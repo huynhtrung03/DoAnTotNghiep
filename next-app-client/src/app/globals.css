@@ -1,0 +1,349 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar Hide Search */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Ẩn icon con mắt mặc định của Edge, Chrome */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+}
+
+/* --- Ant Design Select & Option dark mode --- */
+.dark .ant-select,
+.dark .ant-select-selector,
+.dark .ant-select-dropdown,
+.dark .ant-select-dropdown-menu,
+.dark .ant-select-item,
+.dark .ant-select-item-option {
+  background: #22304a !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-select-dropdown,
+.dark .ant-select-dropdown-menu {
+  box-shadow: 0 4px 16px #0006 !important;
+}
+
+.dark .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.dark .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: #2563eb !important;
+  color: #fff !important;
+}
+
+.dark .ant-select-item-option-disabled {
+  color: #94a3b8 !important;
+  background: #1e293b !important;
+}
+
+.dark .ant-select-arrow {
+  color: #fff !important;
+}
+
+.dark .ant-select-selection-placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+/* --- Ant Design Upload dark mode --- */
+.dark .ant-upload,
+.dark .ant-upload-list,
+.dark .ant-upload-list-item {
+  background: #171f2f !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-upload-list-item-info {
+  color: #fff !important;
+}
+
+.dark .ant-upload-list-item-name {
+  color: #60a5fa !important;
+}
+
+.dark .ant-upload-list-item-card-actions-btn {
+  color: #fff !important;
+}
+
+.dark .ant-upload-list-item-error {
+  color: #f87171 !important;
+}
+
+.dark .ant-upload-list-item-progress {
+  background: #334155 !important;
+}
+
+/* --- Ant Design Form & Form.Item dark mode --- */
+.dark .ant-form,
+.dark .ant-form-item,
+.dark .ant-form-item-label>label {
+  color: #fff !important;
+}
+
+.dark .ant-form-item-explain-error {
+  color: #f87171 !important;
+}
+
+.dark .ant-form-item-explain-success {
+  color: #4ade80 !important;
+}
+
+.dark .ant-form-item-explain-warning {
+  color: #facc15 !important;
+}
+
+.dark .ant-form-item-label>label.ant-form-item-required:not(.ant-form-item-required-mark-optional)::before {
+  color: #f87171 !important;
+}
+
+.dark .ant-form-item-label>label.ant-form-item-required-mark-optional {
+  color: #94a3b8 !important;
+}
+
+/* --- Ant Design Input dark mode --- */
+.dark .ant-input,
+.dark .ant-input-affix-wrapper,
+.dark .ant-input-number,
+.dark .ant-input-number-input {
+  background: #22304a !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-input:focus,
+.dark .ant-input-affix-wrapper:focus,
+.dark .ant-input-affix-wrapper-focused,
+.dark .ant-input-number:focus,
+.dark .ant-input-number-input:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 2px #2563eb33 !important;
+}
+
+.dark .ant-input[disabled],
+.dark .ant-input-affix-wrapper[disabled],
+.dark .ant-input-number[disabled],
+.dark .ant-input-number-input[disabled] {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-input::placeholder,
+.dark .ant-input-number-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+/* Table border và cell */
+.dark .ant-table,
+.dark .ant-table-container,
+.dark .ant-table-thead>tr>th,
+.dark .ant-table-tbody>tr>td {
+  border-color: #334155 !important;
+  background-color: #171f2f !important;
+  color: #fff !important;
+}
+
+/* Header */
+.dark .ant-table-thead>tr>th {
+  background-color: #1e293b !important;
+  color: #fff !important;
+}
+
+/* Hover row */
+.dark .ant-table-tbody>tr:hover>td {
+  background-color: #22304a !important;
+  color: #fff !important;
+}
+
+/* Pagination arrow và số */
+.dark .ant-pagination-item,
+.dark .ant-pagination-prev,
+.dark .ant-pagination-next {
+  background: transparent !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-pagination-item-active {
+  background: #22304a !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+/* Pagination text, arrow, ellipsis, jump-prev/next, và quick-jumper trong dark mode */
+.dark .ant-pagination-item,
+.dark .ant-pagination-item a,
+.dark .ant-pagination-prev,
+.dark .ant-pagination-next,
+.dark .ant-pagination-jump-prev,
+.dark .ant-pagination-jump-next,
+.dark .ant-pagination-item-link,
+.dark .ant-pagination-item-ellipsis,
+.dark .ant-pagination-options,
+.dark .ant-pagination-options-quick-jumper,
+.dark .ant-pagination-options-quick-jumper input {
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-pagination-item-active,
+.dark .ant-pagination-item-active a {
+  color: #fff !important;
+  background: #22304a !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-pagination-item a:hover {
+  color: #60a5fa !important;
+}
+
+.dark .ant-pagination-options-quick-jumper input {
+  background: #171f2f !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+/* Icon (ví dụ svg trong button) */
+.dark .ant-btn>span>svg {
+  color: #fff !important;
+}
+
+/* Button hover */
+.dark .ant-btn:hover,
+.dark .ant-btn:focus {
+  background: #22304a !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+/* Modal dark mode */
+.dark .ant-modal-content,
+:root.dark .ant-modal-content,
+body.dark .ant-modal-content,
+html.dark .ant-modal-content {
+  background-color: #171f2f !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-modal-header {
+  background-color: #1e293b !important;
+  color: #fff !important;
+  border-bottom: 1px solid #334155 !important;
+}
+
+.dark .ant-modal-title {
+  color: #fff !important;
+}
+
+.dark .ant-modal-close-x {
+  color: #fff !important;
+}
+
+.dark .ant-modal-footer {
+  background: #171f2f !important;
+  border-top: 1px solid #334155 !important;
+}
+
+.dark .ant-modal-footer .ant-btn {
+  background: #22304a !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-modal-footer .ant-btn:hover {
+  background: #334155 !important;
+  color: #fff !important;
+}
+
+.dark .ant-modal-content label,
+.dark .ant-modal-content .ant-form-item-label label {
+  color: #fff !important;
+}
+
+.dark .ant-modal-content input,
+.dark .ant-modal-content textarea {
+  background: #22304a !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+.dark .ant-modal-content input::placeholder,
+.dark .ant-modal-content textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+/* InputNumber addonAfter dark mode */
+.dark .ant-input-number-group-addon {
+  background: #22304a !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+
+/* chatbot */
+.bubble-enter {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.bubble-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: all 300ms;
+}
+
+.bubble-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.bubble-exit-active {
+  opacity: 0;
+  transform: scale(0.7);
+  transition: all 300ms;
+}
+
+.chatbox-enter {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+}
+
+.chatbox-enter-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: all 300ms;
+}
+
+.chatbox-exit {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.chatbox-exit-active {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  transition: all 300ms;
+}

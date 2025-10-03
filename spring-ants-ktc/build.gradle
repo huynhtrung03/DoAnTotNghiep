@@ -1,0 +1,82 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.4'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.ants.ktc'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	// JSON processing
+	implementation 'org.json:json:20240303'
+
+	// socket
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	// Caching support
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	// Environment variables support
+	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
+	// Mail dependencies
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	// Security dependencies
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// JWT dependencies
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+	// Cache in memory
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	// Cache in Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+ 	// Cloudinary dependencies
+	implementation 'com.cloudinary:cloudinary-http44:1.37.0'
+
+	// google map 
+	implementation 'com.google.maps:google-maps-services:0.18.1'
+	implementation 'org.json:json:20230227'
+	
+	// Swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    //excel
+	implementation 'org.apache.poi:poi:5.2.5'
+	implementation 'org.apache.poi:poi-ooxml:5.2.5'
+    //pdf
+	implementation 'com.itextpdf:itext7-core:7.2.5'
+
+}
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-parameters"
+}
+tasks.named('test') {
+	useJUnitPlatform()
+}
