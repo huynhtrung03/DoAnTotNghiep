@@ -4,3 +4,20 @@
 .fake
 
 /.venv
+.cursor/plans/rn-cafec4e0.plan.md
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+coverage/
+# React Native Android/iOS
+android/app/build/
+ios/build/
+*.keystore
+
+# Env
+.env
+.env.localmobi-client/*.apk
+mobi-client/**/*.apk
