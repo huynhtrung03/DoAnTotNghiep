@@ -1,200 +1,211 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  withTiming,
-  interpolate,
-  Extrapolate,
-} from 'react-native-reanimated';
-import UserHomeScreen from '../screens/user/home';
-import SearchScreen from '../screens/user/SearchScreen';
-import CartScreen from '../screens/user/CartScreen';
-import HistoryScreen from '../screens/user/HistoryScreen';
-import UserScreen from '../screens/user/UserScreen';
+import { LinearGradient } from 'expo-linear-gradient';
+import UserHomeScreen from '../screens/main/HomeScreen/home';
+import SearchScreen from '../screens/main/SearchScreen/SearchScreen';
+import FavoritedScreen from '../screens/favorites/FavoritesScreen/FavoritedScreen';
+import MessengerScreen from '../screens/mesenger/MesengerScreen';
+import UserStackNavigator from './UserStackNavigator';
+import Colors, { withOpacity } from '../styles/colors';
+import { useFavoriteStore } from '../stores/FavoriteStore';
+import { getAllFavoriteIds } from '../services/favorites/FavoriteService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Tab = createBottomTabNavigator();
 
-// Animated Tab Icon Component
-const AnimatedTabIcon = ({ 
+// Get gradient colors for each tab
+const getTabGradient = (index: number) => {
+  const gradients = [
+    Colors.gradients.blue,     // Home
+    Colors.gradients.purple,   // Search
+    Colors.gradients.pink,     // Cart (Heart)
+    Colors.gradients.orange,   // History
+    Colors.gradients.green,    // User
+  ];
+  return gradients[index] || Colors.gradients.blue;
+};
+
+// Tab Icon Component with Gradient Background
+const TabIcon = ({ 
   name, 
   focusedName, 
-  color, 
   size, 
-  focused 
+  focused,
+  tabIndex,
 }: { 
   name: string; 
   focusedName: string; 
-  color: string; 
   size: number; 
-  focused: boolean; 
+  focused: boolean;
+  tabIndex: number;
 }) => {
-  const scale = useSharedValue(focused ? 1.2 : 1);
-  const opacity = useSharedValue(focused ? 1 : 0.7);
+  const gradient = getTabGradient(tabIndex);
 
-  React.useEffect(() => {
-    scale.value = withSpring(focused ? 1.2 : 1, {
-      damping: 15,
-      stiffness: 150,
-    });
-    opacity.value = withTiming(focused ? 1 : 0.7, { duration: 200 });
-  }, [focused]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  if (focused) {
+    return (
+      <View style={styles.iconContainer}>
+        <LinearGradient
+          colors={gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.iconGradient}
+        >
+          <Ionicons 
+            name={focusedName as any} 
+            size={size} 
+            color={Colors.textWhite} 
+          />
+        </LinearGradient>
+      </View>
+    );
+  }
 
   return (
-    <Animated.View style={animatedStyle}>
+    <View style={styles.iconContainerInactive}>
       <Ionicons 
-        name={focused ? focusedName : name as any} 
-        size={size} 
-        color={color} 
+        name={name as any} 
+        size={size - 2} 
+        color={Colors.textSecondary} 
       />
-    </Animated.View>
+    </View>
   );
 };
 
-// Animated Tab Label Component
-const AnimatedTabLabel = ({ 
+// Tab Label Component
+const TabLabel = ({ 
   label, 
-  color, 
-  focused 
+  focused,
+  tabIndex,
 }: { 
   label: string; 
-  color: string; 
-  focused: boolean; 
+  focused: boolean;
+  tabIndex: number;
 }) => {
-  const scale = useSharedValue(focused ? 1.1 : 1);
-  const opacity = useSharedValue(focused ? 1 : 0.8);
+  if (!focused) return null;
 
-  React.useEffect(() => {
-    scale.value = withSpring(focused ? 1.1 : 1, {
-      damping: 12,
-      stiffness: 100,
-    });
-    opacity.value = withTiming(focused ? 1 : 0.8, { duration: 200 });
-  }, [focused]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const gradient = getTabGradient(tabIndex);
 
   return (
-    <Animated.Text style={[styles.tabLabel, { color }, animatedStyle]}>
+    <Text style={[styles.tabLabel, { color: gradient[0] }]}>
       {label}
-    </Animated.Text>
+    </Text>
   );
 };
 
-// Enhanced Tab Bar with Ripple Effect
-const EnhancedTabBar = ({ state, descriptors, navigation }: any) => {
+// Custom Tab Bar Component
+const CustomTabBar = ({ state, descriptors, navigation }: any) => {
   return (
-    <View style={styles.tabBarContainer}>
-      {state.routes.map((route: any, index: number) => {
-        const { options } = descriptors[route.key];
-        const label = options.tabBarLabel !== undefined
-          ? options.tabBarLabel
-          : options.title !== undefined
-          ? options.title
-          : route.name;
+    <View style={styles.tabBarWrapper}>
+      <View style={styles.tabBarContainer}>
+        {state.routes.map((route: any, index: number) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.index === index;
 
-        const isFocused = state.index === index;
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          };
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
-          }
-        };
+          const onLongPress = () => {
+            navigation.emit({
+              type: 'tabLongPress',
+              target: route.key,
+            });
+          };
 
-        const onLongPress = () => {
-          navigation.emit({
-            type: 'tabLongPress',
-            target: route.key,
-          });
-        };
-
-        return (
-          <Pressable
-            key={route.key}
-            accessibilityRole="button"
-            accessibilityState={isFocused ? { selected: true } : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
-            testID={options.tabBarTestID}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            style={styles.tabButton}
-          >
-            <Animated.View style={styles.tabContent}>
-              {options.tabBarIcon && options.tabBarIcon({
-                color: isFocused ? '#3B82F6' : '#6B7280',
-                size: 24,
-                focused: isFocused,
-              })}
-              {options.tabBarLabel && options.tabBarLabel({
-                color: isFocused ? '#3B82F6' : '#6B7280',
-                focused: isFocused,
-              })}
-            </Animated.View>
-          </Pressable>
-        );
-      })}
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              accessibilityLabel={options.tabBarAccessibilityLabel}
+              testID={options.tabBarTestID}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={styles.tabButton}
+            >
+              <View style={styles.tabContent}>
+                {options.tabBarIcon && options.tabBarIcon({
+                  size: 26,
+                  focused: isFocused,
+                  tabIndex: index,
+                })}
+                {options.tabBarLabel && options.tabBarLabel({
+                  focused: isFocused,
+                  tabIndex: index,
+                })}
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 };
 
 export default function AppTabs() {
+	const { setFavoriteRoomIds, setLoading, isInitialized } = useFavoriteStore();
+
+	// Load favorites khi app khởi động
+	useEffect(() => {
+		const loadFavorites = async () => {
+			try {
+				// Kiểm tra đăng nhập
+				const token = await AsyncStorage.getItem('accessToken');
+				if (!token) {
+					console.log('⚠️ User not logged in, skipping favorites load');
+					setFavoriteRoomIds([]);
+					return;
+				}
+
+				// Chỉ load nếu chưa khởi tạo
+				if (!isInitialized) {
+					console.log('🔄 Loading all favorite IDs...');
+					setLoading(true);
+					const favoriteIds = await getAllFavoriteIds();
+					console.log(`✅ Loaded ${favoriteIds.length} favorites into store`);
+					setFavoriteRoomIds(favoriteIds);
+					setLoading(false);
+				}
+			} catch (error) {
+				console.error('❌ Error loading favorites in AppTabs:', error);
+				setLoading(false);
+			}
+		};
+
+		loadFavorites();
+	}, []);
+
 	return (
 		<Tab.Navigator
+			tabBar={(props) => <CustomTabBar {...props} />}
 			screenOptions={{
 				headerShown: false,
-				tabBarStyle: {
-					backgroundColor: '#fff',
-					borderTopWidth: 1,
-					borderTopColor: '#E5E7EB',
-					paddingBottom: 8,
-					paddingTop: 8,
-					height: 70,
-					elevation: 8,
-					shadowColor: '#000',
-					shadowOffset: { width: 0, height: -2 },
-					shadowOpacity: 0.1,
-					shadowRadius: 8,
-				},
-				tabBarActiveTintColor: '#3B82F6',
-				tabBarInactiveTintColor: '#6B7280',
-				tabBarItemStyle: {
-					paddingVertical: 4,
-				},
-				tabBarShowLabel: true,
 			}}
 		>
 			<Tab.Screen 
 				name="Home" 
 				component={UserHomeScreen}
 				options={{
-					tabBarLabel: ({ color, focused }) => (
-						<AnimatedTabLabel label="Home" color={color} focused={focused} />
+					tabBarLabel: ({ focused }) => (
+						<TabLabel label="Trang chủ" focused={focused} tabIndex={0} />
 					),
-					tabBarIcon: ({ color, size, focused }) => (
-						<AnimatedTabIcon 
+					tabBarIcon: ({ size, focused }) => (
+						<TabIcon 
 							name="home-outline" 
 							focusedName="home"
-							color={color} 
 							size={size} 
-							focused={focused} 
+							focused={focused}
+							tabIndex={0}
 						/>
 					),
 				}}
@@ -203,70 +214,70 @@ export default function AppTabs() {
 				name="Search" 
 				component={SearchScreen}
 				options={{
-					tabBarLabel: ({ color, focused }) => (
-						<AnimatedTabLabel label="Search" color={color} focused={focused} />
+					tabBarLabel: ({ focused }) => (
+						<TabLabel label="Tìm kiếm" focused={focused} tabIndex={1} />
 					),
-					tabBarIcon: ({ color, size, focused }) => (
-						<AnimatedTabIcon 
+					tabBarIcon: ({ size, focused }) => (
+						<TabIcon 
 							name="search-outline" 
 							focusedName="search"
-							color={color} 
 							size={size} 
-							focused={focused} 
+							focused={focused}
+							tabIndex={1}
 						/>
 					),
 				}}
 			/>
 			<Tab.Screen 
-				name="Cart" 
-				component={CartScreen}
+				name="Favorites" 
+				component={FavoritedScreen}
 				options={{
-					tabBarLabel: ({ color, focused }) => (
-						<AnimatedTabLabel label="Cart" color={color} focused={focused} />
+					tabBarLabel: ({ focused }) => (
+						<TabLabel label="Yêu thích" focused={focused} tabIndex={2} />
 					),
-					tabBarIcon: ({ color, size, focused }) => (
-						<AnimatedTabIcon 
+					tabBarIcon: ({ size, focused }) => (
+						<TabIcon 
 							name="heart-outline" 
 							focusedName="heart"
-							color={color} 
 							size={size} 
-							focused={focused} 
+							focused={focused}
+							tabIndex={2}
 						/>
 					),
 				}}
 			/>
 			<Tab.Screen 
-				name="History" 
-				component={HistoryScreen}
+				name="Messages" 
+				component={MessengerScreen}
 				options={{
-					tabBarLabel: ({ color, focused }) => (
-						<AnimatedTabLabel label="History" color={color} focused={focused} />
+					tabBarLabel: ({ focused }) => (
+						<TabLabel label="Tin nhắn" focused={focused} tabIndex={3} />
 					),
-					tabBarIcon: ({ color, size, focused }) => (
-						<AnimatedTabIcon 
-							name="time-outline" 
-							focusedName="time"
-							color={color} 
+					tabBarIcon: ({ size, focused }) => (
+						<TabIcon 
+							name="chatbubble-outline" 
+							focusedName="chatbubble"
 							size={size} 
-							focused={focused} 
+							focused={focused}
+							tabIndex={3}
 						/>
 					),
 				}}
 			/>
 			<Tab.Screen 
 				name="User" 
-				component={UserScreen}
+				component={UserStackNavigator}
 				options={{
-					tabBarLabel: ({ color, focused }) => (
-						<AnimatedTabLabel label="User" color={color} focused={focused} />
+					tabBarLabel: ({ focused }) => (
+						<TabLabel label="Cá nhân" focused={focused} tabIndex={4} />
 					),
-					tabBarIcon: ({ color, size, focused }) => (
-						<AnimatedTabIcon 
+					tabBarIcon: ({ size, focused }) => (
+						<TabIcon 
 							name="person-outline" 
 							focusedName="person"
-							color={color} 
 							size={size} 
-							focused={focused} 
+							focused={focused}
+							tabIndex={4}
 						/>
 					),
 				}}
@@ -276,33 +287,69 @@ export default function AppTabs() {
 }
 
 const styles = StyleSheet.create({
-	tabLabel: {
-		fontSize: 12,
-		fontWeight: '600',
-		marginTop: 4,
+	tabBarWrapper: {
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		backgroundColor: 'transparent',
 	},
 	tabBarContainer: {
 		flexDirection: 'row',
-		backgroundColor: '#fff',
+		backgroundColor: Colors.backgroundLight,
+		paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+		paddingTop: 12,
+		paddingHorizontal: 8,
+		borderTopLeftRadius: 24,
+		borderTopRightRadius: 24,
+		elevation: 20,
+		shadowColor: Colors.cardShadow,
+		shadowOffset: { width: 0, height: -4 },
+		shadowOpacity: 0.15,
+		shadowRadius: 12,
 		borderTopWidth: 1,
-		borderTopColor: '#E5E7EB',
-		paddingBottom: 8,
-		paddingTop: 8,
-		height: 70,
-		elevation: 8,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: -2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 8,
+		borderTopColor: withOpacity(Colors.border, 0.5),
 	},
 	tabButton: {
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
-		paddingVertical: 4,
+		paddingVertical: 8,
 	},
 	tabContent: {
 		alignItems: 'center',
 		justifyContent: 'center',
+		gap: 4,
+		minHeight: 60,
+	},
+	iconContainer: {
+		borderRadius: 20,
+		overflow: 'hidden',
+		elevation: 8,
+		shadowColor: Colors.cardShadow,
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.3,
+		shadowRadius: 8,
+	},
+	iconGradient: {
+		width: 56,
+		height: 56,
+		borderRadius: 20,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	iconContainerInactive: {
+		width: 48,
+		height: 48,
+		borderRadius: 16,
+		alignItems: 'center',
+		justifyContent: 'center',
+		backgroundColor: withOpacity(Colors.backgroundDark, 0.5),
+	},
+	tabLabel: {
+		fontSize: 11,
+		fontWeight: '700',
+		marginTop: 2,
+		letterSpacing: 0.3,
 	},
 });

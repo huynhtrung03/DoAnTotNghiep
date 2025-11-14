@@ -2,6 +2,7 @@ import { View, TextInput, Button, Alert, KeyboardAvoidingView, Platform, ScrollV
 import { useState } from 'react';
 import { API_URL } from '../../services/Constant';
 import axios from 'axios';
+import styles from '../../styles/screens/auth/ForgotPasswordScreen.styles';
 
 export default function ForgotPasswordScreen() {
 	const [email, setEmail] = useState('');
@@ -15,21 +16,21 @@ export default function ForgotPasswordScreen() {
 	};
 	return (
 		<KeyboardAvoidingView 
-			style={{ flex: 1 }} 
+			style={styles.container} 
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 			keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
 		>
 			<ScrollView 
-				contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 16 }}
+				contentContainerStyle={styles.scrollViewContent}
 				keyboardShouldPersistTaps="handled"
 			>
-				<View style={{ gap: 12 }}>
+				<View style={styles.formContainer}>
 					<TextInput 
 						value={email} 
 						onChangeText={setEmail} 
 						placeholder="Email" 
 						keyboardType="email-address"
-						style={{ borderWidth: 1, borderColor: '#e5e7eb', padding: 12, borderRadius: 8 }} 
+						style={styles.textInput} 
 					/>
 					<Button title="Send reset link" onPress={submit} />
 				</View>

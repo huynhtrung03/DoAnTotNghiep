@@ -1,22 +1,9 @@
-// services/ChatService.ts
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  where,
-  or,
-  doc,
-  setDoc,
-  serverTimestamp,
-  addDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import { getFullName } from "@/services/ProfileService";
-import { API_URL, URL_IMAGE } from "@/services/Constant";
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
+import { API_URL } from './config/Constant';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Interface for chat user data
+
 export interface ChatUser {
   id: string;
   name?: string;
@@ -26,7 +13,6 @@ export interface ChatUser {
   unreadCount?: number;
 }
 
-// Interface for message data
 export interface Message {
   id: string;
   text?: string;
@@ -39,283 +25,321 @@ export interface Message {
 }
 
 /**
- * Lắng nghe các cuộc trò chuyện của một người dùng và cập nhật danh sách
- * @param userId ID của người dùng (chủ nhà hoặc người thuê)
- * @param setChatUsers Hàm setter của React State để cập nhật danh sách người dùng
- * @param setUnreadStatus Hàm setter của React State để cập nhật trạng thái tin nhắn chưa đọc
- * @param setIsLoading Hàm setter của React State để cập nhật trạng thái tải dữ liệu
- * @param setError Hàm setter của React State để cập nhật lỗi
- * @returns Hàm unsubscribe để dọn dẹp listener
+ * Get user full name and avatar
+ */
+const getFullName = async (userId: string): Promise<{ fullName: string; avatar: string }> => {
+  try {
+    const token = await AsyncStorage.getItem('accessToken');
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user info');
+    }
+
+    const data = await response.json();
+    return {
+      fullName: data.fullName || data.username || userId,
+      avatar: data.avatar || '',
+    };
+  } catch (error) {
+    console.error('Error fetching user name:', error);
+    return { fullName: userId, avatar: '' };
+  }
+};
+
+/**
+ * Listen for conversations of a user
  */
 export const listenForConversations = (
-  landlordId: string,
+  userId: string,
   lastReadTimestamps: React.MutableRefObject<Map<string, Date>>,
   setUserList: (users: ChatUser[]) => void,
   setIsLoading: (loading: boolean) => void,
   setError: (error: string) => void
-) => {
-  if (!landlordId) {
+): (() => void) => {
+  if (!userId) {
     setIsLoading(false);
-    return () => {}; // Return a no-op function
+    return () => {};
   }
 
-  const q = query(
-    collection(db, "messages"),
-    or(
-      where("senderId", "==", landlordId),
-      where("recipientId", "==", landlordId)
-    ),
-    orderBy("createdAt", "desc")
-  );
+  console.log('👂 Listening for conversations for user:', userId);
 
-  const unsubscribe = onSnapshot(
-    q,
-    async (snapshot) => {
-      const conversations = new Map<string, ChatUser>();
-      const unreadCounts = new Map<string, number>();
-      const uniqueUserIds = new Set<string>();
+  const unsubscribe = firestore()
+    .collection('messages')
+    .where('senderId', '==', userId)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(
+      async (senderSnapshot) => {
+        // Also listen for received messages
+        const recipientSnapshot = await firestore()
+          .collection('messages')
+          .where('recipientId', '==', userId)
+          .orderBy('createdAt', 'desc')
+          .get();
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const otherUserId =
-          data.senderId === landlordId ? data.recipientId : data.senderId;
+        const conversations = new Map<string, ChatUser>();
+        const unreadCounts = new Map<string, number>();
+        const uniqueUserIds = new Set<string>();
 
-        if (!otherUserId || otherUserId === landlordId) return;
-        uniqueUserIds.add(otherUserId);
+        // Process sent messages
+        senderSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const otherUserId = data.recipientId;
 
-        // Update last message
-        if (!conversations.has(otherUserId)) {
-          const lastMessageTime = data.createdAt
-            ? new Date(data.createdAt.seconds * 1000)
-            : new Date();
-          const lastMessageText = data.messageType === 'image' 
-            ? "📷 Đã gửi một ảnh" 
-            : (data.text || "");
-          conversations.set(otherUserId, {
-            id: otherUserId,
-            lastMessageTime,
-            lastMessageText,
-          });
-        }
+          if (!otherUserId || otherUserId === userId) return;
+          uniqueUserIds.add(otherUserId);
 
-        // Count unread messages
-        const lastReadTime = lastReadTimestamps.current.get(otherUserId);
-        if (
-          data.recipientId === landlordId &&
-          (!lastReadTime ||
-            lastReadTime < new Date(data.createdAt.seconds * 1000))
-        ) {
-          const currentCount = unreadCounts.get(otherUserId) || 0;
-          unreadCounts.set(otherUserId, currentCount + 1);
-        }
-      });
+          if (!conversations.has(otherUserId)) {
+            const lastMessageTime = data.createdAt?.toDate() || new Date();
+            const lastMessageText =
+              data.messageType === 'image' ? '📷 Đã gửi một ảnh' : data.text || '';
+            conversations.set(otherUserId, {
+              id: otherUserId,
+              lastMessageTime,
+              lastMessageText,
+            });
+          }
+        });
 
-      // Fetch user details and merge
-      const userIds = Array.from(uniqueUserIds);
-      const namePromises = userIds.map(async (id) => {
-        try {
-          const data = await getFullName(id);
-          return { id, name: data.fullName, avatar: data.avatar };
-        } catch (error) {
-          console.error(`Failed to get name for user ${id}:`, error);
-          return { id, name: id, avatar: "" };
-        }
-      });
-      const names = await Promise.all(namePromises);
-      const updatedUserList: ChatUser[] = names.map(({ id, name, avatar }) => {
-        const chatData = conversations.get(id);
-        const unreadCount = unreadCounts.get(id) || 0;
-        return {
-          ...chatData!,
-          name: name,
-          avatar: avatar,
-          unreadCount: unreadCount,
-        };
-      });
+        // Process received messages
+        recipientSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const otherUserId = data.senderId;
 
-      setUserList(updatedUserList);
-      setIsLoading(false);
-    },
-    (err) => {
-      console.error("Firebase fetch error:", err);
-      setError("Không thể tải tin nhắn. Vui lòng thử lại.");
-      setIsLoading(false);
-    }
-  );
+          if (!otherUserId || otherUserId === userId) return;
+          uniqueUserIds.add(otherUserId);
+
+          if (!conversations.has(otherUserId)) {
+            const lastMessageTime = data.createdAt?.toDate() || new Date();
+            const lastMessageText =
+              data.messageType === 'image' ? '📷 Nhận được một ảnh' : data.text || '';
+            conversations.set(otherUserId, {
+              id: otherUserId,
+              lastMessageTime,
+              lastMessageText,
+            });
+          }
+
+          // Count unread messages
+          const lastReadTime = lastReadTimestamps.current.get(otherUserId);
+          const messageTime = data.createdAt?.toDate() || new Date();
+
+          if (!lastReadTime || lastReadTime < messageTime) {
+            const currentCount = unreadCounts.get(otherUserId) || 0;
+            unreadCounts.set(otherUserId, currentCount + 1);
+          }
+        });
+
+        // Fetch user details
+        const userIds = Array.from(uniqueUserIds);
+        const namePromises = userIds.map(async (id) => {
+          try {
+            const data = await getFullName(id);
+            return { id, name: data.fullName, avatar: data.avatar };
+          } catch (error) {
+            console.error(`Failed to get name for user ${id}:`, error);
+            return { id, name: id, avatar: '' };
+          }
+        });
+
+        const names = await Promise.all(namePromises);
+        const updatedUserList: ChatUser[] = names.map(({ id, name, avatar }) => {
+          const chatData = conversations.get(id);
+          const unreadCount = unreadCounts.get(id) || 0;
+          return {
+            ...chatData!,
+            name,
+            avatar,
+            unreadCount,
+          };
+        });
+
+        console.log('✅ Conversations updated:', updatedUserList.length);
+        setUserList(updatedUserList);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('❌ Firebase fetch error:', error);
+        setError('Không thể tải tin nhắn. Vui lòng thử lại.');
+        setIsLoading(false);
+      }
+    );
 
   return unsubscribe;
 };
 
 /**
- * Cập nhật trạng thái đã đọc của một cuộc trò chuyện
- * @param landlordId ID của chủ nhà
- * @param otherUserId ID của người dùng còn lại
+ * Mark conversation as read
  */
 export const markConversationAsRead = async (
-  landlordId: string,
+  userId: string,
   otherUserId: string
-) => {
+): Promise<void> => {
   try {
-    const readStatusDocRef = doc(
-      db,
-      "readStatuses",
-      `${landlordId}-${otherUserId}`
-    );
-    await setDoc(
-      readStatusDocRef,
-      {
-        userId: landlordId,
-        conversationId: otherUserId,
-        lastRead: serverTimestamp(),
-      },
-      { merge: true }
-    );
-    console.log(`Marked conversation with ${otherUserId} as read for ${landlordId}`);
+    console.log('✅ Marking conversation as read:', { userId, otherUserId });
+
+    await firestore()
+      .collection('readStatuses')
+      .doc(`${userId}-${otherUserId}`)
+      .set(
+        {
+          userId,
+          conversationId: otherUserId,
+          lastRead: firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+    console.log('✅ Conversation marked as read');
   } catch (error) {
-    console.error("Error marking conversation as read:", error);
+    console.error('❌ Error marking conversation as read:', error);
     throw error;
   }
 };
 
 /**
- * Upload ảnh lên backend API
- * @param file File ảnh cần upload
- * @returns Promise<{ imageUrl: string, fileName: string }>
+ * Upload image to Firebase Storage
  */
-export const uploadImageToBackend = async (
-  file: File
+export const uploadImageToFirebase = async (
+  fileUri: string,
+  fileName: string
 ): Promise<{ imageUrl: string; fileName: string }> => {
-  const formData = new FormData();
-  formData.append('image', file);
+  try {
+    console.log('📤 Uploading image to Firebase:', fileName);
 
-  const response = await fetch(`${API_URL.replace('/api', '')}/api/chat/upload-image`, {
-    method: 'POST',
-    body: formData,
-  });
+    const reference = storage().ref(`chat-images/${Date.now()}_${fileName}`);
+    await reference.putFile(fileUri);
+    const url = await reference.getDownloadURL();
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Upload failed');
+    console.log('✅ Image uploaded:', url);
+    return { imageUrl: url, fileName };
+  } catch (error) {
+    console.error('❌ Upload image error:', error);
+    throw new Error('Failed to upload image');
   }
-
-  const result = await response.json();
-  return {
-    imageUrl: `${URL_IMAGE}${result.imageUrl}`,
-    fileName: result.fileName || file.name,
-  };
 };
 
 /**
- * Gửi tin nhắn ảnh
- * @param file File ảnh
- * @param senderId ID người gửi
- * @param recipientId ID người nhận
- * @returns Promise<void>
+ * Send image message
  */
 export const sendImageMessage = async (
-  file: File,
+  fileUri: string,
+  fileName: string,
   senderId: string,
   recipientId: string
 ): Promise<void> => {
-  const { imageUrl, fileName } = await uploadImageToBackend(file);
+  try {
+    console.log('📤 Sending image message');
 
-  await addDoc(collection(db, "messages"), {
-    imageUrl: imageUrl,
-    imageFileName: fileName,
-    senderId: senderId,
-    recipientId: recipientId,
-    createdAt: serverTimestamp(),
-    messageType: 'image',
-  });
+    const { imageUrl } = await uploadImageToFirebase(fileUri, fileName);
+
+    await firestore().collection('messages').add({
+      imageUrl,
+      imageFileName: fileName,
+      senderId,
+      recipientId,
+      createdAt: firestore.FieldValue.serverTimestamp(),
+      messageType: 'image',
+    });
+
+    console.log('✅ Image message sent');
+  } catch (error) {
+    console.error('❌ Send image error:', error);
+    throw error;
+  }
 };
 
 /**
- * Gửi tin nhắn văn bản
- * @param text Nội dung tin nhắn
- * @param senderId ID người gửi
- * @param recipientId ID người nhận
- * @returns Promise<void>
+ * Send text message
  */
 export const sendTextMessage = async (
   text: string,
   senderId: string,
   recipientId: string
 ): Promise<void> => {
-  await addDoc(collection(db, "messages"), {
-    text,
-    senderId: senderId,
-    recipientId: recipientId,
-    createdAt: serverTimestamp(),
-    messageType: 'text',
-  });
+  try {
+    console.log('💬 Sending text message');
+
+    await firestore().collection('messages').add({
+      text,
+      senderId,
+      recipientId,
+      createdAt: firestore.FieldValue.serverTimestamp(),
+      messageType: 'text',
+    });
+
+    console.log('✅ Text message sent');
+  } catch (error) {
+    console.error('❌ Send text error:', error);
+    throw error;
+  }
 };
 
 /**
- * Lắng nghe tổng số tin nhắn chưa đọc cho dashboard
- * @param landlordId ID của chủ nhà
- * @param setUnreadCount Callback để cập nhật số lượng tin nhắn chưa đọc
- * @returns Hàm unsubscribe để dọn dẹp listener
+ * Listen for unread count (for dashboard badge)
  */
 export const listenForUnreadCount = (
-  landlordId: string,
+  userId: string,
   setUnreadCount: (count: number) => void
 ): (() => void) => {
-  if (!landlordId) {
+  if (!userId) {
     return () => {};
   }
 
+  console.log('👂 Listening for unread count for user:', userId);
+
   let currentReadTimestamps = new Map<string, Date>();
 
-  // Listen for read statuses first
-  const readStatusQuery = query(
-    collection(db, "readStatuses"),
-    where("userId", "==", landlordId)
-  );
-
-  const unsubscribeReadStatus = onSnapshot(readStatusQuery, (snapshot) => {
-    const newTimestamps = new Map<string, Date>();
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.lastRead) {
-        newTimestamps.set(
-          data.conversationId,
-          new Date(data.lastRead.seconds * 1000)
-        );
-      }
-    });
-    currentReadTimestamps = newTimestamps;
-    console.log("Unread count listener: Read timestamps updated:", newTimestamps);
-  });
-
-  // Listen for messages and calculate unread count
-  const messagesQuery = query(
-    collection(db, "messages"),
-    where("recipientId", "==", landlordId),
-    orderBy("createdAt", "desc")
-  );
-
-  const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
-    const unreadCounts = new Map<string, number>();
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const senderId = data.senderId;
-
-      if (!senderId || senderId === landlordId) return;
-
-      const lastReadTime = currentReadTimestamps.get(senderId);
-      const messageTime = data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date();
-
-      if (!lastReadTime || lastReadTime < messageTime) {
-        const currentCount = unreadCounts.get(senderId) || 0;
-        unreadCounts.set(senderId, currentCount + 1);
-      }
+  // Listen for read statuses
+  const unsubscribeReadStatus = firestore()
+    .collection('readStatuses')
+    .where('userId', '==', userId)
+    .onSnapshot((snapshot) => {
+      const newTimestamps = new Map<string, Date>();
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.lastRead) {
+          newTimestamps.set(data.conversationId, data.lastRead.toDate());
+        }
+      });
+      currentReadTimestamps = newTimestamps;
+      console.log('📚 Read timestamps updated');
     });
 
-    const totalUnread = Array.from(unreadCounts.values()).reduce((sum, count) => sum + count, 0);
-    console.log("Unread count listener: Total unread messages:", totalUnread);
-    setUnreadCount(totalUnread);
-  });
+  // Listen for messages
+  const unsubscribeMessages = firestore()
+    .collection('messages')
+    .where('recipientId', '==', userId)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot((snapshot) => {
+      const unreadCounts = new Map<string, number>();
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const senderId = data.senderId;
+
+        if (!senderId || senderId === userId) return;
+
+        const lastReadTime = currentReadTimestamps.get(senderId);
+        const messageTime = data.createdAt?.toDate() || new Date();
+
+        if (!lastReadTime || lastReadTime < messageTime) {
+          const currentCount = unreadCounts.get(senderId) || 0;
+          unreadCounts.set(senderId, currentCount + 1);
+        }
+      });
+
+      const totalUnread = Array.from(unreadCounts.values()).reduce(
+        (sum, count) => sum + count,
+        0
+      );
+      console.log('🔔 Total unread messages:', totalUnread);
+      setUnreadCount(totalUnread);
+    });
 
   return () => {
     unsubscribeReadStatus();
@@ -324,19 +348,63 @@ export const listenForUnreadCount = (
 };
 
 /**
- * Xóa tin nhắn
- * @param messageId ID tin nhắn cần xóa
- * @param senderId ID người gửi (để kiểm tra quyền xóa)
- * @returns Promise<void>
+ * Delete message
  */
 export const deleteMessage = async (
   messageId: string,
   senderId: string
 ): Promise<void> => {
   try {
-    await deleteDoc(doc(db, "messages", messageId));
+    console.log('🗑️ Deleting message:', messageId);
+
+    // Check if user is sender
+    const messageDoc = await firestore().collection('messages').doc(messageId).get();
+    if (messageDoc.data()?.senderId !== senderId) {
+      throw new Error('Unauthorized to delete this message');
+    }
+
+    await firestore().collection('messages').doc(messageId).delete();
+    console.log('✅ Message deleted');
   } catch (error) {
-    console.error("Error deleting message:", error);
-    throw new Error("Không thể xóa tin nhắn");
+    console.error('❌ Delete message error:', error);
+    throw new Error('Không thể xóa tin nhắn');
   }
+};
+
+/**
+ * Listen for messages in a conversation (real-time)
+ */
+export const listenForMessages = (
+  userId: string,
+  otherUserId: string,
+  setMessages: (messages: Message[]) => void
+): (() => void) => {
+  console.log('👂 Listening for messages:', { userId, otherUserId });
+
+  const unsubscribe = firestore()
+    .collection('messages')
+    .where('senderId', 'in', [userId, otherUserId])
+    .where('recipientId', 'in', [userId, otherUserId])
+    .orderBy('createdAt', 'asc')
+    .onSnapshot((snapshot) => {
+      const messages: Message[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        messages.push({
+          id: doc.id,
+          text: data.text,
+          imageUrl: data.imageUrl,
+          imageFileName: data.imageFileName,
+          senderId: data.senderId,
+          recipientId: data.recipientId,
+          createdAt: data.createdAt?.toDate() || null,
+          messageType: data.messageType || 'text',
+        });
+      });
+
+      console.log('✅ Messages updated:', messages.length);
+      setMessages(messages);
+    });
+
+  return unsubscribe;
 };

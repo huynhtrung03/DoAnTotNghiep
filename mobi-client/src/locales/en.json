@@ -1,0 +1,38 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "refresh": "Refresh"
+  },
+  "user": {
+    "profile": "Personal Information",
+    "contracts": "My Contracts",
+    "history": "Rental History",
+    "requests": "My Requests",
+    "favorites": "Favorite Rooms",
+    "password": "Change Password",
+    "messages": "Messages",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?"
+  },
+  "settings": {
+    "title": "Settings",
+    "account": "Account",
+    "notifications": "Notifications",
+    "location": "Location",
+    "language": "Language",
+    "help": "Help",
+    "about": "About Us",
+    "aboutText": "Room Rental App"
+  },
+  "features": {
+    "inDevelopment": "Feature in development"
+  }
+}

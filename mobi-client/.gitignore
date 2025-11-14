@@ -29,13 +29,26 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
-
+.md
+.vscode/
+.env
+*.md
 # local env files
 .env*.local
 
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# Android build artifacts and caches (keep source, ignore builds)
+android/.gradle/
+android/build/
+android/app/build/
+android/.cxx/
+android/local.properties
+android/**/*.iml
+android/.idea/
+
+# iOS build artifacts (keep source, ignore builds)
+ios/Pods/
+ios/build/
+ios/.xcode.env.local

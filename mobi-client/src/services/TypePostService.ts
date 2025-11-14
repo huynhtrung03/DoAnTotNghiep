@@ -1,26 +1,50 @@
-export const getPostTypes = async () => {
-    const response = await fetch(`/api/typepost`);
+import { API_URL } from './config/Constant';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export interface PostType {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Get all post types
+ * @returns Array of post types
+ */
+export const getPostTypes = async (): Promise<PostType[]> => {
+  try {
+    const token = await AsyncStorage.getItem('accessToken');
+
+    console.log('📋 Fetching post types...');
+
+    const response = await fetch(`${API_URL}/post-types`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    });
+
     if (!response.ok) {
-        throw new Error("Failed to fetch post types");
+      let errorMsg = 'Failed to fetch post types';
+      try {
+        const errorJson = await response.json();
+        console.error('❌ Backend error:', errorJson);
+        errorMsg = errorJson.message || errorJson.error || errorMsg;
+      } catch (e) {
+        console.error('❌ Error parsing response:', e);
+      }
+      throw new Error(errorMsg);
     }
-    return response.json();
+
+    const postTypes = await response.json();
+    console.log('✅ Post types fetched:', postTypes.length);
+    return postTypes;
+  } catch (error) {
+    console.error('❌ getPostTypes error:', error);
+    throw error;
+  }
 };
 
-// import { API_URL } from "./Constant";
-
-// export const getPostTypes = async (session:any) => {
-//     const response = await fetch(`${API_URL}/post-types`, {
-//         headers: {
-//             "Content-Type": "application/json",
-//             "Authorization": `Bearer ${session.user.accessToken}`,
-//         },
-//     });
-
-//     if (!response.ok) {
-//         const errorJson = await response.json();
-//         console.error("Backend error:", errorJson);
-//         throw new Error("Failed to fetch post types");
-//     }
-
-//     return response.json();
-// };

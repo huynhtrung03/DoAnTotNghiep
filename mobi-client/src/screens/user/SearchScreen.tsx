@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,11 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import Constants from 'expo-constants';
+import MapView, { PROVIDER_GOOGLE, UrlTile, Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import styles from '../../styles/screens/SearchScreen.styles';
 import SuggestAddressBar from '../../components/filter/SuggestAddressBar';
 import RoomsList from '../../components/rooms';
 
@@ -20,17 +23,14 @@ const RoomCard = ({ room }: { room: any }) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'VND'
+      currency: 'VND',
     }).format(price);
   };
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.8}>
       {/* Image with VIP Badge */}
-      <Image 
-        source={{ uri: room.image }} 
-        style={styles.cardImage} 
-      />
+      <Image source={{ uri: room.image }} style={styles.cardImage} />
       {room.isVip && (
         <View style={styles.vipBadge}>
           <Ionicons name="star" size={12} color="#FFFFFF" />
@@ -40,12 +40,16 @@ const RoomCard = ({ room }: { room: any }) => {
 
       {/* Card Content */}
       <View style={styles.cardContent}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{room.title}</Text>
-        
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {room.title}
+        </Text>
+
         {/* Address & Area */}
         <View style={styles.infoRow}>
           <Ionicons name="location-outline" size={14} color="#6B7280" />
-          <Text style={styles.infoText} numberOfLines={1}>{room.address}</Text>
+          <Text style={styles.infoText} numberOfLines={1}>
+            {room.address}
+          </Text>
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="cube-outline" size={14} color="#6B7280" />
@@ -55,7 +59,8 @@ const RoomCard = ({ room }: { room: any }) => {
 
       {/* Card Footer */}
       <View style={styles.cardFooter}>
-        <Text style={styles.cardPrice}>{formatPrice(room.price)}
+        <Text style={styles.cardPrice}>
+          {formatPrice(room.price)}
           <Text style={styles.priceUnit}> / tháng</Text>
         </Text>
         <TouchableOpacity style={styles.detailsButton}>
@@ -68,10 +73,42 @@ const RoomCard = ({ room }: { room: any }) => {
 
 // --- Main Search Screen Component ---
 export default function SearchScreen() {
+  const extra: any =
+    (Constants as any).expoConfig?.extra ??
+    (Constants as any).manifest?.extra ??
+    {};
+  const { NEXT_PUBLIC_GOONG_API_KEY, NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN } = extra as {
+    NEXT_PUBLIC_GOONG_API_KEY?: string;
+    NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?: string;
+  };
+  
+  if (__DEV__) {
+    // Log once to verify keys are available at runtime
+    // eslint-disable-next-line no-console
+    console.log('Map tokens loaded:', {
+      hasGoong: Boolean(NEXT_PUBLIC_GOONG_API_KEY),
+    });
+  }
+  
+  // Không cần useEffect cho Goong với react-native-maps
+  // Goong tiles sẽ được load trực tiếp qua UrlTile component
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [lastQuery, setLastQuery] = useState("");
+  const [lastQuery, setLastQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'search' | 'all'>('search');
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isMapLoading, setIsMapLoading] = useState(true);
+  
+  // LỖI 2: Biến 'region' này không được sử dụng. Thư viện expo-maps dùng 'cameraPosition'.
+  // Đã XÓA: const [region, setRegion] = useState(...)
+
+  const [cameraPosition, setCameraPosition] = useState({
+    center: {
+      latitude: 10.7769,
+      longitude: 106.7009,
+    },
+    zoom: 15,
+  });
 
   const handleAddressChange = (address: { searchAddress: string }) => {
     if (address.searchAddress) {
@@ -83,11 +120,11 @@ export default function SearchScreen() {
     setIsSearching(true);
     setLastQuery(searchQuery);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       const mockResults = [
         {
-          id: "1",
+          id: '1',
           title: `Phòng trọ cao cấp gần ${searchQuery}`,
           price: 5000000,
           address: searchQuery,
@@ -96,7 +133,7 @@ export default function SearchScreen() {
           isVip: true,
         },
         {
-          id: "2", 
+          id: '2',
           title: `Căn hộ mini tiện nghi tại ${searchQuery}`,
           price: 7500000,
           address: searchQuery,
@@ -105,19 +142,19 @@ export default function SearchScreen() {
           isVip: false,
         },
         {
-          id: "3", 
+          id: '3',
           title: `Studio giá rẻ cho sinh viên khu vực ${searchQuery}`,
           price: 3200000,
           address: searchQuery,
           area: 20,
           image: `https://picsum.photos/seed/${Math.random()}/400/300`,
           isVip: false,
-        }
+        },
       ];
-      
+
       setSearchResults(mockResults);
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể tìm kiếm phòng trọ");
+      Alert.alert('Lỗi', 'Không thể tìm kiếm phòng trọ');
     } finally {
       setIsSearching(false);
     }
@@ -125,46 +162,124 @@ export default function SearchScreen() {
 
   const clearSearch = () => {
     setSearchResults([]);
-    setLastQuery("");
+    setLastQuery('');
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Tìm Kiếm</Text>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <SuggestAddressBar
-          showSaveButton={true}
-          onChange={handleAddressChange}
-        />
-      </View>
-
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'search' && styles.activeTab]}
-          onPress={() => setActiveTab('search')}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]}>
-            🔍 Tìm kiếm
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-          onPress={() => setActiveTab('all')}
-        >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            🏠 Tất cả phòng
-          </Text>
-        </TouchableOpacity>
+          <Text style={styles.headerTitle}>Tìm Kiếm</Text>
+          <TouchableOpacity
+            onPress={() => setIsCollapsed(!isCollapsed)}
+            style={styles.collapseToggle}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={isCollapsed ? 'chevron-down' : 'chevron-up'}
+              size={18}
+              color="#2563EB"
+            />
+            <Text style={styles.collapseToggleText}>
+              {isCollapsed ? 'Mở tìm kiếm' : 'Thu gọn'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Content based on active tab */}
-      {activeTab === 'search' ? (
+      {!isCollapsed && (
+        <View style={styles.searchContainer}>
+          <SuggestAddressBar
+            showSaveButton={true}
+            onChange={handleAddressChange}
+          />
+        </View>
+      )}
+
+      {!isCollapsed && (
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'search' && styles.activeTab]}
+            onPress={() => setActiveTab('search')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'search' && styles.activeTabText,
+              ]}
+            >
+              🔍 Tìm kiếm
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+            onPress={() => setActiveTab('all')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'all' && styles.activeTabText,
+              ]}
+            >
+              🏠 Tất cả phòng
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isCollapsed ? (
+        <View style={styles.mapContainer}>
+          <MapView
+            style={StyleSheet.absoluteFillObject}
+            provider={PROVIDER_GOOGLE}
+            initialRegion={{
+              latitude: cameraPosition.center.latitude,
+              longitude: cameraPosition.center.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+            onRegionChangeComplete={(region) => {
+              setCameraPosition({
+                center: {
+                  latitude: region.latitude,
+                  longitude: region.longitude,
+                },
+                zoom: 15,
+              });
+            }}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+            onMapReady={() => {
+              console.log('Goong Map ready');
+              setIsMapLoading(false);
+            }}
+          >
+            {/* Goong Map Tiles */}
+            {NEXT_PUBLIC_GOONG_API_KEY && (
+              <UrlTile
+                urlTemplate={`https://tiles.goong.io/assets/goong_map_web/{z}/{x}/{y}.png?api_key=${NEXT_PUBLIC_GOONG_API_KEY}`}
+                maximumZ={19}
+                flipY={false}
+                zIndex={-1}
+              />
+            )}
+          </MapView>
+          {isMapLoading && (
+            <View style={styles.mapLoadingOverlay}>
+              <ActivityIndicator size="large" color="#2563EB" />
+              <Text style={styles.mapLoadingText}>Đang tải bản đồ Goong...</Text>
+            </View>
+          )}
+        </View>
+      ) : activeTab === 'search' ? (
         <ScrollView style={styles.resultsContainer}>
           {isSearching ? (
             <View style={styles.loadingState}>
@@ -174,19 +289,24 @@ export default function SearchScreen() {
           ) : searchResults.length > 0 ? (
             <View style={styles.resultsSection}>
               <View style={styles.resultsHeader}>
-                <Text style={styles.resultsTitle}>Kết quả cho '{lastQuery}'</Text>
+                <Text style={styles.resultsTitle}>
+                  Kết quả cho '{lastQuery}'
+                </Text>
                 <TouchableOpacity onPress={clearSearch}>
                   <Text style={styles.clearButtonText}>Xóa</Text>
                 </TouchableOpacity>
               </View>
-              
               {searchResults.map((room) => (
                 <RoomCard key={room.id} room={room} />
               ))}
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="search-circle-outline" size={80} color="#D1D5DB" />
+              <Ionicons
+                name="search-circle-outline"
+                size={80}
+                color="#D1D5DB"
+              />
               <Text style={styles.emptyTitle}>Tìm kiếm phòng trọ</Text>
               <Text style={styles.emptySubtitle}>
                 Nhập địa chỉ bạn muốn tìm để xem các phòng có sẵn.
@@ -200,198 +320,3 @@ export default function SearchScreen() {
     </SafeAreaView>
   );
 }
-
-// --- StyleSheet ---
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6', // Lighter gray background for contrast
-  },
-  header: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  searchContainer: {
-    backgroundColor: 'white',
-    paddingBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    zIndex: 10,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginHorizontal: 4,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#3B82F6',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  activeTabText: {
-    color: 'white',
-  },
-  resultsContainer: {
-    flex: 1,
-  },
-  // --- States ---
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    marginTop: 80,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 16,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 24,
-  },
-  loadingState: {
-    marginTop: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  // --- Results Section ---
-  resultsSection: {
-    padding: 16,
-  },
-  resultsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  resultsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-  },
-  clearButtonText: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-  // --- Card Styles ---
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    overflow: 'hidden', // Ensures image corners are rounded
-  },
-  cardImage: {
-    height: 180,
-    width: '100%',
-  },
-  vipBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  vipBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginLeft: 4,
-  },
-  cardContent: {
-    padding: 16,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#4B5563',
-    marginLeft: 8,
-    flex: 1,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  cardPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1E40AF',
-  },
-  priceUnit: {
-    fontSize: 14,
-    fontWeight: 'normal',
-    color: '#6B7280',
-  },
-  detailsButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  detailsButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { API_URL } from '../services/Constant';
+import { API_URL } from '../services/config/Constant';
 
 export async function loginWithUsername(username: string, password: string) {
 	console.log('loginWithUsername: Starting login API call');
@@ -28,6 +28,7 @@ export async function loginWithUsername(username: string, password: string) {
 		['refreshToken', refreshToken ?? ''],
 		['userRoles', JSON.stringify(roles || [])],
 		['userProfile', JSON.stringify(userProfile || {})],
+		['userData', JSON.stringify(user)], // ✅ SAVE userData
 	]);
 	console.log('loginWithUsername: AsyncStorage save completed');
 	
@@ -35,7 +36,7 @@ export async function loginWithUsername(username: string, password: string) {
 }
 
 export async function logout() {
-	await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRoles', 'userProfile']);
+	await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRoles', 'userProfile', 'userData']);
 }
 
 export async function getUserRoles(): Promise<string[]> {

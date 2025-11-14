@@ -4,10 +4,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, ActivityIndicator } from 'react-native';
 import AppTabs from './AppTabs';
-import LoginScreen from '../screens/auth/LoginScreen';
-import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
-import RegisterScreen from '../screens/auth/RegisterScreen';
-// import RoomDetailScreen from '../screens/user/RoomDetailScreen';
+import LoginScreen from '../screens/auth/LoginScreen/LoginScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen/ForgotPasswordScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen/RegisterScreen';
+import RoomDetailScreen from '../screens/main/RoomDetailScreen/RoomDetailScreen';
 import { getUserRoles } from '../lib/auth';
 
 const Stack = createNativeStackNavigator();
@@ -72,15 +72,15 @@ export default function RootNavigator() {
 					<Stack.Screen name="Root" component={AppTabs} />
 					<Stack.Screen name="Users" component={AppTabs} />
 					<Stack.Screen name="LandlordDashboard" component={AppTabs} />
-					{/* <Stack.Screen 
-						name="Detail" 
+					<Stack.Screen 
+						name="RoomDetail" 
 						component={RoomDetailScreen}
 						options={{ 
 							headerShown: true,
 							title: 'Chi tiết phòng',
 							headerBackTitle: 'Quay lại'
 						}} 
-					/> */}
+					/>
 				</Stack.Navigator>
 			)}
 		</NavigationContainer>

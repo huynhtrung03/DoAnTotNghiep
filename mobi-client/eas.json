@@ -1,9 +1,25 @@
 {
-    "cli": { "version": ">= 14.0.0" },
-    "build": {
-      "dev":     { "developmentClient": true, "env": { "APP_ENV": "dev" } },
-      "staging": { "env": { "APP_ENV": "staging" } },
-      "prod":    { "env": { "APP_ENV": "prod" } }
+  "cli": { "version": ">= 14.0.0" },
+  "build": {
+    "dev": {
+      "developmentClient": true,
+      "env": {
+        "APP_ENV": "dev"
+      },
+      "android": {
+        "gradleCommand": ":app:assembleDebug"
+      }
     },
-    "submit": { "prod": {} }
-  }
+    "staging": {
+      "env": {
+        "APP_ENV": "staging"
+      }
+    },
+    "prod": {
+      "env": {
+        "APP_ENV": "prod"
+      }
+    }
+  },
+  "submit": { "prod": {} }
+}
