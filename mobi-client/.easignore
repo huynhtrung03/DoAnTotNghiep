@@ -1,0 +1,68 @@
+# .easignore - Controls what files are uploaded to EAS Build
+# This file takes precedence over .gitignore when using EAS CLI
+
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+
+# Local env files (secrets should be in EAS secrets)
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Native build artifacts and caches - CRITICAL to exclude these
+android/.gradle/
+android/app/.gradle/
+android/build/
+android/app/build/
+android/.cxx/
+android/local.properties
+android/**/*.iml
+android/.idea/
+
+# Gradle daemon files (causes EBUSY errors)
+**/.gradle/**/checksums/
+**/.gradle/**/gc.properties
+**/.gradle/**/fileHashes/
+**/.gradle/**/daemon/
+
+# iOS (if you have it)
+ios/Pods/
+ios/build/
+ios/.xcode.env.local
+
+# Git
+.git/
+
+# Sensitive files
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+*.keystore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

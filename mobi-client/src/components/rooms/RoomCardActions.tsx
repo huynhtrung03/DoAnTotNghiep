@@ -1,34 +1,122 @@
 // components/cards/RoomCardActions.tsx
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCompareStore } from '../../stores/CompareStore';
 import { useFavoriteStore } from '../../stores/FavoriteStore';
 import { RoomInUser } from '../../types/types';
 import { useNavigation } from '@react-navigation/native';
-// Giả sử bạn có một service để gọi API
-// import { updateFavoriteStatus } from '@/services/FavoriteService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { addFavorite as addFavoriteAPI, removeFavorite as removeFavoriteAPI, getFavoriteCount } from '../../services/favorites/FavoriteService';
 
 export default function RoomCardActions({ room, showHeartOnly = false }: { room: RoomInUser; showHeartOnly?: boolean }) {
   const { items, addItem } = useCompareStore();
-  const { favoriteRoomIds, addFavorite, removeFavorite } = useFavoriteStore();
+  const { 
+    favoriteRoomIds, 
+    addFavorite, 
+    removeFavorite,
+    getFavoriteCount: getLocalFavoriteCount,
+    setFavoriteCount,
+    incrementFavoriteCount,
+    decrementFavoriteCount
+  } = useFavoriteStore();
   const navigation = useNavigation<any>();
 
   const isCompared = items.some((item: any) => item.room.id === room.id);
   const isFavorite = favoriteRoomIds.has(room.id);
   
-  // Bạn cần một cơ chế session tương tự trên mobile, có thể qua Context hoặc Redux/Zustand
-  const session = true; // Giả sử người dùng đã đăng nhập
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [favoriteCount, setLocalFavoriteCount] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const [favoriteCount, setFavoriteCount] = useState(0); // Cần lấy dữ liệu này từ API
+  // Kiểm tra đăng nhập
+  useEffect(() => {
+    checkLoginStatus();
+    loadFavoriteCount();
+  }, []);
+
+  // Update local count when store changes
+  useEffect(() => {
+    const count = getLocalFavoriteCount(room.id);
+    if (count > 0) {
+      setLocalFavoriteCount(count);
+    }
+  }, [room.id, getLocalFavoriteCount]);
+
+  const checkLoginStatus = async () => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      setIsLoggedIn(!!token);
+    } catch (error) {
+      console.error('Error checking login status:', error);
+      setIsLoggedIn(false);
+    }
+  };
+
+  const loadFavoriteCount = async () => {
+    try {
+      const count = await getFavoriteCount(room.id);
+      setLocalFavoriteCount(count);
+      setFavoriteCount(room.id, count);
+    } catch (error) {
+      console.error('Error loading favorite count:', error);
+    }
+  };
 
   const handleFavorite = async () => {
-    if (!session) {
-      navigation.navigate('Login');
+    // Kiểm tra đăng nhập
+    if (!isLoggedIn) {
+      Alert.alert(
+        'Yêu cầu đăng nhập',
+        'Bạn cần đăng nhập để thêm phòng vào danh sách yêu thích',
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { 
+            text: 'Đăng nhập', 
+            onPress: () => navigation.navigate('Auth/Login' as never)
+          }
+        ]
+      );
       return;
     }
-    isFavorite ? removeFavorite(room.id) : addFavorite(room.id);
-    // Tích hợp logic gọi API để đồng bộ với server ở đây
+
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    const wasAlreadyFavorite = isFavorite;
+
+    try {
+      if (wasAlreadyFavorite) {
+        // Xóa khỏi favorite
+        const success = await removeFavoriteAPI(room.id);
+        
+        if (success) {
+          removeFavorite(room.id);
+          decrementFavoriteCount(room.id);
+          setLocalFavoriteCount(prev => Math.max(0, prev - 1));
+          console.log(`✅ Removed from favorites: ${room.id}`);
+        } else {
+          Alert.alert('Lỗi', 'Không thể xóa khỏi danh sách yêu thích');
+        }
+      } else {
+        // Thêm vào favorite
+        const success = await addFavoriteAPI(room.id);
+        
+        if (success) {
+          addFavorite(room.id);
+          incrementFavoriteCount(room.id);
+          setLocalFavoriteCount(prev => prev + 1);
+          console.log(`✅ Added to favorites: ${room.id}`);
+        } else {
+          Alert.alert('Lỗi', 'Không thể thêm vào danh sách yêu thích');
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      Alert.alert('Lỗi', 'Có lỗi xảy ra. Vui lòng thử lại sau.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   const handleCompare = () => {

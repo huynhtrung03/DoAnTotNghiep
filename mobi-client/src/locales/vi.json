@@ -1,0 +1,38 @@
+{
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "back": "Quay lại",
+    "refresh": "Làm mới"
+  },
+  "user": {
+    "profile": "Thông tin cá nhân",
+    "contracts": "Hợp đồng của tôi",
+    "history": "Lịch sử thuê trọ",
+    "requests": "Yêu cầu của tôi",
+    "favorites": "Phòng yêu thích",
+    "password": "Đổi mật khẩu",
+    "messages": "Tin nhắn",
+    "logout": "Đăng xuất",
+    "logoutConfirm": "Bạn có chắc chắn muốn đăng xuất?"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "account": "Tài khoản",
+    "notifications": "Thông báo",
+    "location": "Vị trí",
+    "language": "Ngôn ngữ",
+    "help": "Trợ giúp",
+    "about": "Về chúng tôi",
+    "aboutText": "Ứng dụng tìm phòng trọ"
+  },
+  "features": {
+    "inDevelopment": "Chức năng đang phát triển"
+  }
+}

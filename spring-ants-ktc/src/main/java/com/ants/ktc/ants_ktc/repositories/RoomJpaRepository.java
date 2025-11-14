@@ -202,6 +202,9 @@ public interface RoomJpaRepository extends JpaRepository<Room, UUID> {
     @Query(" SELECT COUNT(r) FROM Room r WHERE isRemoved = 0 and approval != 2")
     Long countTotalApprovalRooms();
 
+    @Query(" SELECT COUNT(r) FROM Room r JOIN r.postType pt WHERE pt.code = 'VIP' AND r.approval = 1 AND r.isRemoved = 0")
+    Long countVipRooms();
+
     @Query(value = "SELECT " +
             "LOWER(HEX(r.id)) AS id, " +
             "r.title AS title, " +
@@ -535,6 +538,46 @@ public interface RoomJpaRepository extends JpaRepository<Room, UUID> {
             @Param("districts") List<String> districts,
             @Param("wards") List<String> wards,
             @Param("excludeUserId") String excludeUserId);
+
+        @Query(value = """
+                SELECT 
+                        HEX(r.id) as id,
+                        r.title,
+                        (SELECT i.url FROM images i WHERE i.room_id = r.id LIMIT 1) as imageUrl,
+                        r.area,
+                        r.price_month as priceMonth,
+                        pt.name as postType,
+                        CONCAT(
+                                COALESCE(a.name_street, ''), ', ',
+                                COALESCE(w.name, ''), ', ',
+                                COALESCE(d.name, ''), ', ',
+                                COALESCE(p.name, '')
+                        ) as fullAddress,
+                        a.lng,
+                        a.lat
+                FROM rooms r
+                LEFT JOIN addresses a ON r.address_id = a.id
+                LEFT JOIN wards w ON a.ward_id = w.id
+                LEFT JOIN districts d ON w.district_id = d.id
+                LEFT JOIN provinces p ON d.province_id = p.id
+                LEFT JOIN post_type pt ON r.post_type_id = pt.id
+                WHERE r.available = 0
+                  AND r.post_end_date > CURRENT_DATE
+                  AND r.hidden = 0
+                  AND r.is_removed = 0
+                  AND r.approval = 1
+                  AND a.lat IS NOT NULL
+                  AND a.lng IS NOT NULL
+                  AND a.lat BETWEEN :minLat AND :maxLat
+                  AND a.lng BETWEEN :minLng AND :maxLng
+                ORDER BY r.post_start_date DESC
+                """, nativeQuery = true)
+        List<RoomMapProjection> findRoomInMapWithBounds(
+                @Param("minLat") double minLat,
+                @Param("minLng") double minLng,
+                @Param("maxLat") double maxLat,
+                @Param("maxLng") double maxLng
+        );
 
     @Query("SELECT up.email as email, up.fullName as fullName, r.title as title FROM Room r JOIN r.user u JOIN u.profile up WHERE r.id = :roomId")
     List<MailUserProjection> findMailUsersByRoomId(@Param("roomId") UUID roomId);

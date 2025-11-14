@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:338770280479:android:42ce234f44c360753a552a",
+        "mobilesdk_app_id": "1:338770280479:android:fcccec06b6ec2c353a552a",
         "android_client_info": {
-          "package_name": "com.namaesieunhangao"
+          "package_name": "com.namaesieunhangao.mobiclient"
         }
       },
       "oauth_client": [],

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import SuggestAddressBar from '../../components/filter/SuggestAddressBar';
+import SuggestAddressBar from '../../components/filters/SuggestAddressBar/SuggestAddressBar';
+import styles from '../../styles/screens/test/TestSuggestAddressBar.styles';
 
 export default function TestSuggestAddressBar() {
   const handleAddressChange = (address: any) => {
@@ -22,9 +23,3 @@ export default function TestSuggestAddressBar() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-});

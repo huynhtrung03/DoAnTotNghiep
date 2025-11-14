@@ -2,6 +2,7 @@ import { View, Alert, ImageBackground, ScrollView, StyleSheet, KeyboardAvoidingV
 import AuthHeader from '../../components/auth/AuthHeader';
 import AuthForms from '../../components/auth/AuthForms';
 import { loginWithUsername } from '../../lib/auth';
+import styles from '../../styles/screens/auth/LoginScreen.styles';
 
 export default function LoginScreen() {
 
@@ -17,33 +18,27 @@ export default function LoginScreen() {
 	};
 
 	return (
-		<View style={{ flex: 1 }}>
+		<View style={styles.container}>
 			<ImageBackground
 				source={require('../../../assets/images/anh3.jpg')}
 				style={StyleSheet.absoluteFillObject}
 				resizeMode="cover"
 			/>
-			<View style={{ flex: 1, backgroundColor: 'rgba(245,245,245,0.85)' }}>
+			<View style={styles.backgroundOverlay}>
 				<KeyboardAvoidingView 
-					style={{ flex: 1 }}
+					style={styles.container}
 					behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 					keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
 				>
-					<View style={{ paddingTop: 24, paddingHorizontal: 16 }}>
+					<View style={styles.headerContainer}>
 						<AuthHeader />
 					</View>
 					<ScrollView 
-						contentContainerStyle={{ 
-							flexGrow: 1, 
-							alignItems: 'center', 
-							justifyContent: 'center', 
-							paddingHorizontal: 16,
-							paddingBottom: 20
-						}}
+						contentContainerStyle={styles.scrollViewContent}
 						showsVerticalScrollIndicator={false}
 						keyboardShouldPersistTaps="handled"
 					>
-						<View style={{ width: '100%', maxWidth: 420 }}>
+						<View style={styles.formContainer}>
 							<AuthForms onSubmit={onSubmit} />
 						</View>
 					</ScrollView>
