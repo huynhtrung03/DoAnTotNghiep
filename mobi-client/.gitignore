@@ -31,7 +31,7 @@ yarn-error.*
 *.pem
 .md
 .vscode/
-.env
+*.env
 *.md
 # local env files
 .env*.local
