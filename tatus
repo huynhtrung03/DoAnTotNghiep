@@ -1,0 +1,24 @@
+[1mdiff --git a/.gitignore b/.gitignore[m
+[1mindex b69cdb2..6689c85 100644[m
+[1m--- a/.gitignore[m
+[1m+++ b/.gitignore[m
+[36m@@ -5,3 +5,18 @@[m
+ [m
+ /.venv[m
+ .cursor/plans/rn-cafec4e0.plan.md[m
+[32m+[m[32mnode_modules/[m
+[32m+[m[32mnpm-debug.log*[m
+[32m+[m[32myarn-debug.log*[m
+[32m+[m[32myarn-error.log*[m
+[32m+[m[32mdist/[m
+[32m+[m[32mbuild/[m
+[32m+[m[32mcoverage/[m
+[32m+[m[32m# React Native Android/iOS[m
+[32m+[m[32mandroid/app/build/[m
+[32m+[m[32mios/build/[m
+[32m+[m[32m*.keystore[m
+[32m+[m
+[32m+[m[32m# Env[m
+[32m+[m[32m.env[m
+[32m+[m[32m.env.local[m
+\ No newline at end of file[m

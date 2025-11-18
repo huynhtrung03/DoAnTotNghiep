@@ -284,6 +284,29 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
+    @GetMapping("rooms-in-bounds")
+    public ResponseEntity<List<RoomInMapResponse>> getRoomsInBounds(
+            @RequestParam("minLat") double minLat,
+            @RequestParam("minLng") double minLng,
+            @RequestParam("maxLat") double maxLat,
+            @RequestParam("maxLng") double maxLng) {
+
+        // Basic validation
+        if (minLat >= maxLat || minLng >= maxLng) {
+            throw new IllegalArgumentException("Invalid bounds: minLat must be < maxLat and minLng must be < maxLng");
+        }
+
+        // Prevent extremely large bounding boxes (simple abuse protection)
+        double latDiff = maxLat - minLat;
+        double lngDiff = maxLng - minLng;
+        if (latDiff > 1.0 || lngDiff > 1.0) { // roughly ~111km
+            throw new IllegalArgumentException("Bounds too large. Maximum area is approximately 111km x 111km");
+        }
+
+        List<RoomInMapResponse> rooms = roomService.findRoomInMapWithBounds(minLat, minLng, maxLat, maxLng);
+        return ResponseEntity.ok(rooms);
+    }
+
     @GetMapping("/{id}/feedbacks")
     public ResponseEntity<List<RatingResponseDto>> getFeedbacksByRoom(@PathVariable("id") UUID id) {
         List<RatingResponseDto> feedbacks = ratingService.getAllRatingsByRoom(id);

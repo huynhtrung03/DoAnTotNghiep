@@ -1605,6 +1605,33 @@ public class RoomService {
                                 .collect(Collectors.toList());
         }
 
+        /**
+         * Find rooms inside a rectangular bounding box (map viewport)
+         * @param minLat bottom (south) latitude
+         * @param minLng left (west) longitude
+         * @param maxLat top (north) latitude
+         * @param maxLng right (east) longitude
+         * @return list of RoomInMapResponse
+         */
+        public List<RoomInMapResponse> findRoomInMapWithBounds(double minLat, double minLng,
+                        double maxLat, double maxLng) {
+                List<RoomMapProjection> rooms = roomJpaRepository.findRoomInMapWithBounds(minLat, minLng,
+                                maxLat, maxLng);
+                return rooms.stream()
+                                .map(room -> RoomInMapResponse.builder()
+                                                .id(UUID.fromString(formatHexToUuid(room.getId())))
+                                                .title(room.getTitle())
+                                                .imageUrl(room.getImageUrl())
+                                                .area(room.getArea())
+                                                .priceMonth(room.getPriceMonth())
+                                                .postType(room.getPostType())
+                                                .fullAddress(room.getFullAddress())
+                                                .lng(room.getLng())
+                                                .lat(room.getLat())
+                                                .build())
+                                .collect(Collectors.toList());
+        }
+
         // Generate unique 8-digit transaction code using timestamp and user ID
         private String generateUniqueTransactionCode(String unusedPrefix, UUID userId) {
                 // Use last 4 digits of timestamp for time uniqueness
