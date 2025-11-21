@@ -1,5 +1,5 @@
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
+import { getFirestore, collection, query, where, orderBy, onSnapshot, addDoc, doc, setDoc, getDocs, deleteDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
 import { API_URL } from './config/Constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -68,25 +68,28 @@ export const listenForConversations = (
 
   console.log('👂 Listening for conversations for user:', userId);
 
-  const unsubscribe = firestore()
-    .collection('messages')
-    .where('senderId', '==', userId)
-    .orderBy('createdAt', 'desc')
-    .onSnapshot(
+  const unsubscribe = onSnapshot(
+    query(
+      collection(getFirestore(), 'messages'),
+      where('senderId', '==', userId),
+      orderBy('createdAt', 'desc')
+    ),
       async (senderSnapshot) => {
         // Also listen for received messages
-        const recipientSnapshot = await firestore()
-          .collection('messages')
-          .where('recipientId', '==', userId)
-          .orderBy('createdAt', 'desc')
-          .get();
+        const recipientSnapshot = await getDocs(
+          query(
+            collection(getFirestore(), 'messages'),
+            where('recipientId', '==', userId),
+            orderBy('createdAt', 'desc')
+          )
+        );
 
         const conversations = new Map<string, ChatUser>();
         const unreadCounts = new Map<string, number>();
         const uniqueUserIds = new Set<string>();
 
         // Process sent messages
-        senderSnapshot.forEach((doc) => {
+        senderSnapshot.forEach((doc: any) => {
           const data = doc.data();
           const otherUserId = data.recipientId;
 
@@ -96,7 +99,7 @@ export const listenForConversations = (
           if (!conversations.has(otherUserId)) {
             const lastMessageTime = data.createdAt?.toDate() || new Date();
             const lastMessageText =
-              data.messageType === 'image' ? '📷 Đã gửi một ảnh' : data.text || '';
+              data.messageType === 'image' ? '[Hinh anh]' : data.text || '';
             conversations.set(otherUserId, {
               id: otherUserId,
               lastMessageTime,
@@ -106,7 +109,7 @@ export const listenForConversations = (
         });
 
         // Process received messages
-        recipientSnapshot.forEach((doc) => {
+        recipientSnapshot.forEach((doc: any) => {
           const data = doc.data();
           const otherUserId = data.senderId;
 
@@ -116,7 +119,7 @@ export const listenForConversations = (
           if (!conversations.has(otherUserId)) {
             const lastMessageTime = data.createdAt?.toDate() || new Date();
             const lastMessageText =
-              data.messageType === 'image' ? '📷 Nhận được một ảnh' : data.text || '';
+              data.messageType === 'image' ? '[Hinh anh]' : data.text || '';
             conversations.set(otherUserId, {
               id: otherUserId,
               lastMessageTime,
@@ -182,17 +185,15 @@ export const markConversationAsRead = async (
   try {
     console.log('✅ Marking conversation as read:', { userId, otherUserId });
 
-    await firestore()
-      .collection('readStatuses')
-      .doc(`${userId}-${otherUserId}`)
-      .set(
-        {
-          userId,
-          conversationId: otherUserId,
-          lastRead: firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+    await setDoc(
+      doc(getFirestore(), 'readStatuses', `${userId}-${otherUserId}`),
+      {
+        userId,
+        conversationId: otherUserId,
+        lastRead: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
     console.log('✅ Conversation marked as read');
   } catch (error) {
@@ -211,9 +212,9 @@ export const uploadImageToFirebase = async (
   try {
     console.log('📤 Uploading image to Firebase:', fileName);
 
-    const reference = storage().ref(`chat-images/${Date.now()}_${fileName}`);
+    const reference = ref(getStorage(), `chat-images/${Date.now()}_${fileName}`);
     await reference.putFile(fileUri);
-    const url = await reference.getDownloadURL();
+    const url = await getDownloadURL(reference);
 
     console.log('✅ Image uploaded:', url);
     return { imageUrl: url, fileName };
@@ -237,12 +238,12 @@ export const sendImageMessage = async (
 
     const { imageUrl } = await uploadImageToFirebase(fileUri, fileName);
 
-    await firestore().collection('messages').add({
+    await addDoc(collection(getFirestore(), 'messages'), {
       imageUrl,
       imageFileName: fileName,
       senderId,
       recipientId,
-      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
       messageType: 'image',
     });
 
@@ -264,11 +265,11 @@ export const sendTextMessage = async (
   try {
     console.log('💬 Sending text message');
 
-    await firestore().collection('messages').add({
+    await addDoc(collection(getFirestore(), 'messages'), {
       text,
       senderId,
       recipientId,
-      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
       messageType: 'text',
     });
 
@@ -295,12 +296,14 @@ export const listenForUnreadCount = (
   let currentReadTimestamps = new Map<string, Date>();
 
   // Listen for read statuses
-  const unsubscribeReadStatus = firestore()
-    .collection('readStatuses')
-    .where('userId', '==', userId)
-    .onSnapshot((snapshot) => {
+  const unsubscribeReadStatus = onSnapshot(
+    query(
+      collection(getFirestore(), 'readStatuses'),
+      where('userId', '==', userId)
+    ),
+    (snapshot) => {
       const newTimestamps = new Map<string, Date>();
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         const data = doc.data();
         if (data.lastRead) {
           newTimestamps.set(data.conversationId, data.lastRead.toDate());
@@ -311,14 +314,16 @@ export const listenForUnreadCount = (
     });
 
   // Listen for messages
-  const unsubscribeMessages = firestore()
-    .collection('messages')
-    .where('recipientId', '==', userId)
-    .orderBy('createdAt', 'desc')
-    .onSnapshot((snapshot) => {
+  const unsubscribeMessages = onSnapshot(
+    query(
+      collection(getFirestore(), 'messages'),
+      where('recipientId', '==', userId),
+      orderBy('createdAt', 'desc')
+    ),
+    (snapshot) => {
       const unreadCounts = new Map<string, number>();
 
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         const data = doc.data();
         const senderId = data.senderId;
 
@@ -358,12 +363,17 @@ export const deleteMessage = async (
     console.log('🗑️ Deleting message:', messageId);
 
     // Check if user is sender
-    const messageDoc = await firestore().collection('messages').doc(messageId).get();
-    if (messageDoc.data()?.senderId !== senderId) {
+    const messageDoc = await getDocs(
+      query(
+        collection(getFirestore(), 'messages'),
+        where('__name__', '==', messageId)
+      )
+    );
+    if (messageDoc.docs[0]?.data()?.senderId !== senderId) {
       throw new Error('Unauthorized to delete this message');
     }
 
-    await firestore().collection('messages').doc(messageId).delete();
+    await deleteDoc(doc(getFirestore(), 'messages', messageId));
     console.log('✅ Message deleted');
   } catch (error) {
     console.error('❌ Delete message error:', error);
@@ -381,18 +391,20 @@ export const listenForMessages = (
 ): (() => void) => {
   console.log('👂 Listening for messages:', { userId, otherUserId });
 
-  const unsubscribe = firestore()
-    .collection('messages')
-    .where('senderId', 'in', [userId, otherUserId])
-    .where('recipientId', 'in', [userId, otherUserId])
-    .orderBy('createdAt', 'asc')
-    .onSnapshot((snapshot) => {
+  const unsubscribe = onSnapshot(
+    query(
+      collection(getFirestore(), 'messages'),
+      where('senderId', 'in', [userId, otherUserId]),
+      where('recipientId', 'in', [userId, otherUserId]),
+      orderBy('createdAt', 'asc')
+    ),
+    (snapshot) => {
       const messages: Message[] = [];
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         const data = doc.data();
         messages.push({
           id: doc.id,
-          text: data.text,
+          text: data.text || '',
           imageUrl: data.imageUrl,
           imageFileName: data.imageFileName,
           senderId: data.senderId,

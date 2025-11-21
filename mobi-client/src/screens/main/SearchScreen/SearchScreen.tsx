@@ -15,11 +15,13 @@ import Constants from 'expo-constants';
 import MapboxGL from '@rnmapbox/maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRoute } from '@react-navigation/native';
 import styles from '../../../styles/screens/user/SearchScreen.styles';
 import { useSearchLocation, getMarkerScale } from '../../../hooks/useSearchLocation';
 import SearchRoomCard from '../../../components/rooms/SearchRoomCard/SearchRoomCard';
 
 export default function SearchScreen() {
+  const route = useRoute();
   const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
   const { NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN } = extra as { NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?: string };
 
@@ -60,6 +62,66 @@ export default function SearchScreen() {
   const cameraRef = React.useRef<MapboxGL.Camera>(null);
   const mapRef = React.useRef<MapboxGL.MapView>(null);
   const [searchAddress, setSearchAddress] = useState('');
+
+  // Handle route params from HomeScreen
+  useEffect(() => {
+    const params = route.params as any;
+    if (params?.appliedFilters && params?.filterType) {
+      console.log('🎯 Applied filters from HomeScreen:', params);
+      
+      // Apply filters based on type
+      switch (params.filterType) {
+        case 'nearby':
+          // Set distance and sort by nearest
+          if (params.appliedFilters.distance) {
+            // You can store this for API calls
+            console.log('Nearby filter:', params.appliedFilters.distance);
+          }
+          if (params.appliedFilters.sortBy) {
+            setSortBy(params.appliedFilters.sortBy);
+          }
+          break;
+          
+        case 'popular':
+          // Set time range and sort by views/bookings
+          if (params.appliedFilters.timeRange) {
+            console.log('Popular filter:', params.appliedFilters.timeRange);
+          }
+          if (params.appliedFilters.sortBy) {
+            setSortBy(params.appliedFilters.sortBy);
+          }
+          break;
+          
+        case 'cheap':
+          // Set price range and sort by price
+          if (params.appliedFilters.priceRange) {
+            console.log('Cheap filter:', params.appliedFilters.priceRange);
+          }
+          if (params.appliedFilters.sortBy) {
+            setSortBy(params.appliedFilters.sortBy);
+          }
+          break;
+          
+        case 'premium':
+          // Set amenities and price range
+          if (params.appliedFilters.amenities) {
+            console.log('Premium amenities:', params.appliedFilters.amenities);
+          }
+          if (params.appliedFilters.priceRange) {
+            console.log('Premium price range:', params.appliedFilters.priceRange);
+          }
+          if (params.appliedFilters.sortBy) {
+            setSortBy(params.appliedFilters.sortBy);
+          }
+          break;
+      }
+      
+      // Auto search with applied filters
+      setTimeout(() => {
+        searchRoomsAtCurrentMapCenter(mapRef);
+      }, 500);
+    }
+  }, [route.params]);
 
   // ✅ Hàm sắp xếp danh sách phòng
   const getSortedRooms = () => {

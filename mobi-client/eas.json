@@ -8,6 +8,9 @@
       },
       "android": {
         "gradleCommand": ":app:assembleDebug"
+      },
+      "ios": {
+        "buildConfiguration": "Debug"
       }
     },
     "staging": {

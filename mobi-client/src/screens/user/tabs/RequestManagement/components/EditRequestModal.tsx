@@ -10,6 +10,8 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Colors from '../../../../../styles/colors';
 import * as ImagePicker from 'expo-image-picker';
 import {
   RequirementsService,
@@ -239,7 +241,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
                   onPress={handlePickImage}
                   disabled={uploading}
                 >
-                  <Text>📷</Text>
+                  <Ionicons name="camera" size={16} color={Colors.primary} />
                   <Text style={styles.imagePickerText}>
                     {newImageFile ? 'Select New Image' : 'Select New Image'}
                   </Text>
@@ -266,7 +268,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
                       disabled={uploading}
                     >
                       <Text style={{ fontSize: 13, color: '#ff4d4f', textAlign: 'center' }}>
-                        🗑️ Remove new image
+                        [Xoa anh moi]
                       </Text>
                     </TouchableOpacity>
                   </>
