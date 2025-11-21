@@ -105,6 +105,9 @@ import RegisterScreen from '../screens/auth/RegisterScreen/RegisterScreen';
 // Import màn hình chi tiết (dùng chung cho cả 2 role)
 import RoomDetailScreen from '../screens/main/RoomDetailScreen/RoomDetailScreen';
 
+// Import NotificationScreen
+import NotificationScreen from '../screens/notification/NotificationScreen';
+
 const Stack = createNativeStackNavigator();
 
 type RouteType = 'Auth/Login' | 'UserApp' | 'LandlordApp';
@@ -223,6 +226,22 @@ export default function RootNavigator() {
             options={{ 
               headerShown: true,
               title: 'Chi tiết phòng',
+              headerBackTitle: 'Quay lại',
+              headerStyle: {
+                backgroundColor: '#fff',
+              },
+              headerTintColor: '#111827',
+              headerTitleStyle: {
+                fontWeight: '700',
+              },
+            }} 
+          />
+          <Stack.Screen 
+            name="Notifications" 
+            component={NotificationScreen}
+            options={{ 
+              headerShown: true,
+              title: 'Thông báo',
               headerBackTitle: 'Quay lại',
               headerStyle: {
                 backgroundColor: '#fff',

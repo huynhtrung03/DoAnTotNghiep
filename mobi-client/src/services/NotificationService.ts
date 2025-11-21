@@ -1,6 +1,6 @@
-import { db } from "@/lib/firebase"; // file config firebase
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { getLandlordByRoomId } from "./RoomService";
+import { db, serverTimestamp } from "../lib/firebase";
+import { collection, addDoc, query, where, orderBy, getDocs, updateDoc, doc } from "@react-native-firebase/firestore";
+import { getLandlordByRoomId } from "./rooms/RoomService";
 
 // Hàm tạo notification cho landlord
 export const createBookingNotification = async (
@@ -8,8 +8,19 @@ export const createBookingNotification = async (
   tenantId: number | string | undefined,
   message: string,
 ) => {
-    const landlordId = await getLandlordByRoomId(roomId as string);
   try {
+    if (!roomId) {
+      console.error("roomId is required for createBookingNotification");
+      return;
+    }
+    
+    const landlordId = await getLandlordByRoomId(roomId as string);
+    
+    if (!landlordId || !landlordId.id) {
+      console.error("Could not find landlord for roomId:", roomId);
+      return;
+    }
+    
     await addDoc(collection(db, "notifications"), {
       receiverId: landlordId.id,     // landlord sẽ nhận
       senderId: tenantId,         // user tạo booking
@@ -27,7 +38,6 @@ export const bookingConfirmationNotification = async (
   senderId: number | string | undefined,
   receiverId: number | string | undefined,
   message: string,
-
 ) => {
   try {
     await addDoc(collection(db, "notifications"), {
@@ -135,5 +145,34 @@ export const paymentNotification = async (
     });
   } catch (error) {
     console.error("Lỗi khi tạo notification:", error);
+  }
+};
+
+// Thêm hàm để lấy danh sách thông báo cho một user (phù hợp với React Native để hiển thị trong app)
+export const getNotificationsForUser = async (userId: string) => {
+  try {
+    const q = query(
+      collection(db, "notifications"),
+      where("receiverId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    const notifications = querySnapshot.docs.map((document: any) => ({
+      id: document.id,
+      ...document.data()
+    }));
+    return notifications;
+  } catch (error) {
+    console.error("Lỗi khi lấy notifications:", error);
+    return [];
+  }
+};
+
+// Thêm hàm để đánh dấu thông báo đã đọc
+export const markNotificationAsRead = async (notificationId: string) => {
+  try {
+    await updateDoc(doc(db, "notifications", notificationId), { isRead: true });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật notification:", error);
   }
 };

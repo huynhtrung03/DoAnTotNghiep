@@ -250,8 +250,8 @@ export default function UserScreen() {
     navigation.navigate('Users/RequestManagement' as never);
   };
 
-  const handleNavigateToFavorites = () => {
-    Alert.alert(t('user.favorites'), t('features.inDevelopment'));
+  const handleNavigateToPaymentMethod = () => {
+    navigation.navigate('Users/Bank' as never);
   };
 
   const handleNavigateToPassword = () => {
@@ -318,12 +318,12 @@ export default function UserScreen() {
       onPress: handleNavigateToRequests,
     },
     {
-      key: 'favorites',
-      label: t('user.favorites'),
-      icon: 'heart-outline',
-      iconColor: '#EC4899',
-      iconBg: '#FDF2F8',
-      onPress: handleNavigateToFavorites,
+      key: 'paymentMethod',
+      label: 'Phương thức thanh toán',
+      icon: 'card-outline',
+      iconColor: '#10B981',
+      iconBg: '#ECFDF5',
+      onPress: handleNavigateToPaymentMethod,
     },
     {
       key: 'password',

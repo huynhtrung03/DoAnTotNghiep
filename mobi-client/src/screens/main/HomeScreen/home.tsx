@@ -40,6 +40,7 @@ import { RoomInUser, PaginatedResponse } from '../../../types/types';
 import { getRoomNormalUser, getRoomVipUser, getRoomsInMap, filterRooms } from '../../../services/rooms/RoomService';
 import { getPublicStatistics, PublicStatistics } from '../../../services/statistics/StatisticsService';
 import { getAllFavoriteIds } from '../../../services/favorites/FavoriteService';
+import { getNotificationsForUser } from '../../../services/NotificationService';
 import RoomCard from '../../../components/rooms/RoomCard/RoomCard';
 import styles from '../../../styles/screens/user/HomeScreen.styles';
 import Colors from '../../../styles/colors';
@@ -358,6 +359,7 @@ export default function UserHomeScreen() {
   const [vipPage, setVipPage] = useState(0);
   const [normalPage, setNormalPage] = useState(0);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Modal và bộ lọc states
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -402,6 +404,7 @@ export default function UserHomeScreen() {
         }
       };
       reloadFavorites();
+      loadUnreadCount(); // Load unread notifications when screen is focused
     }, [setFavoriteRoomIds])
   );
 
@@ -432,6 +435,21 @@ export default function UserHomeScreen() {
       }
     } catch (error) {
       console.error('❌ Error loading user profile:', error);
+    }
+  };
+
+  // Load unread notifications count
+  const loadUnreadCount = async () => {
+    try {
+      const userDataStr = await AsyncStorage.getItem('userData');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        const notifications = await getNotificationsForUser(userData.id);
+        const unread = notifications.filter((n: any) => !n.isRead).length;
+        setUnreadCount(unread);
+      }
+    } catch (error) {
+      console.error('❌ Error loading unread count:', error);
     }
   };
 
@@ -515,6 +533,7 @@ export default function UserHomeScreen() {
     loadRooms();
     loadUserProfile();
     loadStatistics();
+    loadUnreadCount();
   }, []);
 
   // Xây dựng lại mảng dữ liệu cho FlatList mỗi khi vipRooms hoặc normalRooms thay đổi
@@ -1106,9 +1125,13 @@ export default function UserHomeScreen() {
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={handleNotifications} style={styles.iconButton}>
               <Ionicons name="notifications-outline" size={24} color={Colors.textPrimary} />
-              <View style={styles.notificationBadge}>
-                <Text style={styles.badgeText}>3</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount.toString()}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity onPress={handleUserProfile} style={styles.iconButton}>
               {userAvatar ? (
