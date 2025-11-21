@@ -7,7 +7,6 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { RequirementDetail } from '../../../../../services/Requirements';
 import { styles } from '../styles';
 
@@ -140,7 +139,7 @@ const CompletionViewModal: React.FC<CompletionViewModalProps> = ({
                   marginTop: 16,
                 }}
               >
-                <Ionicons name="checkmark-circle" size={40} color="#fff" style={{ marginBottom: 8 }} />
+                <Text style={{ fontSize: 40, marginBottom: 8 }}>✅</Text>
                 <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
                   Request has been processed
                 </Text>

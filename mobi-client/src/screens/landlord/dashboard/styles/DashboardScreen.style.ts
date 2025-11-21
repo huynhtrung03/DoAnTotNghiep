@@ -3,14 +3,14 @@ import Colors from '../../../../styles/colors';
 
 // ===== CONSTANTS =====
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 40) / 2; // 16px padding + 8px gap
+const cardWidth = (width - 48) / 2; // 16px padding mỗi bên + 16px gap
 
 // ===== STYLES =====
 export const styles = StyleSheet.create({
   // ===== CONTAINER =====
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA', // Light gray background
+    backgroundColor: Colors.background,
   },
 
   scrollView: {
@@ -21,28 +21,26 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.background,
   },
 
   loadingText: {
     marginTop: 16,
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: 16,
+    color: Colors.textSecondary,
   },
 
   bottomSpacing: {
-    height: 100, // Space for tab bar
+    height: 24,
   },
 
-  // ===== HEADER - Compact & Clean =====
+  // ===== HEADER =====
   headerContainer: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingTop: 16,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
 
   headerContent: {
@@ -62,18 +60,18 @@ export const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: Colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 3,
+    borderColor: Colors.textWhite,
   },
 
   avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F3F4F6',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.textWhite,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -83,58 +81,54 @@ export const styles = StyleSheet.create({
   },
 
   greetingText: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 14,
+    color: Colors.textWhite,
+    opacity: 0.9,
     fontWeight: '500',
   },
 
   landlordName: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
-    marginTop: 2,
+    color: Colors.textWhite,
+    marginTop: 4,
   },
 
   notificationButton: {
     position: 'relative',
     padding: 8,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
   },
 
   notificationBadge: {
     position: 'absolute',
     top: 4,
     right: 4,
-    backgroundColor: '#EF4444',
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    backgroundColor: Colors.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
   },
 
   notificationBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.textWhite,
   },
 
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    marginTop: 16,
   },
 
   dateText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginLeft: 6,
-    fontWeight: '500',
+    fontSize: 13,
+    color: Colors.textWhite,
+    marginLeft: 8,
+    opacity: 0.9,
   },
 
   // ===== SECTION HEADERS =====
@@ -142,13 +136,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
 
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: Colors.textPrimary,
   },
 
   viewAllButton: {
@@ -157,94 +151,88 @@ export const styles = StyleSheet.create({
   },
 
   viewAllText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.primary,
-    marginRight: 2,
+    marginRight: 4,
   },
 
-  // ===== STATISTICS - Clean Cards =====
+  // ===== STATISTICS =====
   statisticsContainer: {
     paddingHorizontal: 16,
-    marginTop: 16,
+    marginTop: -12, // Overlap với header
   },
 
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 16,
   },
 
   statCard: {
     width: cardWidth,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    // Shadow for iOS
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    // Elevation for Android
-    elevation: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
 
   statCardGradient: {
-    // Not used in white design
+    padding: 16,
+    minHeight: 140,
+    justifyContent: 'space-between',
   },
 
   statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
 
   statValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.textWhite,
+    marginBottom: 8,
   },
 
   statFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'column',
   },
 
   statTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
-    flex: 1,
+    color: Colors.textWhite,
+    opacity: 0.9,
   },
 
   statUnit: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    fontWeight: '500',
+    fontSize: 12,
+    color: Colors.textWhite,
+    opacity: 0.7,
+    marginTop: 2,
   },
 
   revenueContainer: {
-    marginTop: 8,
+    marginTop: 16,
   },
 
   revenueCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderRadius: 16,
+    padding: 20,
+    elevation: 4,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
 
   revenueHeader: {
@@ -254,33 +242,34 @@ export const styles = StyleSheet.create({
   },
 
   revenueTitle: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
-    marginLeft: 8,
+    color: Colors.textWhite,
+    marginLeft: 12,
   },
 
   revenueContent: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
 
   revenueValue: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
-    color: '#10B981', // Green for money
-    marginBottom: 4,
+    color: Colors.textWhite,
+    marginBottom: 8,
   },
 
   revenueSubtext: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: 14,
+    color: Colors.textWhite,
+    opacity: 0.8,
   },
 
   revenueDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 12,
+    backgroundColor: Colors.textWhite,
+    opacity: 0.3,
+    marginVertical: 16,
   },
 
   revenueFooter: {
@@ -293,79 +282,67 @@ export const styles = StyleSheet.create({
   },
 
   revenueFooterLabel: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 13,
+    color: Colors.textWhite,
+    opacity: 0.8,
     marginBottom: 4,
-    fontWeight: '500',
   },
 
   revenueFooterValue: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#EF4444', // Red for expenses
+    color: Colors.textWhite,
   },
 
-  // ===== QUICK ACTIONS - Minimalist =====
+  // ===== QUICK ACTIONS =====
   quickActionsContainer: {
     paddingHorizontal: 16,
-    marginTop: 20,
+    marginTop: 24,
   },
 
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 16,
+    marginTop: 16,
   },
 
   quickActionButton: {
     width: cardWidth,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 100,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
 
   quickActionGradient: {
-    // Not used in white design
+    padding: 20,
     alignItems: 'center',
+    minHeight: 120,
+    justifyContent: 'center',
   },
 
   quickActionText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
-    marginTop: 8,
+    color: Colors.textWhite,
+    marginTop: 12,
     textAlign: 'center',
   },
 
-  // ===== TASK OVERVIEW - Clean List =====
+  // ===== TASK OVERVIEW =====
   taskOverviewContainer: {
     paddingHorizontal: 16,
-    marginTop: 20,
+    marginTop: 24,
   },
 
   taskStatsRow: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
 
   taskStatItem: {
@@ -374,34 +351,31 @@ export const styles = StyleSheet.create({
   },
 
   taskStatValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 2,
+    color: Colors.textPrimary,
+    marginBottom: 4,
   },
 
   taskStatLabel: {
-    fontSize: 11,
-    color: '#6B7280',
+    fontSize: 12,
+    color: Colors.textSecondary,
     textAlign: 'center',
-    fontWeight: '500',
   },
 
   tasksList: {
-    gap: 8,
+    gap: 12,
   },
 
   taskItem: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.cardBackground,
     borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    padding: 16,
+    elevation: 2,
+    shadowColor: Colors.cardShadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 4,
   },
 
   taskItemHeader: {
@@ -419,36 +393,36 @@ export const styles = StyleSheet.create({
   },
 
   taskStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     marginRight: 8,
   },
 
   taskItemTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: Colors.textPrimary,
     flex: 1,
   },
 
   taskPriorityBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
 
   taskPriorityText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.textWhite,
   },
 
   taskItemDescription: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 10,
-    lineHeight: 18,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 12,
+    lineHeight: 20,
   },
 
   taskItemFooter: {
@@ -458,16 +432,14 @@ export const styles = StyleSheet.create({
   },
 
   taskStatusBadge: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.backgroundDark,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderRadius: 8,
   },
 
   taskStatusText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
 
@@ -477,32 +449,27 @@ export const styles = StyleSheet.create({
   },
 
   taskDueDateText: {
-    fontSize: 11,
-    color: '#6B7280',
+    fontSize: 12,
+    color: Colors.textSecondary,
     marginLeft: 4,
-    fontWeight: '500',
   },
 
   emptyTasksContainer: {
     alignItems: 'center',
-    paddingVertical: 32,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    paddingVertical: 40,
   },
 
   emptyTasksText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#6B7280',
-    marginTop: 12,
-    marginBottom: 4,
+    color: Colors.textSecondary,
+    marginTop: 16,
+    marginBottom: 8,
   },
 
   emptyTasksSubtext: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: 14,
+    color: Colors.textTertiary,
     textAlign: 'center',
   },
 });

@@ -62,114 +62,141 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
   };
 };
 
-/**
- * Hàm helper để fetch với fallback
- */
-const fetchWithFallback = async <T>(
-  url: string,
-  headers: Record<string, string>,
-  defaultValue: T,
-  logName: string
-): Promise<T> => {
-  try {
-    console.log(`📊 Fetching ${logName}...`);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.warn(`⚠️ ${logName} API not available:`, errorText);
-      return defaultValue;
-    }
-
-    const data = await response.json();
-    console.log(`✅ ${logName} fetched successfully`);
-    return data;
-  } catch (error) {
-    console.warn(`⚠️ ${logName} error, using default value:`, error);
-    return defaultValue;
-  }
-};
-
 // ===== API FUNCTIONS =====
 
 /**
  * Lấy số lượng phòng đã đăng
+ * @returns Số lượng phòng đã đăng
  */
 export const getLandlordPostedRoomCount = async (): Promise<RoomCountResponse> => {
   try {
     const headers = await getAuthHeaders();
-    return await fetchWithFallback(
+    console.log('📊 Fetching posted room count...');
+
+    const response = await fetch(
       `${API_URL}/landlord/statistics/posted-room`,
-      headers,
-      { count: 0 },
-      'Posted room count'
+      {
+        method: 'GET',
+        headers,
+      }
     );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Failed to fetch posted room count:', errorText);
+      throw new Error('Failed to fetch posted room count');
+    }
+
+    const data = await response.json();
+    console.log('✅ Posted room count:', data.count);
+    return data;
   } catch (error) {
     console.error('❌ getLandlordPostedRoomCount error:', error);
-    return { count: 0 };
+    throw error;
   }
 };
 
 /**
  * Lấy số lượng phòng đã cho thuê
+ * @returns Số lượng phòng đã cho thuê
  */
 export const getLandlordRentedRoomCount = async (): Promise<RoomCountResponse> => {
   try {
     const headers = await getAuthHeaders();
-    return await fetchWithFallback(
+    console.log('📊 Fetching rented room count...');
+
+    const response = await fetch(
       `${API_URL}/landlord/statistics/rented-room`,
-      headers,
-      { count: 0 },
-      'Rented room count'
+      {
+        method: 'GET',
+        headers,
+      }
     );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Failed to fetch rented room count:', errorText);
+      throw new Error('Failed to fetch rented room count');
+    }
+
+    const data = await response.json();
+    console.log('✅ Rented room count:', data.count);
+    return data;
   } catch (error) {
     console.error('❌ getLandlordRentedRoomCount error:', error);
-    return { count: 0 };
+    throw error;
   }
 };
 
 /**
  * Lấy số lượng lượt xem phòng
+ * @returns Số lượng lượt xem
  */
 export const getLandlordViewedRoomCount = async (): Promise<RoomCountResponse> => {
   try {
     const headers = await getAuthHeaders();
-    return await fetchWithFallback(
+    console.log('📊 Fetching viewed room count...');
+
+    const response = await fetch(
       `${API_URL}/landlord/statistics/viewed-room`,
-      headers,
-      { count: 0 },
-      'Viewed room count'
+      {
+        method: 'GET',
+        headers,
+      }
     );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Failed to fetch viewed room count:', errorText);
+      throw new Error('Failed to fetch viewed room count');
+    }
+
+    const data = await response.json();
+    console.log('✅ Viewed room count:', data.count);
+    return data;
   } catch (error) {
     console.error('❌ getLandlordViewedRoomCount error:', error);
-    return { count: 0 };
+    throw error;
   }
 };
 
 /**
  * Lấy số lượng phòng được yêu thích
+ * @returns Số lượng phòng yêu thích
  */
 export const getLandlordFavoritedRoomCount = async (): Promise<RoomCountResponse> => {
   try {
     const headers = await getAuthHeaders();
-    return await fetchWithFallback(
+    console.log('📊 Fetching favorited room count...');
+
+    const response = await fetch(
       `${API_URL}/landlord/statistics/favorited-room`,
-      headers,
-      { count: 0 },
-      'Favorited room count'
+      {
+        method: 'GET',
+        headers,
+      }
     );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Failed to fetch favorited room count:', errorText);
+      throw new Error('Failed to fetch favorited room count');
+    }
+
+    const data = await response.json();
+    console.log('✅ Favorited room count:', data.count);
+    return data;
   } catch (error) {
     console.error('❌ getLandlordFavoritedRoomCount error:', error);
-    return { count: 0 };
+    throw error;
   }
 };
 
 /**
- * Lấy thống kê bảo trì phòng
+ * Lấy thống kê bảo trì phòng theo khoảng thời gian
+ * @param startDate - Ngày bắt đầu (YYYY-MM-DD), không bắt buộc
+ * @param endDate - Ngày kết thúc (YYYY-MM-DD), không bắt buộc
+ * @returns Thống kê bảo trì
  */
 export const getLandlordMaintenanceStatistics = async (
   startDate?: string,
@@ -185,32 +212,39 @@ export const getLandlordMaintenanceStatistics = async (
     const queryString = queryParams.toString();
     const url = `${API_URL}/landlord/statistics/maintaince-room${queryString ? `?${queryString}` : ''}`;
 
-    return await fetchWithFallback(
-      url,
+    console.log('📊 Fetching maintenance statistics...');
+    if (startDate || endDate) {
+      console.log(`   Khoảng thời gian: ${startDate || 'không giới hạn'} → ${endDate || 'không giới hạn'}`);
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
       headers,
-      {
-        totalMaintenances: 0,
-        pendingMaintenances: 0,
-        completedMaintenances: 0,
-        totalCost: 0,
-        averageCost: 0,
-      },
-      'Maintenance statistics'
-    );
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Failed to fetch maintenance statistics:', errorText);
+      throw new Error('Failed to fetch maintenance statistics');
+    }
+
+    const data = await response.json();
+    console.log('✅ Maintenance statistics:', {
+      total: data.totalMaintenances,
+      cost: data.totalCost,
+    });
+    return data;
   } catch (error) {
     console.error('❌ getLandlordMaintenanceStatistics error:', error);
-    return {
-      totalMaintenances: 0,
-      pendingMaintenances: 0,
-      completedMaintenances: 0,
-      totalCost: 0,
-      averageCost: 0,
-    };
+    throw error;
   }
 };
 
 /**
- * Lấy thống kê chi phí đăng phòng
+ * Lấy thống kê chi phí đăng phòng theo khoảng thời gian
+ * @param startDate - Ngày bắt đầu (YYYY-MM-DD), không bắt buộc
+ * @param endDate - Ngày kết thúc (YYYY-MM-DD), không bắt buộc
+ * @returns Thống kê chi phí đăng phòng
  */
 export const getLandlordFeePostRoomStatistics = async (
   startDate?: string,
@@ -226,28 +260,39 @@ export const getLandlordFeePostRoomStatistics = async (
     const queryString = queryParams.toString();
     const url = `${API_URL}/landlord/statistics/cost-post-room${queryString ? `?${queryString}` : ''}`;
 
-    return await fetchWithFallback(
-      url,
+    console.log('📊 Fetching fee post room statistics...');
+    if (startDate || endDate) {
+      console.log(`   Khoảng thời gian: ${startDate || 'không giới hạn'} → ${endDate || 'không giới hạn'}`);
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
       headers,
-      {
-        totalFee: 0,
-        totalPosts: 0,
-        averageFeePerPost: 0,
-      },
-      'Fee post room statistics'
-    );
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Failed to fetch fee post room statistics:', errorText);
+      throw new Error('Failed to fetch fee post room statistics');
+    }
+
+    const data = await response.json();
+    console.log('✅ Fee post room statistics:', {
+      totalFee: data.totalFee,
+      totalPosts: data.totalPosts,
+    });
+    return data;
   } catch (error) {
     console.error('❌ getLandlordFeePostRoomStatistics error:', error);
-    return {
-      totalFee: 0,
-      totalPosts: 0,
-      averageFeePerPost: 0,
-    };
+    throw error;
   }
 };
 
 /**
- * Lấy thống kê doanh thu
+ * Lấy thống kê doanh thu theo khoảng thời gian
+ * @param startDate - Ngày bắt đầu (YYYY-MM-DD), không bắt buộc
+ * @param endDate - Ngày kết thúc (YYYY-MM-DD), không bắt buộc
+ * @returns Thống kê doanh thu
  */
 export const getLandlordRevenueStatistics = async (
   startDate?: string,
@@ -263,22 +308,30 @@ export const getLandlordRevenueStatistics = async (
     const queryString = queryParams.toString();
     const url = `${API_URL}/landlord/statistics/revenue-room${queryString ? `?${queryString}` : ''}`;
 
-    return await fetchWithFallback(
-      url,
+    console.log('📊 Fetching revenue statistics...');
+    if (startDate || endDate) {
+      console.log(`   Khoảng thời gian: ${startDate || 'không giới hạn'} → ${endDate || 'không giới hạn'}`);
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
       headers,
-      {
-        totalRevenue: 0,
-        totalContracts: 0,
-        averageRevenuePerContract: 0,
-      },
-      'Revenue statistics'
-    );
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Failed to fetch revenue statistics:', errorText);
+      throw new Error('Failed to fetch revenue statistics');
+    }
+
+    const data = await response.json();
+    console.log('✅ Revenue statistics:', {
+      totalRevenue: data.totalRevenue,
+      totalContracts: data.totalContracts,
+    });
+    return data;
   } catch (error) {
     console.error('❌ getLandlordRevenueStatistics error:', error);
-    return {
-      totalRevenue: 0,
-      totalContracts: 0,
-      averageRevenuePerContract: 0,
-    };
+    throw error;
   }
 };

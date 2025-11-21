@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "604423699850",
-    "project_id": "chatweb-78d98",
-    "storage_bucket": "chatweb-78d98.firebasestorage.app"
+    "project_number": "338770280479",
+    "project_id": "mobi-client-7469c",
+    "storage_bucket": "mobi-client-7469c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:604423699850:android:8e754a917b33f5e44b5c73",
+        "mobilesdk_app_id": "1:338770280479:android:fcccec06b6ec2c353a552a",
         "android_client_info": {
           "package_name": "com.namaesieunhangao.mobiclient"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyALvWSxH70t8NXQzpiCvvUbtVsXpWzNVWg"
+          "current_key": "AIzaSyB2cB985esDfSxS3CZy5TjqUKwtYNZDyj4"
         }
       ],
       "services": {

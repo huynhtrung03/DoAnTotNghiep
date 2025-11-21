@@ -14,6 +14,7 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
+  Image,
   TextInput,
   ActivityIndicator,
   StatusBar,
@@ -23,11 +24,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ChatUser, listenForConversations } from '../../services/ChatService';
 import Colors, { withOpacity } from '../../styles/colors';
 import { StyleSheet } from 'react-native';
-import MessCard from './component/MessCard';
-import AIChatbot from './component/AIChatbot';
 
 export default function MessengerScreen() {
   const navigation = useNavigation<any>();
@@ -39,9 +39,6 @@ export default function MessengerScreen() {
   const [currentUserId, setCurrentUserId] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const lastReadTimestamps = useRef(new Map<string, Date>());
-
-  // AI Chatbot state
-  const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
     loadCurrentUser();
@@ -91,19 +88,6 @@ export default function MessengerScreen() {
     }
   }, [searchQuery, userList]);
 
-  // Add AI assistant to the beginning of filtered users
-  const usersWithAI = React.useMemo(() => {
-    const aiUser: ChatUser = {
-      id: 'ai-assistant',
-      name: 'Ants AI Assistant',
-      avatar: '', // Will use robot icon
-      lastMessageText: 'Tôi có thể giúp bạn tìm phòng trọ phù hợp',
-      lastMessageTime: new Date(),
-      unreadCount: 0,
-    };
-    return [aiUser, ...filteredUsers];
-  }, [filteredUsers]);
-
   const handleRefresh = () => {
     setRefreshing(true);
     // Force reload by clearing and re-listening
@@ -112,11 +96,6 @@ export default function MessengerScreen() {
   };
 
   const handlePressConversation = (user: ChatUser) => {
-    if (user.id === 'ai-assistant') {
-      setShowAIChat(true);
-      return;
-    }
-
     navigation.navigate('Chat', {
       recipientId: user.id,
       recipientName: user.name,
@@ -124,12 +103,82 @@ export default function MessengerScreen() {
     });
   };
 
+  const formatTime = (date?: Date) => {
+    if (!date) return '';
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Vừa xong';
+    if (diffMins < 60) return `${diffMins} phút`;
+    if (diffHours < 24) return `${diffHours} giờ`;
+    if (diffDays < 7) return `${diffDays} ngày`;
+
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+    });
+  };
+
   const renderConversationItem = ({ item, index }: { item: ChatUser; index: number }) => (
-    <MessCard
-      user={item}
-      onPress={() => handlePressConversation(item)}
-      index={index}
-    />
+    <Animated.View entering={FadeInDown.duration(400).delay(index * 50)}>
+      <TouchableOpacity
+        style={styles.conversationItem}
+        onPress={() => handlePressConversation(item)}
+        activeOpacity={0.7}
+      >
+        {/* Avatar */}
+        <View style={styles.avatarContainer}>
+          {item.avatar ? (
+            <Image source={{ uri: item.avatar }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="person" size={24} color={Colors.textSecondary} />
+            </View>
+          )}
+          {/* Online indicator (optional) */}
+          {/* <View style={styles.onlineIndicator} /> */}
+        </View>
+
+        {/* Content */}
+        <View style={styles.conversationContent}>
+          <View style={styles.conversationHeader}>
+            <Text
+              style={[
+                styles.userName,
+                (item.unreadCount ?? 0) > 0 ? styles.userNameUnread : undefined,
+              ]}
+              numberOfLines={1}
+            >
+              {item.name || 'Unknown User'}
+            </Text>
+            <Text style={styles.timeText}>{formatTime(item.lastMessageTime)}</Text>
+          </View>
+
+          <View style={styles.messageRow}>
+            <Text
+              style={[
+                styles.lastMessage,
+                (item.unreadCount ?? 0) > 0 ? styles.lastMessageUnread : undefined,
+              ]}
+              numberOfLines={1}
+            >
+              {item.lastMessageText || 'Không có tin nhắn'}
+            </Text>
+            {item.unreadCount && item.unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadText}>
+                  {item.unreadCount > 99 ? '99+' : item.unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 
   const renderEmptyState = () => {
@@ -181,7 +230,7 @@ export default function MessengerScreen() {
       {error ? (
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={24} color={Colors.error} />
-          <Text style={styles.errorText}>{error || 'Có lỗi xảy ra'}</Text>
+          <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : null}
 
@@ -193,12 +242,12 @@ export default function MessengerScreen() {
         </View>
       ) : (
         <FlatList
-          data={usersWithAI}
+          data={filteredUsers}
           renderItem={renderConversationItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
             styles.listContent,
-            usersWithAI.length === 0 && styles.listContentEmpty,
+            filteredUsers.length === 0 && styles.listContentEmpty,
           ]}
           ListEmptyComponent={renderEmptyState}
           showsVerticalScrollIndicator={false}
@@ -212,9 +261,6 @@ export default function MessengerScreen() {
           }
         />
       )}
-
-      {/* AI Chatbot Modal */}
-      <AIChatbot visible={showAIChat} onClose={() => setShowAIChat(false)} />
     </SafeAreaView>
   );
 }

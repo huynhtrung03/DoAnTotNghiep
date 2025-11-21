@@ -76,7 +76,7 @@ export default function RoomCard({ room }: { room: RoomInUser }) {
               <View style={styles.locationBadge}>
                 <Ionicons name="location" size={14} color="white" />
                 <Text style={styles.locationText} numberOfLines={1}>
-                  {room.address?.ward?.district?.province?.name || 'N/A'}
+                  {room.address.ward.district.province.name}
                 </Text>
               </View>
             </View>
@@ -95,7 +95,7 @@ export default function RoomCard({ room }: { room: RoomInUser }) {
         <View style={styles.addressRow}>
           <MaterialCommunityIcons name="map-marker-outline" size={16} color="#9CA3AF" />
           <Text style={styles.address} numberOfLines={1}>
-            {room.address?.ward?.district?.name || 'N/A'}
+            {room.address.ward.district.name}
           </Text>
         </View>
 
