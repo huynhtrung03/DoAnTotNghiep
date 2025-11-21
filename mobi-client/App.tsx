@@ -3,6 +3,7 @@ import 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import RootNavigator from './src/navigation/RootNavigator';
 import './src/lib/i18n'; // Import i18n config
 
@@ -15,8 +16,10 @@ export default function App() {
   // );
   return (
     <SafeAreaProvider>
-      <StatusBar style="auto" />
-      <RootNavigator />
+      <KeyboardProvider>
+        <StatusBar style="auto" />
+        <RootNavigator />
+      </KeyboardProvider>
     </SafeAreaProvider>
   )
 }

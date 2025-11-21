@@ -48,6 +48,9 @@ export default (): ExpoConfig => ({
     bundleIdentifier: 'com.namaesieunhangao.mobiclient',
     // googleServicesFile: './GoogleService-Info.plist',
     // Đã xóa: config.googleMapsApiKey
+    "infoPlist": {
+      "ITSAppUsesNonExemptEncryption": false
+    }
   },
 
   android: {

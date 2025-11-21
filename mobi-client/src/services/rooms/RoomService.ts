@@ -331,7 +331,7 @@ export async function getRoomVipWithLocation(
     }
 
     const result = await response.json();
-    console.log("🏠 VIP API Response:", result);
+    console.log("[HOUSE] VIP API Response:", result);
     return result;
   } catch (error: any) {
     console.error("Error fetching VIP rooms with location:", error);
@@ -366,7 +366,7 @@ export async function getRoomNormalWithLocation(
     }
 
     const result = await response.json();
-    console.log("🏠 Normal API Response:", result);
+    console.log("[HOUSE] Normal API Response:", result);
     return result;
   } catch (error: any) {
     console.error("Error fetching normal rooms with location:", error);
@@ -513,7 +513,16 @@ export async function getRoomsInMap(
       throw new Error(data.message || "Failed to fetch rooms in map");
     }
 
-    return response.json();
+    const rooms = await response.json();
+    
+    // Filter out rooms with incomplete address data to prevent crashes
+    const validRooms = rooms.filter((room: any) => 
+      room && room.address && room.address.ward && room.address.ward.district && room.address.ward.district.province
+    );
+    
+    console.log(`✅ getRoomsInMap: Found ${rooms.length} rooms, ${validRooms.length} valid rooms`);
+    
+    return validRooms;
   } catch (error: any) {
     console.error("Error fetching rooms in map:", error);
     return null;

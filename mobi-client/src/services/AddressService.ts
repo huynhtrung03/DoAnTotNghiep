@@ -1,4 +1,4 @@
-import { API_URL } from "./Constant";
+import { API_URL } from "./config/Constant";
 
 // const API_URL = "https://e930f8f40a31.ngrok-free.app/api";
 export async function getProvinces()  {
