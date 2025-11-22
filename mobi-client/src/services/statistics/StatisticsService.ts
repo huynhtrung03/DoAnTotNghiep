@@ -27,7 +27,7 @@ export const getPublicStatistics = async (): Promise<PublicStatistics> => {
     }
 
     const data = await response.json();
-    console.log('✅ Statistics data received:', data);
+    // console.log('✅ Statistics data received:', data);
     return data;
   } catch (error) {
     console.error('❌ Error fetching public statistics:', error);

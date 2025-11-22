@@ -94,7 +94,7 @@ export default function RoomCardActions({ room, showHeartOnly = false }: { room:
           removeFavorite(room.id);
           decrementFavoriteCount(room.id);
           setLocalFavoriteCount(prev => Math.max(0, prev - 1));
-          console.log(`✅ Removed from favorites: ${room.id}`);
+          ////console.log(`✅ Removed from favorites: ${room.id}`);
         } else {
           Alert.alert('Lỗi', 'Không thể xóa khỏi danh sách yêu thích');
         }
@@ -106,7 +106,7 @@ export default function RoomCardActions({ room, showHeartOnly = false }: { room:
           addFavorite(room.id);
           incrementFavoriteCount(room.id);
           setLocalFavoriteCount(prev => prev + 1);
-          console.log(`✅ Added to favorites: ${room.id}`);
+          //console.log(`✅ Added to favorites: ${room.id}`);
         } else {
           Alert.alert('Lỗi', 'Không thể thêm vào danh sách yêu thích');
         }

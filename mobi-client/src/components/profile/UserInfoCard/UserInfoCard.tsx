@@ -114,7 +114,7 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
 
       console.log('📦 UserInfoCard: Landlord data:', landlordData);
       console.log('🖼️ UserInfoCard: Avatar URL:', landlordData?.avatar);
-      console.log('🔗 UserInfoCard: Full avatar URL:', landlordData?.avatar ? URL_IMAGE + landlordData.avatar : 'No avatar');
+      console.log('🔗 UserInfoCard: Full avatar URL:', landlordData?.avatar ? `${URL_IMAGE}${landlordData.avatar.startsWith('/') ? landlordData.avatar.slice(1) : landlordData.avatar}` : 'No avatar');
       console.log('❤️ UserInfoCard: Favorite status:', favoriteStatus, 'Count:', favCount);
 
       if (landlordData) {
@@ -329,7 +329,7 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
                 source={{ 
                   uri: landlord.avatar.startsWith('http') 
                     ? landlord.avatar 
-                    : URL_IMAGE + landlord.avatar 
+                    : `${URL_IMAGE}${landlord.avatar.startsWith('/') ? landlord.avatar.slice(1) : landlord.avatar}` 
                 }} 
                 style={styles.compactAvatar}
               />
@@ -429,14 +429,14 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
                 source={{ 
                   uri: landlord.avatar.startsWith('http') 
                     ? landlord.avatar 
-                    : URL_IMAGE + landlord.avatar 
+                    : `${URL_IMAGE}${landlord.avatar.startsWith('/') ? landlord.avatar.slice(1) : landlord.avatar}` 
                 }} 
                 style={styles.avatar}
                 onError={(error) => {
                   console.warn('⚠️ UserInfoCard: Error loading avatar:', error.nativeEvent.error);
                   if (landlord.avatar) {
                     console.warn('⚠️ UserInfoCard: Attempted URL:', 
-                      landlord.avatar.startsWith('http') ? landlord.avatar : URL_IMAGE + landlord.avatar
+                      landlord.avatar.startsWith('http') ? landlord.avatar : `${URL_IMAGE}${landlord.avatar.startsWith('/') ? landlord.avatar.slice(1) : landlord.avatar}`
                     );
                   }
                 }}

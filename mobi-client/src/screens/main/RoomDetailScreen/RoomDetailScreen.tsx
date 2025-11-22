@@ -21,7 +21,7 @@ export default function RoomDetailScreen({ route, navigation }: any) {
           if (token) {
             const favoriteIds = await getAllFavoriteIds();
             setFavoriteRoomIds(favoriteIds);
-            console.log(`🔄 RoomDetailScreen: Reloaded ${favoriteIds.length} favorites`);
+            //console.log(`🔄 RoomDetailScreen: Reloaded ${favoriteIds.length} favorites`);
           }
         } catch (error) {
           console.error('❌ Error reloading favorites in RoomDetailScreen:', error);

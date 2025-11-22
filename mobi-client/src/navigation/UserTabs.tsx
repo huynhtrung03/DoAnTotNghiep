@@ -169,10 +169,10 @@ export default function UserTabs() {
 
         // Chỉ load nếu chưa khởi tạo
         if (!isInitialized) {
-          console.log('🔄 Loading all favorite IDs...');
+          // console.log('🔄 Loading all favorite IDs...');
           setLoading(true);
           const favoriteIds = await getAllFavoriteIds();
-          console.log(`✅ Loaded ${favoriteIds.length} favorites into store`);
+          // console.log(`✅ Loaded ${favoriteIds.length} favorites into store`);
           setFavoriteRoomIds(favoriteIds);
           setLoading(false);
         }

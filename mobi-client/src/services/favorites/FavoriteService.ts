@@ -133,7 +133,7 @@ export async function getAllFavoriteIds(): Promise<string[]> {
       .map((item) => item.id);
 
     const totalPages = firstPageData.totalPages || 1;
-    console.log(`📄 Total pages: ${totalPages}`);
+    // console.log(`📄 Total pages: ${totalPages}`);
 
     // Fetch các trang còn lại (nếu có)
     const fetchPromises = [];
@@ -168,7 +168,7 @@ export async function getAllFavoriteIds(): Promise<string[]> {
       allFavoriteIds = [...allFavoriteIds, ...pageIds];
     }
 
-    console.log(`✅ Fetched total ${allFavoriteIds.length} favorite IDs`);
+    // console.log(`✅ Fetched total ${allFavoriteIds.length} favorite IDs`);
     return allFavoriteIds;
 
   } catch (error) {
@@ -204,7 +204,7 @@ export async function getFavoriteRooms(
       }
     );
 
-    console.log(`📡 API Response Status: ${response.status} ${response.statusText}`);
+    // console.log(`📡 API Response Status: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -221,7 +221,7 @@ export async function getFavoriteRooms(
     }
 
     const data: PaginatedResponse<RoomInUser> = await response.json();
-    console.log(`✅ Fetched ${data.content?.length || 0} favorite rooms`);
+    // console.log(`✅ Fetched ${data.content?.length || 0} favorite rooms`);
     return data;
 
   } catch (error: any) {

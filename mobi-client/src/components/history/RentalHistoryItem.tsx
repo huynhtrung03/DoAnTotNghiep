@@ -167,11 +167,11 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
         <View style={styles.imageSection}>
           <Text style={styles.imageSectionTitle}>Payment Proof:</Text>
           <TouchableOpacity
-            onPress={() => onPressImage(`${URL_IMAGE}${item.imageProof}`)}
+            onPress={() => onPressImage(`${URL_IMAGE}${item.imageProof.startsWith('/') ? item.imageProof.slice(1) : item.imageProof}`)}
             style={styles.imageContainer}
           >
             <Image
-              source={{ uri: `${URL_IMAGE}${item.imageProof}` }}
+              source={{ uri: `${URL_IMAGE}${item.imageProof.startsWith('/') ? item.imageProof.slice(1) : item.imageProof}` }}
               style={styles.image}
               resizeMode="cover"
             />

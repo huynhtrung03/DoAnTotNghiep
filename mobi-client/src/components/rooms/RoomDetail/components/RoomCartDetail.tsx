@@ -350,7 +350,7 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
               scrollEventThrottle={16}
             >
               {images.map((image, index) => {
-                const mediaUrl = URL_IMAGE + image.url;
+                const mediaUrl = `${URL_IMAGE}${image.url.startsWith('/') ? image.url.slice(1) : image.url}`;
                 const isVideo = isVideoUrl(image.url);
                 
                 return (
@@ -507,7 +507,7 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
             contentOffset={{ x: fullscreenIndex * SCREEN_WIDTH, y: 0 }}
           >
             {images.map((image, index) => {
-              const mediaUrl = URL_IMAGE + image.url;
+              const mediaUrl = `${URL_IMAGE}${image.url.startsWith('/') ? image.url.slice(1) : image.url}`;
               const isVideo = isVideoUrl(image.url);
               
               return (

@@ -50,7 +50,7 @@ export default function SearchScreen() {
   useEffect(() => {
     if (NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
       MapboxGL.setAccessToken(NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN);
-      if (__DEV__) console.log('✅ Mapbox token set.');
+      // if (__DEV__) //console.log('✅ Mapbox token set.');
     } else {
       console.error('❌ Mapbox Access Token không tìm thấy!');
     }
@@ -67,7 +67,7 @@ export default function SearchScreen() {
   useEffect(() => {
     const params = route.params as any;
     if (params?.appliedFilters && params?.filterType) {
-      console.log('🎯 Applied filters from HomeScreen:', params);
+      //console.log('🎯 Applied filters from HomeScreen:', params);
       
       // Apply filters based on type
       switch (params.filterType) {
@@ -75,7 +75,7 @@ export default function SearchScreen() {
           // Set distance and sort by nearest
           if (params.appliedFilters.distance) {
             // You can store this for API calls
-            console.log('Nearby filter:', params.appliedFilters.distance);
+            //console.log('Nearby filter:', params.appliedFilters.distance);
           }
           if (params.appliedFilters.sortBy) {
             setSortBy(params.appliedFilters.sortBy);
@@ -85,7 +85,7 @@ export default function SearchScreen() {
         case 'popular':
           // Set time range and sort by views/bookings
           if (params.appliedFilters.timeRange) {
-            console.log('Popular filter:', params.appliedFilters.timeRange);
+            //console.log('Popular filter:', params.appliedFilters.timeRange);
           }
           if (params.appliedFilters.sortBy) {
             setSortBy(params.appliedFilters.sortBy);
@@ -95,7 +95,7 @@ export default function SearchScreen() {
         case 'cheap':
           // Set price range and sort by price
           if (params.appliedFilters.priceRange) {
-            console.log('Cheap filter:', params.appliedFilters.priceRange);
+            //console.log('Cheap filter:', params.appliedFilters.priceRange);
           }
           if (params.appliedFilters.sortBy) {
             setSortBy(params.appliedFilters.sortBy);
@@ -105,10 +105,10 @@ export default function SearchScreen() {
         case 'premium':
           // Set amenities and price range
           if (params.appliedFilters.amenities) {
-            console.log('Premium amenities:', params.appliedFilters.amenities);
+            //console.log('Premium amenities:', params.appliedFilters.amenities);
           }
           if (params.appliedFilters.priceRange) {
-            console.log('Premium price range:', params.appliedFilters.priceRange);
+            //console.log('Premium price range:', params.appliedFilters.priceRange);
           }
           if (params.appliedFilters.sortBy) {
             setSortBy(params.appliedFilters.sortBy);
@@ -468,7 +468,7 @@ export default function SearchScreen() {
             style={StyleSheet.absoluteFillObject}
             styleURL={MapboxGL.StyleURL.Street}
             onDidFinishLoadingMap={() => {
-              console.log('✅ Map loaded');
+              //console.log('✅ Map loaded');
               setIsMapLoading(false);
             }}
             onRegionDidChange={() => handleMapIdle(mapRef)}

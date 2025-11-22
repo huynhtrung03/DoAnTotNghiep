@@ -25,7 +25,7 @@ export default function RoomCard({ room }: { room: RoomInUser }) {
   const navigation = useNavigation<any>();
   
   const mainMediaUri = room.images?.[0]?.url 
-    ? URL_IMAGE + room.images[0].url 
+    ? `${URL_IMAGE}${room.images[0].url.startsWith('/') ? room.images[0].url.slice(1) : room.images[0].url}` 
     : 'https://via.placeholder.com/400x300.png?text=No+Image';
 
   const handleCardPress = () => {

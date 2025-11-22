@@ -34,39 +34,39 @@
 
 //   const getRouteByRole = (roles: string[]) => {
 //     // Kiểm tra roles để điều hướng
-//     console.log('getRouteByRole - Checking roles:', roles);
+//     //console.log('getRouteByRole - Checking roles:', roles);
     
 //     if (roles.includes('Landlords')) {
-//       console.log('Navigating to LandlordDashboard');
+//       //console.log('Navigating to LandlordDashboard');
 //       return 'LandlordDashboard';
 //     }
 //     if (roles.includes('Users')) {
-//       console.log('Navigating to Users');
+//       //console.log('Navigating to Users');
 //       return 'Users';
 //     }
     
-//     console.log('Navigating to Root (default)');
+//     //console.log('Navigating to Root (default)');
 //     return 'Root';
 //   };
 
 //   const onSubmit = async (data: FormValues) => {
 //     try {
 //       setLoading(true);
-//       console.log('Starting login...');
+//       //console.log('Starting login...');
       
 //       const { user } = await loginWithUsername(data.username, data.password);
-//       console.log('Login successful - User:', user);
-//       console.log('User roles from login response:', user.roles);
+//       //console.log('Login successful - User:', user);
+//       //console.log('User roles from login response:', user.roles);
 
 //       // Đợi một chút để đảm bảo AsyncStorage đã lưu xong
 //       await new Promise(resolve => setTimeout(resolve, 200));
 
 //       // Lấy roles từ user object thay vì gọi API getUserRoles()
 //       const userRoles = Array.isArray(user.roles) ? user.roles : [];
-//       console.log('User Roles:', userRoles);
+//       //console.log('User Roles:', userRoles);
       
 //       const targetRoute = getRouteByRole(userRoles);
-//       console.log('Target Route:', targetRoute);
+//       //console.log('Target Route:', targetRoute);
 
 //       navigation.reset({ index: 0, routes: [{ name: targetRoute }] });
 //     } catch (e: any) {
@@ -79,7 +79,7 @@
 
 //   const handleGoogleSuccess = async () => {
 //     try {
-//       console.log('Google login success, checking roles...');
+//       //console.log('Google login success, checking roles...');
       
 //       // Đợi một chút để đảm bảo AsyncStorage đã lưu xong sau khi đăng nhập Google
 //       await new Promise(resolve => setTimeout(resolve, 200));
@@ -87,10 +87,10 @@
 //       // Đọc roles từ AsyncStorage thay vì gọi API
 //       const rolesString = await AsyncStorage.getItem('userRoles');
 //       const userRoles = rolesString ? JSON.parse(rolesString) : [];
-//       console.log('Google Login - User Roles:', userRoles);
+//       //console.log('Google Login - User Roles:', userRoles);
       
 //       const targetRoute = getRouteByRole(userRoles);
-//       console.log('Google Login - Target Route:', targetRoute);
+//       //console.log('Google Login - Target Route:', targetRoute);
       
 //       navigation.reset({ index: 0, routes: [{ name: targetRoute }] });
 //     } catch (error) {
@@ -219,39 +219,39 @@ export default function LoginScreen() {
 
   const getRouteByRole = (roles: string[]): 'LandlordApp' | 'UserApp' => {
     // Kiểm tra roles để điều hướng
-    console.log('getRouteByRole - Checking roles:', roles);
+    //console.log('getRouteByRole - Checking roles:', roles);
     
     if (roles.includes('Landlords')) {
-      console.log('✅ Navigating to LandlordApp');
+      //console.log('✅ Navigating to LandlordApp');
       return 'LandlordApp';
     }
     if (roles.includes('Users')) {
-      console.log('✅ Navigating to UserApp');
+      //console.log('✅ Navigating to UserApp');
       return 'UserApp';
     }
     
-    console.log('⚠️ Navigating to UserApp (default)');
+    //console.log('⚠️ Navigating to UserApp (default)');
     return 'UserApp';
   };
 
   const onSubmit = async (data: FormValues) => {
     try {
       setLoading(true);
-      console.log('Starting login...');
+      //console.log('Starting login...');
       
       const { user } = await loginWithUsername(data.username, data.password);
-      console.log('Login successful - User:', user);
-      console.log('User roles from login response:', user.roles);
+      //console.log('Login successful - User:', user);
+      //console.log('User roles from login response:', user.roles);
 
       // Đợi một chút để đảm bảo AsyncStorage đã lưu xong
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Lấy roles từ user object thay vì gọi API getUserRoles()
       const userRoles = Array.isArray(user.roles) ? user.roles : [];
-      console.log('User Roles:', userRoles);
+      //console.log('User Roles:', userRoles);
       
       const targetRoute = getRouteByRole(userRoles);
-      console.log('Target Route:', targetRoute);
+      //console.log('Target Route:', targetRoute);
 
       navigation.reset({ index: 0, routes: [{ name: targetRoute }] });
     } catch (e: any) {
@@ -264,7 +264,7 @@ export default function LoginScreen() {
 
   const handleGoogleSuccess = async () => {
     try {
-      console.log('Google login success, checking roles...');
+      //console.log('Google login success, checking roles...');
       
       // Đợi một chút để đảm bảo AsyncStorage đã lưu xong sau khi đăng nhập Google
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -272,10 +272,10 @@ export default function LoginScreen() {
       // Đọc roles từ AsyncStorage thay vì gọi API
       const rolesString = await AsyncStorage.getItem('userRoles');
       const userRoles = rolesString ? JSON.parse(rolesString) : [];
-      console.log('Google Login - User Roles:', userRoles);
+      //console.log('Google Login - User Roles:', userRoles);
       
       const targetRoute = getRouteByRole(userRoles);
-      console.log('Google Login - Target Route:', targetRoute);
+      //console.log('Google Login - Target Route:', targetRoute);
       
       navigation.reset({ index: 0, routes: [{ name: targetRoute }] });
     } catch (error) {

@@ -153,25 +153,48 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
 
     const now = new Date();
     const messageDate = new Date(date);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const msgDate = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+    
     const diffMs = now.getTime() - messageDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) {
+    // Vừa xong (< 1 phút)
+    if (diffMins < 1) return 'Vừa xong';
+    
+    // Vài phút trước (< 1 giờ)
+    if (diffMins < 60) return `${diffMins} phút`;
+    
+    // Hôm nay
+    if (msgDate.getTime() === today.getTime()) {
+      if (diffHours < 24) return `${diffHours} giờ`;
       return messageDate.toLocaleTimeString('vi-VN', {
         hour: '2-digit',
         minute: '2-digit',
       });
-    } else if (diffDays === 1) {
-      return 'Hôm qua';
-    } else if (diffDays < 7) {
-      const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-      return days[messageDate.getDay()];
-    } else {
-      return messageDate.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-      });
     }
+    
+    // Hôm qua
+    if (msgDate.getTime() === yesterday.getTime()) {
+      return 'Hôm qua';
+    }
+    
+    // Tuần này
+    if (diffDays < 7) {
+      const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+      return days[messageDate.getDay()];
+    }
+    
+    // Ngày tháng năm
+    return messageDate.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: messageDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    });
   };
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
@@ -194,9 +217,11 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
           isOwnMessage ? styles.ownMessageWrapper : styles.otherMessageWrapper
         ]}>
           {!isOwnMessage && (
-            <View style={styles.avatarSmall}>
-              <MaterialCommunityIcons name="robot" size={16} color={Colors.primary} />
-            </View>
+            <Image 
+              source={require('../../../../assets/chatbot.png')} 
+              style={styles.avatarSmall}
+              resizeMode="cover"
+            />
           )}
 
           <View style={[
@@ -218,7 +243,11 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
   const renderEmptyState = () => {
     return (
       <View style={styles.emptyContainer}>
-        <MaterialCommunityIcons name="robot" size={80} color={Colors.primary} />
+        <Image 
+          source={require('../../../../assets/chatbot.png')} 
+          style={styles.emptyAvatar}
+          resizeMode="cover"
+        />
         <Text style={styles.emptyTitle}>Chào mừng đến với AI Assistant</Text>
         <Text style={styles.emptySubtitle}>
           Tôi có thể giúp bạn tìm phòng trọ phù hợp với nhu cầu của bạn
@@ -248,9 +277,11 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
 
           <View style={styles.headerContent}>
             <View style={styles.avatarContainer}>
-              <View style={styles.headerAvatarPlaceholder}>
-                <MaterialCommunityIcons name="robot" size={20} color={Colors.primary} />
-              </View>
+              <Image 
+                source={require('../../../../assets/chatbot.png')} 
+                style={styles.headerAvatar}
+                resizeMode="cover"
+              />
             </View>
             <View style={styles.headerInfo}>
               <Text style={styles.headerName} numberOfLines={1}>
@@ -281,9 +312,11 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
                 {/* Typing Indicator */}
                 {showTyping && (
                   <View style={[styles.messageContainer, styles.otherMessageWrapper]}>
-                    <View style={styles.avatarSmall}>
-                      <MaterialCommunityIcons name="robot" size={16} color={Colors.primary} />
-                    </View>
+                    <Image 
+                      source={require('../../../../assets/chatbot.png')} 
+                      style={styles.avatarSmall}
+                      resizeMode="cover"
+                    />
                     <View style={[styles.messageBubble, styles.otherMessageBubble, styles.typingBubble]}>
                       <View style={styles.typingDots}>
                         <View style={styles.typingDot} />
@@ -362,8 +395,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: Colors.cardBackground,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
+    shadowColor: Colors.cardShadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   backButton: {
     width: 40,
@@ -385,28 +423,22 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-  },
-  headerAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 0.5,
     borderColor: Colors.border,
   },
   headerInfo: {
     flex: 1,
   },
   headerName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: Colors.textPrimary,
+    letterSpacing: -0.2,
   },
   headerStatus: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.textSecondary,
+    marginTop: 2,
   },
   headerButton: {
     width: 40,
@@ -451,10 +483,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.cardBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: 8,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
   },
   messageBubble: {
     maxWidth: '75%',
@@ -469,12 +500,13 @@ const styles = StyleSheet.create({
   otherMessageBubble: {
     backgroundColor: Colors.cardBackground,
     borderBottomLeftRadius: 4,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
   },
   messageText: {
     fontSize: 15,
     lineHeight: 20,
+    letterSpacing: -0.1,
   },
   ownMessageText: {
     color: Colors.textWhite,
@@ -502,7 +534,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: Colors.cardBackground,
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
     borderTopColor: Colors.border,
   },
   inputContainer: {
@@ -516,8 +548,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   input: {
-    backgroundColor: Colors.background,
-    borderWidth: 1,
+    backgroundColor: Colors.backgroundDark,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 20,
     paddingHorizontal: 16,
@@ -525,6 +557,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     maxHeight: 100,
     minHeight: 40,
+    color: Colors.textPrimary,
   },
   sendButton: {
     width: 40,
@@ -545,6 +578,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 32,
     paddingVertical: 40,
+  },
+  emptyAvatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
+    borderColor: Colors.border,
   },
   emptyTitle: {
     fontSize: 20,

@@ -108,6 +108,9 @@ import RoomDetailScreen from '../screens/main/RoomDetailScreen/RoomDetailScreen'
 // Import NotificationScreen
 import NotificationScreen from '../screens/notification/NotificationScreen';
 
+// Import ChatScreen
+import ChatScreen from '../screens/mesenger/ChatScreenDetail';
+
 const Stack = createNativeStackNavigator();
 
 type RouteType = 'Auth/Login' | 'UserApp' | 'LandlordApp';
@@ -250,6 +253,13 @@ export default function RootNavigator() {
               headerTitleStyle: {
                 fontWeight: '700',
               },
+            }} 
+          />
+          <Stack.Screen 
+            name="Chat" 
+            component={ChatScreen}
+            options={{ 
+              headerShown: false,
             }} 
           />
         </Stack.Navigator>

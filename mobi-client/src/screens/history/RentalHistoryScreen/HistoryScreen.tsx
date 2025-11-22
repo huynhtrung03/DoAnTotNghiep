@@ -75,17 +75,17 @@ export default function HistoryScreen() {
         setRefreshing(true);
       }
 
-      console.log('📚 HistoryScreen - Fetching bookings, page:', pageNum, 'append:', append);
+      //console.log('📚 HistoryScreen - Fetching bookings, page:', pageNum, 'append:', append);
       
       const response = await userFetchBookings(pageNum, 10);
       
-      console.log('📚 HistoryScreen - Response:', JSON.stringify(response, null, 2));
+      //console.log('📚 HistoryScreen - Response:', JSON.stringify(response, null, 2));
       
       const fetchedBookings = response.bookings || response;
       const total = response.totalPages || 1;
 
-      console.log('📚 HistoryScreen - Fetched bookings count:', fetchedBookings.length);
-      console.log('📚 HistoryScreen - Total pages:', total);
+      //console.log('📚 HistoryScreen - Fetched bookings count:', fetchedBookings.length);
+      //console.log('📚 HistoryScreen - Total pages:', total);
 
       const mappedBookings = fetchedBookings.map(mapBookingToRentalData);
 
@@ -111,9 +111,9 @@ export default function HistoryScreen() {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem('accessToken');
       const userData = await AsyncStorage.getItem('userData');
-      console.log('🔐 Auth Check - Token exists:', !!token);
-      console.log('🔐 Auth Check - Token preview:', token ? `${token.substring(0, 30)}...` : 'NULL');
-      console.log('🔐 Auth Check - UserData:', userData);
+      //console.log('🔐 Auth Check - Token exists:', !!token);
+      //console.log('🔐 Auth Check - Token preview:', token ? `${token.substring(0, 30)}...` : 'NULL');
+      //console.log('🔐 Auth Check - UserData:', userData);
     };
     
     checkAuth();

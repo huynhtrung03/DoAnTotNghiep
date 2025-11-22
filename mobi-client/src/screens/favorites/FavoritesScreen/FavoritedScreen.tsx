@@ -47,7 +47,7 @@ const FavoritedScreen = () => {
         try {
           const favoriteIds = await getAllFavoriteIds();
           setFavoriteRoomIds(favoriteIds);
-          console.log(`🔄 Reloaded ${favoriteIds.length} favorites in store`);
+          //console.log(`🔄 Reloaded ${favoriteIds.length} favorites in store`);
         } catch (error) {
           console.error('❌ Error reloading favorites:', error);
         }
@@ -63,16 +63,13 @@ const FavoritedScreen = () => {
       else setLoading(true);
       setError(null);
 
-      console.log(`📋 Đang lấy danh sách phòng yêu thích - Trang ${page + 1}`);
+      //console.log(`📋 Đang lấy danh sách phòng yêu thích - Trang ${page + 1}`);
 
       const result = await getFavoriteRooms(page, pageSize);
 
-      console.log(`✅ Đã lấy ${result.content?.length || 0} phòng`);
-      console.log('📊 Pagination:', {
-        page: result.page,
-        totalPages: result.totalPages,
-        totalElements: result.totalElements,
-      });
+      //console.log(`✅ Đã lấy ${result.content?.length || 0} phòng`);
+  
+
 
       // Backend trả về "content" không phải "data"
       setRooms(result.content || []);
@@ -130,14 +127,14 @@ const FavoritedScreen = () => {
 
   // ===== HANDLERS =====
   const handleRoomPress = (room: RoomInUser) => {
-    console.log('👁️ Xem chi tiết phòng:', room.id);
+    //console.log('👁️ Xem chi tiết phòng:', room.id);
     // Navigate to RoomDetail screen
     navigation.navigate('RoomDetail', { roomId: room.id });
   };
 
   const handleFavoriteToggle = async (roomId: string) => {
     try {
-      console.log('💔 Xóa khỏi yêu thích:', roomId);
+      //console.log('💔 Xóa khỏi yêu thích:', roomId);
 
       const success = await removeFavorite(roomId);
 
@@ -152,7 +149,7 @@ const FavoritedScreen = () => {
         // Reload favorites in store
         const favoriteIds = await getAllFavoriteIds();
         setFavoriteRoomIds(favoriteIds);
-        console.log(`✅ Removed from favorites and reloaded store`);
+        //console.log(`✅ Removed from favorites and reloaded store`);
       } else {
         Alert.alert('Lỗi', 'Không thể xóa phòng khỏi danh sách yêu thích');
       }
@@ -164,7 +161,7 @@ const FavoritedScreen = () => {
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
-    console.log('🔍 Lọc theo:', filter);
+    //console.log('🔍 Lọc theo:', filter);
   };
 
   const handleRetry = () => {
