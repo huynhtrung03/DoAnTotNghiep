@@ -473,21 +473,59 @@ export async function getRecentRooms(): Promise<RoomInUser[] | null> {
 
 /**
  * Get landlord details by room ID
- * Used by UserInfoCard component
+ * Used by NotificationService, UserInfoCard component
  * Public endpoint
  */
 export async function getLandlordByRoomId(roomId: string) {
   try {
-    const response = await fetch(`${API_URL}/rooms/landlord-room/${roomId}`);
+    console.log("🔍 getLandlordByRoomId called with roomId:", roomId);
+    
+    const url = `${API_URL}/rooms/landlord-room/${roomId}`;
+    console.log("📡 Fetching from URL:", url);
+    
+    const response = await fetch(url);
 
     if (!response.ok) {
       const data = await response.json();
+      console.error("❌ API returned error:", data);
       throw new Error(data.message || "Failed to fetch landlord details");
     }
 
-    return response.json();
+    const landlord = await response.json();
+    
+    console.log("=== DEBUG: getLandlordByRoomId RESPONSE ===");
+    console.log("Full response:", JSON.stringify(landlord, null, 2));
+    console.log("landlord type:", typeof landlord);
+    console.log("landlord.id:", landlord?.id);
+    console.log("landlord.id type:", typeof landlord?.id);
+    console.log("landlord keys:", Object.keys(landlord || {}));
+    console.log("===========================================");
+
+    // ✅ Validate response
+    if (!landlord) {
+      console.error("❌ Landlord response is null or undefined");
+      return null;
+    }
+
+    if (!landlord.id) {
+      console.error("❌ WARNING: landlord.id is missing! Response structure:", {
+        ...landlord,
+      });
+      // Cố gắng tìm alternative field có thể chứa ID
+      const possibleIdFields = ['userId', 'ownerId', 'landlordId', 'id'];
+      for (const field of possibleIdFields) {
+        if (landlord[field]) {
+          console.warn(`⚠️ Using alternative field '${field}' as ID:`, landlord[field]);
+          return { ...landlord, id: landlord[field] };
+        }
+      }
+      return null;
+    }
+
+    console.log("✅ Landlord fetched successfully with ID:", landlord.id);
+    return landlord;
   } catch (error: any) {
-    console.error("Error fetching landlord details:", error);
+    console.error("🔥 Error fetching landlord details:", error);
     return null;
   }
 }

@@ -289,6 +289,21 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
   };
 
   const handleBookingPress = () => {
+    // Kiểm tra đăng nhập trước khi mở modal booking
+    if (!isLoggedIn) {
+      Alert.alert(
+        'Yêu cầu đăng nhập',
+        'Bạn cần đăng nhập để đặt phòng',
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { 
+            text: 'Đăng nhập', 
+            onPress: () => navigation.navigate('Auth/Login')
+          }
+        ]
+      );
+      return;
+    }
     setBookingModalVisible(true);
   };
 

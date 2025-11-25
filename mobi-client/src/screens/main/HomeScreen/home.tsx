@@ -40,7 +40,7 @@ import { RoomInUser, PaginatedResponse } from '../../../types/types';
 import { getRoomNormalUser, getRoomVipUser, getRoomsInMap, filterRooms } from '../../../services/rooms/RoomService';
 import { getPublicStatistics, PublicStatistics } from '../../../services/statistics/StatisticsService';
 import { getAllFavoriteIds } from '../../../services/favorites/FavoriteService';
-import { getNotificationsForUser } from '../../../services/NotificationService';
+import { getNotificationsForUser } from '../../../services/statistics/NotificationService';
 import RoomCard from '../../../components/rooms/RoomCard/RoomCard';
 import styles from '../../../styles/screens/user/HomeScreen.styles';
 import Colors from '../../../styles/colors';

@@ -1,4 +1,4 @@
-import { API_URL } from '../config/Constant';
+import { API_URL } from './config/Constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface LandlordPaymentInfo {
@@ -22,24 +22,24 @@ export async function userFetchBookings(page: number, size: number) {
   try {
     const token = await AsyncStorage.getItem('accessToken');
     const userDataStr = await AsyncStorage.getItem('userData');
-    
+
     if (!userDataStr) {
       throw new Error('User not logged in. Please login again.');
     }
-    
+
     const userData = JSON.parse(userDataStr);
     const userId = userData.id;
-    
+
     if (!userId) {
       throw new Error('User ID not found. Please login again.');
     }
-    
-    console.log('🔍 userFetchBookings - Fetching:', `${API_URL}/bookings/user/${userId}/paging?page=${page}&size=${size}`);
+
+    console.log('🔍 userFetchBookings - Fetching:', `${API_URL}/booking/user?page=${page}&size=${size}`);
     console.log('🔑 Token:', token ? `${token.substring(0, 20)}...` : 'NULL');
     console.log('👤 UserId:', userId);
-    
+
     const response = await fetch(
-      `${API_URL}/bookings/user/${userId}/paging?page=${page}&size=${size}`,
+      `${API_URL}/booking/user?page=${page}&size=${size}`,
       {
         method: 'GET',
         headers: {
@@ -55,14 +55,14 @@ export async function userFetchBookings(page: number, size: number) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Error response text:', errorText);
-      
+
       let errorJson;
       try {
         errorJson = JSON.parse(errorText);
       } catch (e) {
         throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch bookings'}`);
       }
-      
+
       throw new Error(errorJson.message || errorJson.error || 'Failed to fetch bookings');
     }
 
@@ -81,9 +81,9 @@ export async function userFetchBookings(page: number, size: number) {
 export async function landlordFetchBookings(page: number, size: number) {
   try {
     const token = await AsyncStorage.getItem('accessToken');
-    
+
     const response = await fetch(
-      `${API_URL}/bookings/landlord?page=${page}&size=${size}`,
+      `${API_URL}/booking/landlord?page=${page}&size=${size}`,
       {
         method: 'GET',
         headers: {
@@ -128,25 +128,11 @@ export async function createBooking(bookingData: BookingData, userId: string) {
     console.log('BookingService - Response ok:', response.ok);
 
     if (!response.ok) {
-      let errorMessage = 'Failed to create booking';
+      const errorJson = await response.json();
+      console.error('BookingService - Error response:', errorJson);
 
-      try {
-        const errorText = await response.text();
-        console.error('BookingService - Error response text:', errorText);
-
-        // Try to parse as JSON first
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.details || errorJson.message || errorJson.error || errorMessage;
-        } catch (parseError) {
-          // If not JSON, use the raw text (might be HTML error page)
-          errorMessage = errorText || `HTTP ${response.status}: ${errorMessage}`;
-        }
-      } catch (textError) {
-        console.error('BookingService - Failed to read error response:', textError);
-        errorMessage = `HTTP ${response.status}: ${errorMessage}`;
-      }
-
+      const errorMessage =
+        errorJson.details || errorJson.message || 'Failed to create booking';
       throw new Error(errorMessage);
     }
 
@@ -171,13 +157,13 @@ export async function updateBookingStatus(
   try {
     const token = await AsyncStorage.getItem('accessToken');
 
-    const response = await fetch(`${API_URL}/bookings/${bookingId}/status`, {
+    const response = await fetch(`${API_URL}/booking?bookingId=${bookingId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify({ newStatus }),
     });
 
     if (!response.ok) {
@@ -203,7 +189,7 @@ export async function getLandlordPaymentInfo(
     const token = await AsyncStorage.getItem('accessToken');
 
     const response = await fetch(
-      `${API_URL}/bookings/${bookingId}/landlord-payment-info`,
+      `${API_URL}/booking?bookingId=${bookingId}&action=landlord-payment-info`,
       {
         method: 'GET',
         headers: {
@@ -238,9 +224,9 @@ export async function deleteBooking(bookingId: string) {
     const token = await AsyncStorage.getItem('accessToken');
 
     const response = await fetch(
-      `${API_URL}/bookings/${bookingId}`,
+      `${API_URL}/booking/landlord?bookingId=${encodeURIComponent(bookingId)}`,
       {
-        method: 'DELETE',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -260,8 +246,8 @@ export async function deleteBooking(bookingId: string) {
       throw new Error(message);
     }
 
-    const result = await response.json();
-    return { success: true, message: result.message || 'Booking deleted successfully' };
+    const successText = await response.text();
+    return { success: true, message: successText };
   } catch (error) {
     console.error('deleteBooking error:', error);
     throw error;
@@ -285,7 +271,6 @@ export async function uploadBillTransferImage(bookingId: string, fileUri: string
     console.log('BookingService - uploadBillTransferImage called with:', {
       bookingId,
       fileName,
-      fileUri,
     });
 
     const token = await AsyncStorage.getItem('accessToken');
@@ -299,7 +284,7 @@ export async function uploadBillTransferImage(bookingId: string, fileUri: string
     } as any);
 
     const response = await fetch(
-      `${API_URL}/bookings/${bookingId}/upload-bill-transfer`,
+      `${API_URL}/booking/${bookingId}/upload-bill-transfer`,
       {
         method: 'POST',
         headers: {
@@ -341,7 +326,7 @@ export async function getBookingById(bookingId: string) {
     const token = await AsyncStorage.getItem('accessToken');
 
     const response = await fetch(
-      `${API_URL}/bookings/${bookingId}`,
+      `${API_URL}/booking/${bookingId}`,
       {
         method: 'GET',
         headers: {
@@ -372,7 +357,7 @@ export async function cancelBooking(bookingId: string, reason?: string) {
     const token = await AsyncStorage.getItem('accessToken');
 
     const response = await fetch(
-      `${API_URL}/bookings/${bookingId}/cancel`,
+      `${API_URL}/booking/${bookingId}/cancel`,
       {
         method: 'POST',
         headers: {

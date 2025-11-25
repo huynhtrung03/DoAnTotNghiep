@@ -56,7 +56,7 @@
     "react-native-reanimated-carousel": "^4.0.3",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
-    "react-native-svg": "^15.12.1",
+    "react-native-svg": "15.12.1",
     "react-native-toast-message": "^2.3.3",
     "react-native-vector-icons": "^10.3.0",
     "react-native-webview": "13.15.0",
@@ -66,6 +66,7 @@
   },
   "devDependencies": {
     "@react-native-community/cli": "latest",
+    "@react-native/metro-config": "^0.82.1",
     "@types/point-in-polygon": "^1.1.5",
     "@types/qs": "^6.14.0",
     "@types/react": "~19.1.0",

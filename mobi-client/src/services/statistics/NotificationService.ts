@@ -1,402 +1,386 @@
-import { db, serverTimestamp } from '../../lib/firebase';
-import { getLandlordByRoomId } from '../rooms/RoomService';
+import firestore from "@react-native-firebase/firestore";
+import { getLandlordByRoomId } from "../rooms/RoomService";
 
-interface NotificationData {
-  receiverId: string | number;
-  senderId: string | number;
-  type: string;
-  message: string;
-  isRead?: boolean;
-  contractId?: string | number;
-  roomId?: string | number;
-}
-
-/**
- * Tạo notification chung (sử dụng Firebase Firestore)
- */
-const createNotification = async (data: NotificationData) => {
-  try {
-    const docRef = await db.collection('notifications').add({
-      receiverId: data.receiverId,
-      senderId: data.senderId,
-      type: data.type,
-      message: data.message,
-      isRead: data.isRead || false,
-      contractId: data.contractId,
-      roomId: data.roomId,
-      createdAt: serverTimestamp(),
-    });
-
-    console.log('Notification created successfully with ID:', docRef.id);
-    return { id: docRef.id, ...data };
-  } catch (error) {
-    console.error('Lỗi khi tạo notification:', error);
-    throw error;
-  }
+// === HÀM QUAN TRỌNG: Lọc sạch dữ liệu trước khi gửi ===
+// Hàm này biến mọi giá trị không hợp lệ thành null để tránh crash Firebase
+// Xử lý: undefined, null, "", 0, false, NaN
+const sanitizeData = (data: Record<string, any>) => {
+  const cleaned: Record<string, any> = {};
+  Object.keys(data).forEach((key) => {
+    const value = data[key];
+    
+    // Chuyển tất cả giá trị không hợp lệ thành null
+    // Firestore chấp nhận null, nhưng KHÔNG chấp nhận undefined
+    if (
+      value === undefined ||
+      value === null ||
+      value === "" ||
+      (typeof value === "number" && (isNaN(value) || value === 0)) ||
+      value === false
+    ) {
+      cleaned[key] = null;
+    } else if (typeof value === "string") {
+      // Trim whitespace từ strings
+      cleaned[key] = value.trim() || null;
+    } else {
+      cleaned[key] = value;
+    }
+  });
+  return cleaned;
 };
 
 /**
- * Tạo notification cho landlord khi có booking mới
- * @param roomId - ID của phòng
- * @param tenantId - ID của tenant (người thuê)
- * @param message - Nội dung thông báo
+ * Validate receiver ID (landlord ID)
+ * Đảm bảo giá trị hợp lệ để gửi notification
  */
+const validateReceiverId = (receiverId: any): boolean => {
+  if (!receiverId) {
+    console.error("❌ VALIDATION FAILED: receiverId is missing or invalid", { receiverId });
+    return false;
+  }
+  if (typeof receiverId === "string" && receiverId.trim() === "") {
+    console.error("❌ VALIDATION FAILED: receiverId is empty string", { receiverId });
+    return false;
+  }
+  if (typeof receiverId === "number" && (isNaN(receiverId) || receiverId === 0)) {
+    console.error("❌ VALIDATION FAILED: receiverId is invalid number", { receiverId });
+    return false;
+  }
+  return true;
+};
+
+/**
+ * Validate sender ID (tenant ID)
+ */
+const validateSenderId = (senderId: any): boolean => {
+  if (!senderId) {
+    console.error("❌ VALIDATION FAILED: senderId is missing or invalid", { senderId });
+    return false;
+  }
+  if (typeof senderId === "string" && senderId.trim() === "") {
+    console.error("❌ VALIDATION FAILED: senderId is empty string", { senderId });
+    return false;
+  }
+  if (typeof senderId === "number" && (isNaN(senderId) || senderId === 0)) {
+    console.error("❌ VALIDATION FAILED: senderId is invalid number", { senderId });
+    return false;
+  }
+  return true;
+};
+
 export const createBookingNotification = async (
   roomId: number | string | undefined,
   tenantId: number | string | undefined,
-  message: string,
+  message: string
 ) => {
   try {
+    console.log("🔍 createBookingNotification START:", { roomId, tenantId, message });
+
+    // STEP 0: Validate input parameters
     if (!roomId) {
-      console.error('roomId is required for createBookingNotification');
+      console.warn("⚠️ ABORT: roomId is missing");
       return;
     }
 
-    // Lấy thông tin landlord từ roomId
-    const landlordId = await getLandlordByRoomId(roomId as string);
-
-    if (!landlordId || !landlordId.id) {
-      console.error('Could not find landlord for roomId:', roomId);
+    if (!validateSenderId(tenantId)) {
+      console.warn("⚠️ ABORT: Invalid senderId (tenantId)");
       return;
     }
 
-    await createNotification({
-      receiverId: landlordId.id,
-      senderId: tenantId!,
-      type: 'booking_success',
-      message: message,
-      roomId: roomId,
+    // STEP 1: Lấy thông tin chủ nhà
+    console.log("📢 Calling getLandlordByRoomId...");
+    let landlord;
+    try {
+      landlord = await getLandlordByRoomId(roomId as string);
+      console.log("🏠 Landlord response received");
+    } catch (fetchError) {
+      console.error("❌ getLandlordByRoomId threw error:", fetchError);
+      console.warn("⚠️ Cannot send notification: Failed to fetch landlord info");
+      return;
+    }
+
+    console.log("🏠 Landlord object:", JSON.stringify(landlord, null, 2));
+
+    if (!landlord) {
+      console.error("❌ ABORT: landlord object is null or undefined");
+      console.warn("⚠️ Cannot send notification: Landlord data is empty");
+      return;
+    }
+
+    // STEP 1b: Kiểm tra cấu trúc landlord object
+    console.log("=== LANDLORD STRUCTURE CHECK ===");
+    console.log("landlord keys:", Object.keys(landlord));
+    console.log("landlord.id:", landlord.id);
+    console.log("landlord.id type:", typeof landlord.id);
+    console.log("=================================");
+
+    if (!validateReceiverId(landlord.id)) {
+      console.error("❌ ABORT: landlord.id is invalid or missing", { 
+        landlord: JSON.stringify(landlord, null, 2),
+        landlordId: landlord.id
+      });
+      console.warn("⚠️ Cannot send notification: No valid landlord ID");
+      return;
+    }
+
+    // STEP 2: Chuẩn bị dữ liệu thô
+    const rawData = {
+      receiverId: landlord.id,
+      senderId: tenantId,
+      type: "booking_success",
+      message: message || "",
+      isRead: false,
+      contractId: null,
+    };
+
+    console.log("📋 Raw data before sanitize:", JSON.stringify(rawData, null, 2));
+
+    // STEP 3: Làm sạch dữ liệu
+    const cleanPayload = sanitizeData(rawData);
+    console.log("🧹 Cleaned data:", JSON.stringify(cleanPayload, null, 2));
+
+    // STEP 4: Validate cleaned payload
+    console.log("=== VALIDATE CLEANED PAYLOAD ===");
+    Object.entries(cleanPayload).forEach(([key, value]) => {
+      console.log(`  ${key}: ${value} (type: ${typeof value})`);
     });
+    console.log("==================================");
 
-    console.log('Booking notification created successfully for landlord:', landlordId.id);
+    // STEP 5: Thêm timestamp
+    cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
+
+    console.log("✅ FINAL PAYLOAD to Firestore:", JSON.stringify(cleanPayload, null, 2));
+
+    // STEP 6: Gửi lên Firestore
+    await firestore().collection("notifications").add(cleanPayload);
+    
+    console.log("✨ SUCCESS: Booking notification created successfully");
   } catch (error) {
-    console.error('Lỗi khi tạo booking notification:', error);
-    throw error;
+    console.error("🔥 CRITICAL ERROR in createBookingNotification:", error);
   }
 };
 
-/**
- * Tạo notification xác nhận booking (từ tenant gửi cho landlord)
- * @param senderId - ID người gửi (tenant)
- * @param receiverId - ID người nhận (landlord)
- * @param message - Nội dung thông báo
- */
+// --- Các hàm khác cũng áp dụng sanitizeData tương tự ---
+
 export const bookingConfirmationNotification = async (
   senderId: number | string | undefined,
   receiverId: number | string | undefined,
-  message: string,
+  message: string
 ) => {
   try {
-    if (!senderId || !receiverId) {
-      console.error('senderId and receiverId are required');
-      return;
-    }
+    console.log("🔍 bookingConfirmationNotification START", { senderId, receiverId });
 
-    await createNotification({
-      receiverId: receiverId,
-      senderId: senderId,
-      type: 'booking_confirmation',
-      message: message,
-    });
+    // Validate
+    if (!validateSenderId(senderId)) return;
+    if (!validateReceiverId(receiverId)) return;
 
-    console.log('Booking confirmation notification sent successfully');
+    const rawData = {
+      receiverId,
+      senderId,
+      type: "booking_success",
+      message: message || "",
+      isRead: false,
+    };
+    
+    const cleanPayload = sanitizeData(rawData);
+    cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
+
+    await firestore().collection("notifications").add(cleanPayload);
+    console.log("✨ SUCCESS: Booking confirmation notification created");
   } catch (error) {
-    console.error('Lỗi khi tạo booking confirmation notification:', error);
-    throw error;
+    console.error("🔥 Error in bookingConfirmationNotification:", error);
   }
 };
 
-/**
- * Tạo notification khi tenant tạo request/yêu cầu mới
- * @param roomId - ID của phòng
- * @param tenantId - ID của tenant
- * @param message - Nội dung yêu cầu
- */
 export const createRequestNotification = async (
   roomId: number | string | undefined,
   tenantId: number | string | undefined,
-  message: string,
+  message: string
 ) => {
   try {
+    console.log("🔍 createRequestNotification START", { roomId, tenantId });
+
     if (!roomId) {
-      console.error('roomId is required for createRequestNotification');
+      console.warn("⚠️ ABORT: roomId is missing");
       return;
     }
 
-    // Lấy thông tin landlord từ roomId
-    const landlordId = await getLandlordByRoomId(roomId as string);
-
-    if (!landlordId || !landlordId.id) {
-      console.error('Could not find landlord for roomId:', roomId);
+    if (!validateSenderId(tenantId)) {
+      console.warn("⚠️ ABORT: Invalid senderId");
       return;
     }
 
-    await createNotification({
-      receiverId: landlordId.id,
-      senderId: tenantId!,
-      type: 'request_success',
-      message: message,
-      roomId: roomId,
-    });
+    // Lấy landlord info
+    let landlord;
+    try {
+      landlord = await getLandlordByRoomId(roomId as string);
+    } catch (error) {
+      console.error("❌ Failed to fetch landlord:", error);
+      return;
+    }
 
-    console.log('Request notification created successfully for landlord:', landlordId.id);
+    if (!landlord || !validateReceiverId(landlord?.id)) {
+      console.error("❌ ABORT: Invalid landlord or landlord.id");
+      return;
+    }
+
+    const rawData = {
+      receiverId: landlord.id,
+      senderId: tenantId,
+      type: "request_success",
+      message: message || "",
+      isRead: false,
+    };
+
+    const cleanPayload = sanitizeData(rawData);
+    cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
+
+    await firestore().collection("notifications").add(cleanPayload);
+    console.log("✨ SUCCESS: Request notification created");
   } catch (error) {
-    console.error('Lỗi khi tạo request notification:', error);
-    throw error;
+    console.error("🔥 Error in createRequestNotification:", error);
   }
 };
 
-/**
- * Tạo notification khi landlord xử lý request
- * @param landlordId - ID của landlord
- * @param tenantId - ID của tenant
- * @param message - Nội dung phản hồi
- */
 export const requestProcessedNotification = async (
   landlordId: number | string | undefined,
   tenantId: number | string | undefined,
-  message: string,
+  message: string
 ) => {
   try {
-    if (!landlordId || !tenantId) {
-      console.error('landlordId and tenantId are required');
+    console.log("🔍 requestProcessedNotification START", { landlordId, tenantId });
+
+    if (!validateReceiverId(tenantId)) {
+      console.warn("⚠️ ABORT: Invalid receiverId (tenantId)");
       return;
     }
 
-    await createNotification({
+    if (!validateSenderId(landlordId)) {
+      console.warn("⚠️ ABORT: Invalid senderId (landlordId)");
+      return;
+    }
+
+    const rawData = {
       receiverId: tenantId,
       senderId: landlordId,
-      type: 'request_processed',
-      message: message,
-    });
+      type: "request_success",
+      message: message || "",
+      isRead: false,
+    };
 
-    console.log('Request processed notification sent successfully');
+    const cleanPayload = sanitizeData(rawData);
+    cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
+
+    await firestore().collection("notifications").add(cleanPayload);
+    console.log("✨ SUCCESS: Request processed notification created");
   } catch (error) {
-    console.error('Lỗi khi tạo request processed notification:', error);
-    throw error;
+    console.error("🔥 Error in requestProcessedNotification:", error);
   }
 };
 
-/**
- * Tạo notification khi có resident (cư dân) mới
- * @param landlordId - ID của landlord
- * @param tenantId - ID của tenant
- * @param contractId - ID của hợp đồng
- * @param message - Nội dung thông báo
- */
 export const createResidentNotification = async (
   landlordId: number | string | undefined,
   tenantId: number | string | undefined,
   contractId: number | string | undefined,
-  message: string,
+  message: string
 ) => {
   try {
-    if (!landlordId || !tenantId || !contractId) {
-      console.error('landlordId, tenantId and contractId are required');
+    console.log("🔍 createResidentNotification START", { landlordId, tenantId, contractId });
+
+    if (!validateReceiverId(landlordId)) {
+      console.warn("⚠️ ABORT: Invalid receiverId (landlordId)");
       return;
     }
 
-    await createNotification({
+    if (!validateSenderId(tenantId)) {
+      console.warn("⚠️ ABORT: Invalid senderId (tenantId)");
+      return;
+    }
+
+    const rawData = {
       receiverId: landlordId,
       senderId: tenantId,
-      type: 'resident_success',
-      message: message,
+      type: "resident_success",
+      message: message || "",
       contractId: contractId,
-    });
+      isRead: false,
+    };
 
-    console.log('Resident notification created successfully');
+    const cleanPayload = sanitizeData(rawData);
+    cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
+
+    await firestore().collection("notifications").add(cleanPayload);
+    console.log("✨ SUCCESS: Resident notification created");
   } catch (error) {
-    console.error('Lỗi khi tạo resident notification:', error);
-    throw error;
+    console.error("🔥 Error in createResidentNotification:", error);
   }
 };
 
-/**
- * Tạo notification về thanh toán
- * @param senderId - ID người gửi
- * @param receiverId - ID người nhận
- * @param contractId - ID hợp đồng
- * @param message - Nội dung thông báo thanh toán
- */
 export const paymentNotification = async (
   senderId: number | string | undefined,
   receiverId: number | string | undefined,
   contractId: number | string | undefined,
-  message: string,
+  message: string
 ) => {
   try {
-    if (!senderId || !receiverId || !contractId) {
-      console.error('senderId, receiverId and contractId are required');
+    console.log("🔍 paymentNotification START", { senderId, receiverId, contractId });
+
+    if (!validateSenderId(senderId)) {
+      console.warn("⚠️ ABORT: Invalid senderId");
       return;
     }
 
-    await createNotification({
-      senderId: senderId,
-      receiverId: receiverId,
-      type: 'payment_success',
-      message: message,
-      contractId: contractId,
-    });
+    if (!validateReceiverId(receiverId)) {
+      console.warn("⚠️ ABORT: Invalid receiverId");
+      return;
+    }
 
-    console.log('Payment notification created successfully');
+    const rawData = {
+      senderId,
+      receiverId,
+      type: "payment_success",
+      message: message || "",
+      contractId,
+      isRead: false,
+    };
+
+    const cleanPayload = sanitizeData(rawData);
+    cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
+
+    await firestore().collection("notifications").add(cleanPayload);
+    console.log("✨ SUCCESS: Payment notification created");
   } catch (error) {
-    console.error('Lỗi khi tạo payment notification:', error);
-    throw error;
+    console.error("🔥 Error in paymentNotification:", error);
   }
 };
 
-/**
- * Lấy danh sách notifications của user (từ Firestore)
- */
-export const getUserNotifications = async (userId: string | number) => {
+// GET Notifications
+export const getNotificationsForUser = async (userId: string) => {
   try {
-    const querySnapshot = await db
-      .collection('notifications')
-      .where('receiverId', '==', userId)
-      .orderBy('createdAt', 'desc')
+    const querySnapshot = await firestore()
+      .collection("notifications")
+      .where("receiverId", "==", userId)
+      .orderBy("createdAt", "desc")
       .get();
 
-    const notifications = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
+    return querySnapshot.docs.map((document) => ({
+      id: document.id,
+      ...document.data(),
     }));
-
-    return notifications;
   } catch (error) {
-    console.error('Error fetching notifications:', error);
-    throw error;
+    console.error("Lỗi khi lấy notifications:", error);
+    return [];
   }
 };
 
-/**
- * Đánh dấu notification là đã đọc (Firestore)
- */
-export const markNotificationAsRead = async (notificationId: string | number) => {
+// Mark as Read
+export const markNotificationAsRead = async (notificationId: string) => {
   try {
-    await db.collection('notifications').doc(notificationId as string).update({
-      isRead: true,
-    });
-
-    console.log('Notification marked as read:', notificationId);
-    return { success: true };
+    await firestore()
+      .collection("notifications")
+      .doc(notificationId)
+      .update({ isRead: true });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
-    throw error;
+    console.error("Lỗi khi cập nhật notification:", error);
   }
-};
-
-/**
- * Đánh dấu tất cả notifications là đã đọc (Firestore)
- */
-export const markAllNotificationsAsRead = async (userId: string | number) => {
-  try {
-    const querySnapshot = await db
-      .collection('notifications')
-      .where('receiverId', '==', userId)
-      .where('isRead', '==', false)
-      .get();
-
-    const batch = db.batch();
-    querySnapshot.docs.forEach(doc => {
-      batch.update(doc.ref, { isRead: true });
-    });
-
-    await batch.commit();
-    console.log('All notifications marked as read for user:', userId);
-    return { success: true, count: querySnapshot.size };
-  } catch (error) {
-    console.error('Error marking all notifications as read:', error);
-    throw error;
-  }
-};
-
-/**
- * Xóa notification (Firestore)
- */
-export const deleteNotification = async (notificationId: string | number) => {
-  try {
-    await db.collection('notifications').doc(notificationId as string).delete();
-    
-    console.log('Notification deleted:', notificationId);
-    return { success: true };
-  } catch (error) {
-    console.error('Error deleting notification:', error);
-    throw error;
-  }
-};
-
-/**
- * Lấy số lượng notifications chưa đọc (Firestore)
- */
-export const getUnreadNotificationCount = async (userId: string | number) => {
-  try {
-    const querySnapshot = await db
-      .collection('notifications')
-      .where('receiverId', '==', userId)
-      .where('isRead', '==', false)
-      .get();
-
-    const count = querySnapshot.size;
-    console.log('Unread notification count:', count);
-    return count;
-  } catch (error) {
-    console.error('Error fetching unread notification count:', error);
-    throw error;
-  }
-};
-
-/**
- * Lắng nghe notifications real-time (Firestore listener)
- * @param userId - ID của user
- * @param callback - Function được gọi khi có notification mới
- * @returns Unsubscribe function
- */
-export const subscribeToNotifications = (
-  userId: string | number,
-  callback: (notifications: any[]) => void
-) => {
-  const unsubscribe = db
-    .collection('notifications')
-    .where('receiverId', '==', userId)
-    .orderBy('createdAt', 'desc')
-    .onSnapshot(
-      querySnapshot => {
-        const notifications = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        callback(notifications);
-      },
-      error => {
-        console.error('Error in notification listener:', error);
-      }
-    );
-
-  return unsubscribe;
-};
-
-/**
- * Lắng nghe số lượng notifications chưa đọc real-time
- * @param userId - ID của user
- * @param callback - Function được gọi khi số lượng thay đổi
- * @returns Unsubscribe function
- */
-export const subscribeToUnreadCount = (
-  userId: string | number,
-  callback: (count: number) => void
-) => {
-  const unsubscribe = db
-    .collection('notifications')
-    .where('receiverId', '==', userId)
-    .where('isRead', '==', false)
-    .onSnapshot(
-      querySnapshot => {
-        callback(querySnapshot.size);
-      },
-      error => {
-        console.error('Error in unread count listener:', error);
-      }
-    );
-
-  return unsubscribe;
 };
