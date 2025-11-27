@@ -72,7 +72,7 @@ const fetchWithFallback = async <T>(
   logName: string
 ): Promise<T> => {
   try {
-    console.log(`📊 Fetching ${logName}...`);
+    // console.log(`📊 Fetching ${logName}...`);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -81,12 +81,80 @@ const fetchWithFallback = async <T>(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn(`⚠️ ${logName} API not available:`, errorText);
+      // Temporarily suppress backend null return warnings
+      if (!errorText.includes('Null return value from advice')) {
+        console.warn(`⚠️ ${logName} API not available:`, errorText);
+      }
       return defaultValue;
     }
 
     const data = await response.json();
-    console.log(`✅ ${logName} fetched successfully`);
+    // console.log(`✅ ${logName} fetched successfully, raw data:`, data, 'type:', typeof data);
+    
+    // ✅ XỬ LÝ CÁC TRƯỜNG HỢP ĐẶC BIỆT
+    // Nếu null hoặc undefined → trả về default
+    if (data === null || data === undefined) {
+      console.warn(`⚠️ ${logName} returned null/undefined, using default`);
+      return defaultValue;
+    }
+    
+    // Nếu là object rỗng {} → trả về default
+    if (typeof data === 'object' && Object.keys(data).length === 0) {
+      console.warn(`⚠️ ${logName} returned empty object, using default`);
+      return defaultValue;
+    }
+    
+    // ✅ VALIDATE DỮ LIỆU THEO TYPE
+    if (logName.includes('count')) {
+      // Xử lý trường hợp API trả về trực tiếp số thay vì object
+      if (typeof data === 'number') {
+        // console.log(`✅ ${logName} returned direct number:`, data);
+        // Trả về object với count từ số trực tiếp
+        return { count: data } as any;
+      }
+      
+      // Đảm bảo data là object và có field 'count'
+      if (typeof data !== 'object' || data === null || !('count' in data)) {
+        console.warn(`⚠️ ${logName} invalid data structure or missing 'count' field, data:`, data, 'using default');
+        return defaultValue;
+      }
+      if (typeof data.count !== 'number') {
+        console.warn(`⚠️ ${logName} 'count' field is not a number:`, data.count, 'using default');
+        return defaultValue;
+      }
+    } else if (logName.includes('Revenue')) {
+      // Đảm bảo data là object và có field 'totalRevenue'
+      if (typeof data !== 'object' || data === null || !('totalRevenue' in data)) {
+        console.warn(`⚠️ ${logName} invalid data structure or missing 'totalRevenue' field, data:`, data, 'using default');
+        return defaultValue;
+      }
+      if (typeof data.totalRevenue !== 'number') {
+        console.warn(`⚠️ ${logName} 'totalRevenue' field is not a number:`, data.totalRevenue, 'using default');
+        return defaultValue;
+      }
+    } else if (logName.includes('Maintenance')) {
+      // Đảm bảo data là object và có field 'totalCost'
+      if (typeof data !== 'object' || data === null || !('totalCost' in data)) {
+        console.warn(`⚠️ ${logName} invalid data structure or missing 'totalCost' field, data:`, data, 'using default');
+        return defaultValue;
+      }
+      if (typeof data.totalCost !== 'number') {
+        console.warn(`⚠️ ${logName} 'totalCost' field is not a number:`, data.totalCost, 'using default');
+        return defaultValue;
+      }
+    }
+    
+    // Debug log for zero values
+    if (data && typeof data === 'object') {
+      if (logName.includes('count') && data.count === 0) {
+        console.debug(`DEBUG: ${logName} returned count: 0`);
+      } else if (logName.includes('Revenue') && data.totalRevenue === 0) {
+        console.debug(`DEBUG: ${logName} returned totalRevenue: 0`);
+      } else if (logName.includes('Maintenance') && data.totalCost === 0) {
+        console.debug(`DEBUG: ${logName} returned totalCost: 0`);
+      }
+    }
+    
     return data;
   } catch (error) {
     console.warn(`⚠️ ${logName} error, using default value:`, error);
@@ -99,11 +167,17 @@ const fetchWithFallback = async <T>(
 /**
  * Lấy số lượng phòng đã đăng
  */
-export const getLandlordPostedRoomCount = async (): Promise<RoomCountResponse> => {
+export const getLandlordPostedRoomCount = async (landlordId: string): Promise<RoomCountResponse> => {
+  // Validate input
+  if (!landlordId || landlordId.trim() === '') {
+    console.error('❌ Invalid landlordId provided to getLandlordPostedRoomCount');
+    return { count: 0 };
+  }
+
   try {
     const headers = await getAuthHeaders();
     return await fetchWithFallback(
-      `${API_URL}/landlord/statistics/posted-room`,
+      `${API_URL}/landlord/statistics/total-posted-rooms/${landlordId}`,
       headers,
       { count: 0 },
       'Posted room count'
@@ -117,11 +191,17 @@ export const getLandlordPostedRoomCount = async (): Promise<RoomCountResponse> =
 /**
  * Lấy số lượng phòng đã cho thuê
  */
-export const getLandlordRentedRoomCount = async (): Promise<RoomCountResponse> => {
+export const getLandlordRentedRoomCount = async (landlordId: string): Promise<RoomCountResponse> => {
+  // Validate input
+  if (!landlordId || landlordId.trim() === '') {
+    console.error('❌ Invalid landlordId provided to getLandlordRentedRoomCount');
+    return { count: 0 };
+  }
+
   try {
     const headers = await getAuthHeaders();
     return await fetchWithFallback(
-      `${API_URL}/landlord/statistics/rented-room`,
+      `${API_URL}/landlord/statistics/total-rented-rooms/${landlordId}`,
       headers,
       { count: 0 },
       'Rented room count'
@@ -135,11 +215,17 @@ export const getLandlordRentedRoomCount = async (): Promise<RoomCountResponse> =
 /**
  * Lấy số lượng lượt xem phòng
  */
-export const getLandlordViewedRoomCount = async (): Promise<RoomCountResponse> => {
+export const getLandlordViewedRoomCount = async (landlordId: string): Promise<RoomCountResponse> => {
+  // Validate input
+  if (!landlordId || landlordId.trim() === '') {
+    console.error('❌ Invalid landlordId provided to getLandlordViewedRoomCount');
+    return { count: 0 };
+  }
+
   try {
     const headers = await getAuthHeaders();
     return await fetchWithFallback(
-      `${API_URL}/landlord/statistics/viewed-room`,
+      `${API_URL}/landlord/statistics/total-viewed-rooms/${landlordId}`,
       headers,
       { count: 0 },
       'Viewed room count'
@@ -153,11 +239,17 @@ export const getLandlordViewedRoomCount = async (): Promise<RoomCountResponse> =
 /**
  * Lấy số lượng phòng được yêu thích
  */
-export const getLandlordFavoritedRoomCount = async (): Promise<RoomCountResponse> => {
+export const getLandlordFavoritedRoomCount = async (landlordId: string): Promise<RoomCountResponse> => {
+  // Validate input
+  if (!landlordId || landlordId.trim() === '') {
+    console.error('❌ Invalid landlordId provided to getLandlordFavoritedRoomCount');
+    return { count: 0 };
+  }
+
   try {
     const headers = await getAuthHeaders();
     return await fetchWithFallback(
-      `${API_URL}/landlord/statistics/favorited-room`,
+      `${API_URL}/landlord/statistics/total-favorited-rooms/${landlordId}`,
       headers,
       { count: 0 },
       'Favorited room count'
@@ -172,9 +264,22 @@ export const getLandlordFavoritedRoomCount = async (): Promise<RoomCountResponse
  * Lấy thống kê bảo trì phòng
  */
 export const getLandlordMaintenanceStatistics = async (
+  landlordId: string,
   startDate?: string,
   endDate?: string
 ): Promise<MaintenanceStatistics> => {
+  // Validate input
+  if (!landlordId || landlordId.trim() === '') {
+    console.error('❌ Invalid landlordId provided to getLandlordMaintenanceStatistics');
+    return {
+      totalMaintenances: 0,
+      pendingMaintenances: 0,
+      completedMaintenances: 0,
+      totalCost: 0,
+      averageCost: 0,
+    };
+  }
+
   try {
     const headers = await getAuthHeaders();
     const queryParams = new URLSearchParams();
@@ -183,7 +288,7 @@ export const getLandlordMaintenanceStatistics = async (
     if (endDate) queryParams.append('endDate', endDate);
 
     const queryString = queryParams.toString();
-    const url = `${API_URL}/landlord/statistics/maintaince-room${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_URL}/landlord/statistics/maintenance-statistics/${landlordId}${queryString ? `?${queryString}` : ''}`;
 
     return await fetchWithFallback(
       url,
@@ -213,9 +318,20 @@ export const getLandlordMaintenanceStatistics = async (
  * Lấy thống kê chi phí đăng phòng
  */
 export const getLandlordFeePostRoomStatistics = async (
+  landlordId: string,
   startDate?: string,
   endDate?: string
 ): Promise<FeePostRoomStatistics> => {
+  // Validate input
+  if (!landlordId || landlordId.trim() === '') {
+    console.error('❌ Invalid landlordId provided to getLandlordFeePostRoomStatistics');
+    return {
+      totalFee: 0,
+      totalPosts: 0,
+      averageFeePerPost: 0,
+    };
+  }
+
   try {
     const headers = await getAuthHeaders();
     const queryParams = new URLSearchParams();
@@ -224,7 +340,7 @@ export const getLandlordFeePostRoomStatistics = async (
     if (endDate) queryParams.append('endDate', endDate);
 
     const queryString = queryParams.toString();
-    const url = `${API_URL}/landlord/statistics/cost-post-room${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_URL}/landlord/statistics/fee-post-room-statistics/${landlordId}${queryString ? `?${queryString}` : ''}`;
 
     return await fetchWithFallback(
       url,
@@ -250,9 +366,20 @@ export const getLandlordFeePostRoomStatistics = async (
  * Lấy thống kê doanh thu
  */
 export const getLandlordRevenueStatistics = async (
+  landlordId: string,
   startDate?: string,
   endDate?: string
 ): Promise<RevenueStatistics> => {
+  // Validate input
+  if (!landlordId || landlordId.trim() === '') {
+    console.error('❌ Invalid landlordId provided to getLandlordRevenueStatistics');
+    return {
+      totalRevenue: 0,
+      totalContracts: 0,
+      averageRevenuePerContract: 0,
+    };
+  }
+
   try {
     const headers = await getAuthHeaders();
     const queryParams = new URLSearchParams();
@@ -261,7 +388,7 @@ export const getLandlordRevenueStatistics = async (
     if (endDate) queryParams.append('endDate', endDate);
 
     const queryString = queryParams.toString();
-    const url = `${API_URL}/landlord/statistics/revenue-room${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_URL}/landlord/statistics/revenue-statistics/${landlordId}${queryString ? `?${queryString}` : ''}`;
 
     return await fetchWithFallback(
       url,

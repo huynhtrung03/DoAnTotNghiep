@@ -391,7 +391,7 @@ export const RequirementsService = {
     size: number = 10
   ): Promise<PaginatedResponse<RequirementDetail>> {
     try {
-      console.log(`📋 Đang lấy yêu cầu - Trang ${page + 1}`);
+      // console.log(`📋 Đang lấy yêu cầu - Trang ${page + 1}`);
       
       const token = await AsyncStorage.getItem('accessToken');
       const userDataStr = await AsyncStorage.getItem('userData');
@@ -421,7 +421,7 @@ export const RequirementsService = {
       }
 
       const result = await response.json();
-      console.log(`✅ Đã lấy ${result.data?.length || 0} yêu cầu`);
+      // console.log(`✅ Đã lấy ${result.data?.length || 0} yêu cầu`);
 
       // Chuẩn hóa response từ backend
       return {
@@ -446,7 +446,7 @@ export const RequirementsService = {
     description: string
   ): Promise<void> {
     try {
-      console.log(`✏️ Đang cập nhật yêu cầu ${requirementId}...`);
+      // console.log(`✏️ Đang cập nhật yêu cầu ${requirementId}...`);
       
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) throw new Error('Yêu cầu đăng nhập');
@@ -469,7 +469,7 @@ export const RequirementsService = {
         throw new Error(errorMsg);
       }
 
-      console.log('✅ Đã cập nhật yêu cầu thành công');
+      // console.log('✅ Đã cập nhật yêu cầu thành công');
     } catch (error: any) {
       console.error('❌ Lỗi updateRequirement:', error.message);
       throw error;

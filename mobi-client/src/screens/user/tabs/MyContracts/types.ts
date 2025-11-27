@@ -3,9 +3,6 @@
  * Quản lý hợp đồng của người dùng (tenant)
  */
 
-// Import ContractData từ service (source of truth)
-import { ContractData as ServiceContractData } from '../../../../services/ContractService';
-
 // Trạng thái hợp đồng (giống với service)
 export type ContractStatus = 0 | 1 | 2 | 3;
 // 0: Active (Đang hoạt động)
@@ -16,26 +13,27 @@ export type ContractStatus = 0 | 1 | 2 | 3;
 // Extended contract với thông tin hiển thị (populated data)
 export interface ContractDisplayData {
   id: string;
+  contractName: string;
   roomId: string;
+  roomTitle: string;
   tenantId: string;
+  tenantName: string;
+  tenantPhone: string;
   landlordId: string;
+  landlordName: string;
   startDate: string;
   endDate: string;
-  monthlyRent: number;
   depositAmount: number;
-  status: ContractStatus; // Override với type cụ thể hơn
-  contractImageUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-  // Extended fields
-  roomTitle?: string;
-  landlordName?: string;
-  contractName?: string;
-  tenantName?: string;
+  monthlyRent: number;
+  status: ContractStatus; // 0: active, 1: terminated, 2: expired, 3: pending
+  contractImage?: string;
+  bills: any[]; // Simplified for display
+  residents?: any[];
+  landlordPaymentInfo?: any;
 }
 
-// Re-export ServiceContractData nếu cần
-export type { ServiceContractData as ContractData };
+// Re-export BaseContractData nếu cần
+// export type { BaseContractData as ContractData };
 
 // Map trạng thái
 export interface StatusInfo {

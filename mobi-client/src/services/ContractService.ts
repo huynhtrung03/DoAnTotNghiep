@@ -1,35 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './config/Constant';
-
-export interface BillData {
-  id: string;
-  contractId: string;
-  month: string;
-  totalAmount: number;
-  status: 'PENDING' | 'CONFIRMING' | 'PAID' | 'OVERDUE';
-  dueDate: string;
-  paidDate?: string;
-  electricityUsage?: number;
-  waterUsage?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ContractData {
-  id: string;
-  roomId: string;
-  tenantId: string;
-  landlordId: string;
-  startDate: string;
-  endDate: string;
-  monthlyRent: number;
-  depositAmount: number;
-  status: number; // 0: active, 1: expired, 2: terminated
-  contractImageUrl?: string;
-  bills?: BillData[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { ContractData, BillData } from '../types/types';
+import { getFullName } from './profile/ProfileService';
 
 interface PaginatedContractResponse {
   content: ContractData[];
@@ -55,13 +27,47 @@ const getAuthHeaders = async () => {
   };
 };
 
+/**
+ * Resolve names for a contract by fetching from profile service if needed
+ */
+const resolveContractNames = async (contract: ContractData): Promise<ContractData> => {
+  const token = await AsyncStorage.getItem('accessToken');
+  if (!token) return contract;
+
+  const resolvedContract = { ...contract };
+
+  // Resolve tenant name if it's an ID or starts with #
+  if (!resolvedContract.tenantName || resolvedContract.tenantName.startsWith('#')) {
+    try {
+      const tenantName = await getFullName(resolvedContract.tenantId, token);
+      resolvedContract.tenantName = tenantName || `Tenant ${resolvedContract.tenantId}`;
+    } catch (error) {
+      console.warn('Failed to fetch tenant name:', error);
+      resolvedContract.tenantName = `Tenant ${resolvedContract.tenantId}`;
+    }
+  }
+
+  // Resolve landlord name if it's an ID or starts with #
+  if (!resolvedContract.landlordName || resolvedContract.landlordName.startsWith('#')) {
+    try {
+      const landlordName = await getFullName(resolvedContract.landlordId, token);
+      resolvedContract.landlordName = landlordName || `Landlord ${resolvedContract.landlordId}`;
+    } catch (error) {
+      console.warn('Failed to fetch landlord name:', error);
+      resolvedContract.landlordName = `Landlord ${resolvedContract.landlordId}`;
+    }
+  }
+
+  return resolvedContract;
+};
+
 export const ContractService = {
   /**
    * Get contracts by tenant ID
    */
   async getByTenant(tenantId: string): Promise<ContractData[]> {
     try {
-      console.log('🔍 Fetching contracts for tenant:', tenantId);
+      // console.log('🔍 Fetching contracts for tenant:', tenantId);
       
       const headers = await getAuthHeaders();
       const response = await fetch(`${BASE_URL}/tenant/${tenantId}`, {
@@ -79,7 +85,10 @@ export const ContractService = {
 
       const contracts = await response.json();
       console.log('✅ Contracts fetched:', contracts.length);
-      return contracts;
+
+      // Resolve names for each contract
+      const resolvedContracts = await Promise.all(contracts.map(resolveContractNames));
+      return resolvedContracts;
     } catch (error) {
       console.error('💥 getByTenant error:', error);
       throw error;
@@ -114,9 +123,17 @@ export const ContractService = {
         throw new Error(`Failed to fetch contracts: ${response.status}`);
       }
 
-      const contracts = await response.json();
-      console.log('✅ Contracts fetched:', contracts.content?.length || 0);
-      return contracts;
+      const contractsResponse = await response.json();
+      console.log('✅ Contracts fetched:', contractsResponse.content?.length || 0);
+
+      // Resolve names for each contract
+      if (contractsResponse.content && Array.isArray(contractsResponse.content)) {
+        contractsResponse.content = await Promise.all(
+          contractsResponse.content.map(resolveContractNames)
+        );
+      }
+
+      return contractsResponse;
     } catch (error) {
       console.error('💥 getByLandlord error:', error);
       throw error;
@@ -146,7 +163,10 @@ export const ContractService = {
 
       const contracts = await response.json();
       console.log('✅ Contracts fetched:', contracts.length);
-      return contracts;
+
+      // Resolve names for each contract
+      const resolvedContracts = await Promise.all(contracts.map(resolveContractNames));
+      return resolvedContracts;
     } catch (error) {
       console.error('💥 getByRoom error:', error);
       throw error;
@@ -176,7 +196,10 @@ export const ContractService = {
 
       const contract = await response.json();
       console.log('✅ Contract fetched:', contract);
-      return contract;
+
+      // Resolve names if needed
+      const resolvedContract = await resolveContractNames(contract);
+      return resolvedContract;
     } catch (error) {
       console.error('💥 getById error:', error);
       throw error;
@@ -206,7 +229,10 @@ export const ContractService = {
 
       const contracts = await response.json();
       console.log('✅ Contracts fetched:', contracts.length);
-      return contracts;
+
+      // Resolve names for each contract
+      const resolvedContracts = await Promise.all(contracts.map(resolveContractNames));
+      return resolvedContracts;
     } catch (error) {
       console.error('💥 getByStatus error:', error);
       throw error;
@@ -237,7 +263,10 @@ export const ContractService = {
 
       const contract = await response.json();
       console.log('✅ Contract created:', contract);
-      return contract;
+
+      // Resolve names for the new contract
+      const resolvedContract = await resolveContractNames(contract);
+      return resolvedContract;
     } catch (error) {
       console.error('💥 createContract error:', error);
       throw error;
@@ -271,7 +300,10 @@ export const ContractService = {
 
       const contract = await response.json();
       console.log('✅ Contract updated:', contract);
-      return contract;
+
+      // Resolve names for the updated contract
+      const resolvedContract = await resolveContractNames(contract);
+      return resolvedContract;
     } catch (error) {
       console.error('💥 updateContract error:', error);
       throw error;
@@ -389,7 +421,10 @@ export const ContractService = {
 
       const contract = await response.json();
       console.log('✅ Contract image uploaded:', contract);
-      return contract;
+
+      // Resolve names for the updated contract
+      const resolvedContract = await resolveContractNames(contract);
+      return resolvedContract;
     } catch (error) {
       console.error('💥 uploadContractImage error:', error);
       throw error;

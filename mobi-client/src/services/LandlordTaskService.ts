@@ -58,7 +58,7 @@ export const LandlordTaskService = {
    */
   async createTask(data: LandlordTaskCreateDto): Promise<LandlordTaskResponseDto> {
     try {
-      console.log('📝 Creating task:', data);
+      // console.log('📝 Creating task:', data);
       
       const headers = await getAuthHeaders();
       const response = await fetch(`${BASE_URL}`, {
@@ -67,7 +67,7 @@ export const LandlordTaskService = {
         body: JSON.stringify(data),
       });
 
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -76,7 +76,7 @@ export const LandlordTaskService = {
       }
 
       const result = await response.json();
-      console.log('✅ Task created:', result);
+      // console.log('✅ Task created:', result);
       return result;
     } catch (error) {
       console.error('💥 createTask error:', error);
@@ -92,7 +92,7 @@ export const LandlordTaskService = {
     data: LandlordTaskUpdateDto
   ): Promise<LandlordTaskResponseDto> {
     try {
-      console.log('📝 Updating task:', taskId, data);
+      // console.log('📝 Updating task:', taskId, data);
       
       const headers = await getAuthHeaders();
       const response = await fetch(`${BASE_URL}/${taskId}`, {
@@ -101,7 +101,7 @@ export const LandlordTaskService = {
         body: JSON.stringify(data),
       });
 
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -110,7 +110,7 @@ export const LandlordTaskService = {
       }
 
       const result = await response.json();
-      console.log('✅ Task updated:', result);
+      // console.log('✅ Task updated:', result);
       return result;
     } catch (error) {
       console.error('💥 updateTask error:', error);
@@ -123,7 +123,7 @@ export const LandlordTaskService = {
    */
   async getTasksByLandlord(landlordId: string): Promise<LandlordTaskResponseDto[]> {
     try {
-      console.log('🔍 Fetching tasks for landlord:', landlordId);
+      // console.log('🔍 Fetching tasks for landlord:', landlordId);
       
       const headers = await getAuthHeaders();
       const response = await fetch(`${BASE_URL}/landlord/${landlordId}`, {
@@ -131,7 +131,7 @@ export const LandlordTaskService = {
         headers,
       });
 
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -140,7 +140,7 @@ export const LandlordTaskService = {
       }
 
       const tasks = await response.json();
-      console.log('✅ Tasks fetched:', tasks.length);
+      // console.log('✅ Tasks fetched:', tasks.length);
       return tasks;
     } catch (error) {
       console.error('💥 getTasksByLandlord error:', error);
@@ -153,7 +153,7 @@ export const LandlordTaskService = {
    */
   async getTaskDetail(taskId: string): Promise<LandlordTaskResponseDto> {
     try {
-      console.log('🔍 Fetching task detail:', taskId);
+      // console.log('🔍 Fetching task detail:', taskId);
       
       const headers = await getAuthHeaders();
       const response = await fetch(`${BASE_URL}/${taskId}`, {
@@ -161,7 +161,7 @@ export const LandlordTaskService = {
         headers,
       });
 
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -170,7 +170,7 @@ export const LandlordTaskService = {
       }
 
       const task = await response.json();
-      console.log('✅ Task detail fetched:', task);
+      // console.log('✅ Task detail fetched:', task);
       return task;
     } catch (error) {
       console.error('💥 getTaskDetail error:', error);
@@ -183,7 +183,7 @@ export const LandlordTaskService = {
    */
   async deleteTask(taskId: string): Promise<void> {
     try {
-      console.log('🗑️ Deleting task:', taskId);
+      // console.log('🗑️ Deleting task:', taskId);
       
       const headers = await getAuthHeaders();
       const response = await fetch(`${BASE_URL}/${taskId}`, {
@@ -191,7 +191,7 @@ export const LandlordTaskService = {
         headers,
       });
 
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -199,7 +199,7 @@ export const LandlordTaskService = {
         throw new Error(`Failed to delete task: ${response.status}`);
       }
 
-      console.log('✅ Task deleted');
+      // console.log('✅ Task deleted');
     } catch (error) {
       console.error('💥 deleteTask error:', error);
       throw error;

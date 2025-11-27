@@ -62,22 +62,17 @@ const getFullName = async (userId: string): Promise<{ fullName: string; avatar: 
     try {
       const nameData = await getFullNameAPI(userId, token);
       const fullName = nameData.fullName || nameData.name || userId;
+      let avatarUrl = nameData.avatar ? URL_IMAGE + nameData.avatar.substring(1) : '';
         
-      // Lấy avatar từ profile endpoint đầy đủ
+      // Lấy role từ profile endpoint đầy đủ nếu cần
       try {
         const profileData = await getProfileById(userId, token);
-        let avatarUrl = '';
-        if (profileData && profileData.avatar) {
-          avatarUrl = profileData.avatar;
-          //console.log('📸 Profile avatar for user:', userId, 'raw avatar:', profileData.avatar);
-        } else {
-          console.warn('⚠️ No profile data or avatar for user:', userId);
-        }
-        const result = { fullName, avatar: avatarUrl, role: 'tenant' as const };
+        const role = profileData?.role || 'tenant';
+        const result = { fullName, avatar: avatarUrl, role: role as 'landlord' | 'tenant' | 'admin' };
         userInfoCache.set(userId, { ...result, timestamp: Date.now() });
         //console.log('✅ User info fetched (getname + profile):', { userId, fullName, hasAvatar: !!avatarUrl });
         
-        // Nếu không có avatar từ profile, thử users endpoint
+        // Nếu không có avatar từ getname, thử users endpoint
         if (!result.avatar) {
           try {
             const userResponse = await fetch(`${API_URL}/users/${userId}`, {
@@ -91,8 +86,8 @@ const getFullName = async (userId: string): Promise<{ fullName: string; avatar: 
             if (userResponse.ok) {
               const userData = await userResponse.json();
               
-              // Sử dụng avatar trực tiếp từ API
-              let userAvatarUrl = userData.avatar || '';
+              // Sử dụng avatar từ API và construct URL
+              let userAvatarUrl = userData.avatar ? URL_IMAGE + userData.avatar.substring(1) : '';
               
               if (userAvatarUrl) {
                 result.avatar = userAvatarUrl;
@@ -105,19 +100,13 @@ const getFullName = async (userId: string): Promise<{ fullName: string; avatar: 
           }
         }
         
-        if (!result.avatar) {
-          result.avatar = '';
-        }
         return result;
       } catch (profileError) {
-        console.warn('⚠️ Failed to fetch profile for avatar, user:', userId, 'error:', (profileError as Error).message);
-        // Nếu không lấy được avatar, vẫn dùng tên
-        const result = { fullName, avatar: '', role: 'tenant' as const };
+        console.warn('⚠️ Failed to fetch profile for role, user:', userId, 'error:', (profileError as Error).message);
+        // Nếu không lấy được role, dùng tenant
+        const result = { fullName, avatar: avatarUrl, role: 'tenant' as const };
         userInfoCache.set(userId, { ...result, timestamp: Date.now() });
-        //console.log('✅ User name fetched (getname only):', { userId, fullName });
-        if (!result.avatar) {
-          result.avatar = '';
-        }
+        //console.log('✅ User info fetched (getname only):', { userId, fullName, hasAvatar: !!avatarUrl });
         return result;
       }
 
@@ -138,8 +127,8 @@ const getFullName = async (userId: string): Promise<{ fullName: string; avatar: 
       if (userResponse.ok) {
         const userData = await userResponse.json();
         
-        // Sử dụng avatar trực tiếp từ API
-        let avatarUrl = userData.avatar || '';
+        // Sử dụng avatar từ API và construct URL
+        let avatarUrl = userData.avatar ? URL_IMAGE + userData.avatar.substring(1) : '';
         
         const result = {
           fullName: userData.fullName || userData.username || userId,
@@ -151,10 +140,6 @@ const getFullName = async (userId: string): Promise<{ fullName: string; avatar: 
         userInfoCache.set(userId, { ...result, timestamp: Date.now() });
         
         //console.log('✅ User info fetched (users endpoint):', { userId, fullName: result.fullName, hasAvatar: !!avatarUrl });
-        
-        if (!result.avatar) {
-          result.avatar = '';
-        }
         
         return result;
       } else {

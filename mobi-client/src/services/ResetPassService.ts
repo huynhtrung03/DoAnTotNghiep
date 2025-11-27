@@ -35,7 +35,7 @@ export interface UpdatePasswordResponse {
  */
 export async function resetPassword(email: string): Promise<ResetPasswordResponse> {
   try {
-    console.log('📧 Requesting password reset for:', email);
+    // console.log('📧 Requesting password reset for:', email);
 
     const formData = new FormData();
     formData.append('email', email);
@@ -54,7 +54,7 @@ export async function resetPassword(email: string): Promise<ResetPasswordRespons
       throw new Error(msg);
     }
 
-    console.log('✅ Password reset email sent');
+    // console.log('✅ Password reset email sent');
     return data;
   } catch (error) {
     console.error('❌ resetPassword error:', error);
@@ -73,7 +73,7 @@ export async function verifyResetCode(
   code: string
 ): Promise<VerifyCodeResponse> {
   try {
-    console.log('🔐 Verifying reset code for:', email);
+    // console.log('🔐 Verifying reset code for:', email);
 
     const formData = new FormData();
     formData.append('email', email);
@@ -92,7 +92,7 @@ export async function verifyResetCode(
       throw new Error(msg);
     }
 
-    console.log('✅ Reset code verified');
+    // console.log('✅ Reset code verified');
     return data;
   } catch (error) {
     console.error('❌ verifyResetCode error:', error);
@@ -113,7 +113,7 @@ export async function changePassword(
   code: string
 ): Promise<ChangePasswordResponse> {
   try {
-    console.log('🔑 Changing password for:', email);
+    // console.log('🔑 Changing password for:', email);
 
     const formData = new FormData();
     formData.append('email', email);
@@ -134,7 +134,7 @@ export async function changePassword(
       throw new Error(msg);
     }
 
-    console.log('✅ Password changed successfully');
+    // console.log('✅ Password changed successfully');
     return data;
   } catch (error) {
     console.error('❌ changePassword error:', error);
@@ -161,7 +161,7 @@ export async function updatePassword(
     const userData = JSON.parse(userDataStr);
     const userId = userData.id;
 
-    console.log('🔑 Updating password for user:', userId);
+    // console.log('🔑 Updating password for user:', userId);
 
     const requestBody = {
       ...request,
@@ -186,7 +186,7 @@ export async function updatePassword(
       throw new Error(msg);
     }
 
-    console.log('✅ Password updated successfully');
+    // console.log('✅ Password updated successfully');
     return data;
   } catch (error) {
     console.error('❌ updatePassword error:', error);

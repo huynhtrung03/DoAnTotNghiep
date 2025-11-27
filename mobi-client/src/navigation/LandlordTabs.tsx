@@ -7,6 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Import màn hình cho Landlord
 import DashboardScreen from '../screens/landlord/dashboard/DashboardScreen';
+import PaymentHistoryScreen from '../screens/landlord/paymenthistory/PaymentHistoryScreen';
+import UserScreen from '../screens/user/UserScreen';
+import MesengerScreen from '../screens/mesenger/MesengerScreen';
 import Colors, { withOpacity } from '../styles/colors';
 
 const Tab = createBottomTabNavigator();
@@ -35,13 +38,7 @@ const ContractManagementScreen = () => (
   <PlaceholderScreen title="Quản lý hợp đồng" icon="document-text" />
 );
 
-const FinanceScreen = () => (
-  <PlaceholderScreen title="Quản lý tài chính" icon="wallet" />
-);
-
-const LandlordProfileScreen = () => (
-  <PlaceholderScreen title="Thông tin cá nhân" icon="person" />
-);
+const FinanceScreen = () => <PaymentHistoryScreen />;
 
 // Get gradient colors for each tab
 const getTabGradient = (index: number) => {
@@ -50,6 +47,7 @@ const getTabGradient = (index: number) => {
     Colors.gradients.green,    // Rooms
     Colors.gradients.purple,   // Contracts
     Colors.gradients.orange,   // Finance
+    Colors.gradients.green,    // Messages
     Colors.gradients.pink,     // Profile
   ];
   return gradients[index] || Colors.gradients.blue;
@@ -261,11 +259,29 @@ export default function LandlordTabs() {
         }}
       />
       <Tab.Screen 
-        name="LandlordProfile" 
-        component={LandlordProfileScreen}
+        name="Messages" 
+        component={MesengerScreen}
         options={{
           tabBarLabel: ({ focused }) => (
-            <TabLabel label="Cá nhân" focused={focused} tabIndex={4} />
+            <TabLabel label="Tin nhắn" focused={focused} tabIndex={4} />
+          ),
+          tabBarIcon: ({ size, focused }) => (
+            <TabIcon 
+              name="chatbubble-outline" 
+              focusedName="chatbubble"
+              size={size} 
+              focused={focused}
+              tabIndex={4}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="LandlordProfile" 
+        component={UserScreen}
+        options={{
+          tabBarLabel: ({ focused }) => (
+            <TabLabel label="Cá nhân" focused={focused} tabIndex={5} />
           ),
           tabBarIcon: ({ size, focused }) => (
             <TabIcon 
@@ -273,7 +289,7 @@ export default function LandlordTabs() {
               focusedName="person"
               size={size} 
               focused={focused}
-              tabIndex={4}
+              tabIndex={5}
             />
           ),
         }}

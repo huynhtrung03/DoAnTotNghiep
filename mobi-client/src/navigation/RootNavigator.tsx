@@ -111,6 +111,12 @@ import NotificationScreen from '../screens/notification/NotificationScreen';
 // Import ChatScreen
 import ChatScreen from '../screens/mesenger/ChatScreenDetail';
 
+// Import HistoryRoomDetail
+import HistoryRoomDetail from '../components/rooms/HistoryRoomDetail/HistoryRoomDetail';
+
+// Import PaymentWebView
+import PaymentWebView from '../screens/landlord/paymenthistory/PaymentWebView';
+
 const Stack = createNativeStackNavigator();
 
 type RouteType = 'Auth/Login' | 'UserApp' | 'LandlordApp';
@@ -260,6 +266,38 @@ export default function RootNavigator() {
             component={ChatScreen}
             options={{ 
               headerShown: false,
+            }} 
+          />
+          <Stack.Screen 
+            name="HistoryRoomDetail" 
+            component={HistoryRoomDetail}
+            options={{ 
+              headerShown: true,
+              title: 'Chi tiết phòng đã đặt',
+              headerBackTitle: 'Quay lại',
+              headerStyle: {
+                backgroundColor: '#fff',
+              },
+              headerTintColor: '#111827',
+              headerTitleStyle: {
+                fontWeight: '700',
+              },
+            }} 
+          />
+          <Stack.Screen 
+            name="PaymentWebView" 
+            component={PaymentWebView}
+            options={{ 
+              headerShown: true,
+              title: 'Thanh toán',
+              headerBackTitle: 'Quay lại',
+              headerStyle: {
+                backgroundColor: '#fff',
+              },
+              headerTintColor: '#111827',
+              headerTitleStyle: {
+                fontWeight: '700',
+              },
             }} 
           />
         </Stack.Navigator>

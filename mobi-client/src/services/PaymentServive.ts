@@ -4,21 +4,45 @@ import { API_URL } from './config/Constant';
 
 export async function getTransactionsByUserIdPaginated(
   page: number,
-  size: number
+  size: number,
+  userId?: string
 ) {
   try {
     const accessToken = await AsyncStorage.getItem('accessToken');
-    const response = await fetch(
-      `${API_URL}/landlord/payment-history?page=${page}&size=${size}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-      }
-    );
-    if (!response.ok) throw new Error("Network error");
+    // console.log('PaymentService - Access token exists:', !!accessToken);
+
+    // If userId is not provided, get it from JWT token
+    let targetUserId = userId;
+    if (!targetUserId && accessToken) {
+      const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+      targetUserId = tokenPayload.id;
+      // console.log('PaymentService - User ID from JWT:', targetUserId);
+    }
+
+    const apiUrl = targetUserId
+      ? `${API_URL}/transactions/by-user/${targetUserId}/paging?page=${page}&size=${size}`
+      : `${API_URL}/landlord/payment-history?page=${page}&size=${size}`;
+
+    // console.log('PaymentService - API URL:', apiUrl);
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+      },
+    });
+
+    // console.log('PaymentService - Response status:', response.status);
+    // console.log('PaymentService - Response ok:', response.ok);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PaymentService - Error response:', errorText);
+      throw new Error(`Network error: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
+    // console.log('PaymentService - Success response:', data);
     return data;
   } catch (error) {
     console.error("Error fetching transactions:", error);
@@ -60,28 +84,58 @@ export async function getTransactionsByUserIdAndDateRange(
   startDate: string,
   endDate: string,
   page: number = 0,
-  size: number = 5
+  size: number = 5,
+  userId?: string
 ) {
   try {
     const accessToken = await AsyncStorage.getItem('accessToken');
+
+    // If userId is not provided, get it from JWT token
+    let targetUserId = userId;
+    if (!targetUserId && accessToken) {
+      const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+      targetUserId = tokenPayload.id;
+      // console.log('PaymentService - User ID from JWT for date range:', targetUserId);
+    }
+
+    // Format endDate to include time if it's just a date (add T23:59:59)
+    let formattedEndDate = endDate;
+    if (endDate && !endDate.includes('T')) {
+      formattedEndDate = `${endDate}T23:59:59`;
+      // console.log('PaymentService - Formatted endDate:', endDate, '->', formattedEndDate);
+    }
+
     const params = new URLSearchParams({
       startDate,
-      endDate,
+      endDate: formattedEndDate,
       page: page.toString(),
       size: size.toString(),
     }).toString();
 
-    const response = await fetch(
-      `${API_URL}/landlord/payment-history/filter-by-date?${params}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-      }
-    );
-    if (!response.ok) throw new Error("Network error");
+    const apiUrl = targetUserId
+      ? `${API_URL}/transactions/by-user/${targetUserId}/date-range?${params}`
+      : `${API_URL}/landlord/payment-history/filter-by-date?${params}`;
+
+    // console.log('PaymentService - Date range API URL:', apiUrl);
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+      },
+    });
+
+    // console.log('PaymentService - Date range response status:', response.status);
+    // console.log('PaymentService - Date range response ok:', response.ok);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PaymentService - Date range error response:', errorText);
+      throw new Error(`Network error: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
+    // console.log('PaymentService - Date range success response:', data);
     return data;
   } catch (error) {
     console.error("Error fetching transactions by date range:", error);
@@ -156,7 +210,10 @@ export const createPayment = async (payload: {
 //------- confirm payment ------//
 export const confirmPayment = async (query: string) => {
   try {
+    // console.log('PaymentService - Confirming payment with query:', query);
     const accessToken = await AsyncStorage.getItem('accessToken');
+    // console.log('PaymentService - Access token exists for confirm:', !!accessToken);
+
     const res = await fetch(`${API_URL}/payments/confirm?${query}`, {
       method: "GET",
       headers: {
@@ -164,7 +221,10 @@ export const confirmPayment = async (query: string) => {
       },
     });
 
+    // console.log('PaymentService - Confirm response status:', res.status);
     const data = await res.json();
+    // console.log('PaymentService - Confirm response data:', data);
+
     if (!res.ok) {
       throw new Error(data.message || "Failed to confirm payment");
     }

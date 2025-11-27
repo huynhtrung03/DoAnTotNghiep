@@ -76,9 +76,9 @@ export async function createRoom(
  */
 export async function updateRoom(roomId: string, formData: FormData) {
   try {
-    console.log("--- UPDATE ROOM API ---");
-    console.log("roomId:", roomId);
-    console.log("-----------------------");
+    // console.log("--- UPDATE ROOM API ---");
+    // console.log("roomId:", roomId);
+    // console.log("-----------------------");
 
     const response = await fetch(
       `${API_URL}/landlord/room?roomId=${roomId}`,
@@ -227,7 +227,7 @@ export async function hideShowRoom(
  */
 export async function getRoomById(id: string): Promise<RoomDetail | null> {
   try {
-    console.log("Fetching room with ID:", id);
+    // console.log("Fetching room with ID:", id);
     const response = await fetch(`${API_URL}/rooms/${id}`);
 
     if (!response.ok) {
@@ -320,7 +320,7 @@ export async function getRoomVipWithLocation(
       url += `&lat=${latitude}&lng=${longitude}`;
     }
 
-    console.log("🌍 VIP API Call:", url);
+    // console.log("🌍 VIP API Call:", url);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -331,7 +331,7 @@ export async function getRoomVipWithLocation(
     }
 
     const result = await response.json();
-    console.log("[HOUSE] VIP API Response:", result);
+    // console.log("[HOUSE] VIP API Response:", result);
     return result;
   } catch (error: any) {
     console.error("Error fetching VIP rooms with location:", error);
@@ -355,7 +355,7 @@ export async function getRoomNormalWithLocation(
       url += `&lat=${latitude}&lng=${longitude}`;
     }
 
-    console.log("🌍 Normal API Call:", url);
+    // console.log("🌍 Normal API Call:", url);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -366,7 +366,7 @@ export async function getRoomNormalWithLocation(
     }
 
     const result = await response.json();
-    console.log("[HOUSE] Normal API Response:", result);
+    // console.log("[HOUSE] Normal API Response:", result);
     return result;
   } catch (error: any) {
     console.error("Error fetching normal rooms with location:", error);
@@ -478,10 +478,10 @@ export async function getRecentRooms(): Promise<RoomInUser[] | null> {
  */
 export async function getLandlordByRoomId(roomId: string) {
   try {
-    console.log("🔍 getLandlordByRoomId called with roomId:", roomId);
+    // console.log("🔍 getLandlordByRoomId called with roomId:", roomId);
     
     const url = `${API_URL}/rooms/landlord-room/${roomId}`;
-    console.log("📡 Fetching from URL:", url);
+    // console.log("📡 Fetching from URL:", url);
     
     const response = await fetch(url);
 
@@ -493,13 +493,13 @@ export async function getLandlordByRoomId(roomId: string) {
 
     const landlord = await response.json();
     
-    console.log("=== DEBUG: getLandlordByRoomId RESPONSE ===");
-    console.log("Full response:", JSON.stringify(landlord, null, 2));
-    console.log("landlord type:", typeof landlord);
-    console.log("landlord.id:", landlord?.id);
-    console.log("landlord.id type:", typeof landlord?.id);
-    console.log("landlord keys:", Object.keys(landlord || {}));
-    console.log("===========================================");
+    // console.log("=== DEBUG: getLandlordByRoomId RESPONSE ===");
+    // console.log("Full response:", JSON.stringify(landlord, null, 2));
+    // console.log("landlord type:", typeof landlord);
+    // console.log("landlord.id:", landlord?.id);
+    // console.log("landlord.id type:", typeof landlord?.id);
+    // console.log("landlord keys:", Object.keys(landlord || {}));
+    // console.log("===========================================");
 
     // ✅ Validate response
     if (!landlord) {
@@ -522,7 +522,7 @@ export async function getLandlordByRoomId(roomId: string) {
       return null;
     }
 
-    console.log("✅ Landlord fetched successfully with ID:", landlord.id);
+    // console.log("✅ Landlord fetched successfully with ID:", landlord.id);
     return landlord;
   } catch (error: any) {
     console.error("🔥 Error fetching landlord details:", error);
@@ -558,7 +558,7 @@ export async function getRoomsInMap(
       room && room.address && room.address.ward && room.address.ward.district && room.address.ward.district.province
     );
     
-    console.log(`✅ getRoomsInMap: Found ${rooms.length} rooms, ${validRooms.length} valid rooms`);
+    // console.log(`✅ getRoomsInMap: Found ${rooms.length} rooms, ${validRooms.length} valid rooms`);
     
     return validRooms;
   } catch (error: any) {
@@ -584,14 +584,14 @@ export async function getRoomsInBounds(
     const url = `${API_URL}/rooms/rooms-in-bounds?minLat=${minLat}&minLng=${minLng}&maxLat=${maxLat}&maxLng=${maxLng}`;
     
     if (__DEV__) {
-      console.log('🌐 API URL:', url);
-      console.log('📍 Bounds params:', { minLat, minLng, maxLat, maxLng });
+      // console.log('🌐 API URL:', url);
+      // console.log('📍 Bounds params:', { minLat, minLng, maxLat, maxLng });
     }
     
     const response = await fetch(url);
 
     if (__DEV__) {
-      console.log('📡 Response status:', response.status, response.statusText);
+      // console.log('📡 Response status:', response.status, response.statusText);
     }
 
     if (!response.ok) {
@@ -613,7 +613,7 @@ export async function getRoomsInBounds(
     const data = await response.json();
     
     if (__DEV__) {
-      console.log('✅ API Success Response:', Array.isArray(data) ? `Array with ${data.length} items` : typeof data);
+      // console.log('✅ API Success Response:', Array.isArray(data) ? `Array with ${data.length} items` : typeof data);
     }
     
     return data;

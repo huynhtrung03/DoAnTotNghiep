@@ -79,7 +79,7 @@ export async function getFavoriteRoomIds(
       .filter((item) => item && typeof item.id === 'string')
       .map((item) => item.id);
 
-    console.log(`✅ Fetched ${favoriteIds.length} favorite IDs (page ${page})`);
+    // console.log(`✅ Fetched ${favoriteIds.length} favorite IDs (page ${page})`);
     return favoriteIds;
 
   } catch (error) {
@@ -191,7 +191,7 @@ export async function getFavoriteRooms(
       throw new Error('Bạn chưa đăng nhập. Vui lòng đăng nhập để xem phòng yêu thích.');
     }
 
-    console.log(`🔍 Calling API: ${API_URL}/favorites?page=${page}&size=${size}`);
+    // console.log(`🔍 Calling API: ${API_URL}/favorites?page=${page}&size=${size}`);
 
     const response = await fetch(
       `${API_URL}/favorites?page=${page}&size=${size}`,
@@ -258,7 +258,7 @@ export async function addFavorite(roomId: string): Promise<boolean> {
       return false;
     }
 
-    console.log(`✅ Added favorite: ${roomId}`);
+    // console.log(`✅ Added favorite: ${roomId}`);
     return true;
 
   } catch (error) {
@@ -294,7 +294,7 @@ export async function removeFavorite(roomId: string): Promise<boolean> {
       return false;
     }
 
-    console.log(`✅ Removed favorite: ${roomId}`);
+    // console.log(`✅ Removed favorite: ${roomId}`);
     return true;
 
   } catch (error) {

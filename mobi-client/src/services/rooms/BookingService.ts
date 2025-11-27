@@ -34,9 +34,9 @@ export async function userFetchBookings(page: number, size: number) {
       throw new Error('User ID not found. Please login again.');
     }
     
-    console.log('🔍 userFetchBookings - Fetching:', `${API_URL}/bookings/user/${userId}/paging?page=${page}&size=${size}`);
-    console.log('🔑 Token:', token ? `${token.substring(0, 20)}...` : 'NULL');
-    console.log('👤 UserId:', userId);
+    // console.log('🔍 userFetchBookings - Fetching:', `${API_URL}/bookings/user/${userId}/paging?page=${page}&size=${size}`);
+    // console.log('🔑 Token:', token ? `${token}...` : 'NULL');
+    // console.log('👤 UserId:', userId);
     
     const response = await fetch(
       `${API_URL}/bookings/user/${userId}/paging?page=${page}&size=${size}`,
@@ -49,8 +49,8 @@ export async function userFetchBookings(page: number, size: number) {
       }
     );
 
-    console.log('📡 Response status:', response.status);
-    console.log('📡 Response ok:', response.ok);
+    // console.log('📡 Response status:', response.status);
+    // console.log('📡 Response ok:', response.ok);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -67,7 +67,7 @@ export async function userFetchBookings(page: number, size: number) {
     }
 
     const data = await response.json();
-    console.log('✅ Bookings fetched:', data?.bookings?.length || 0, 'items');
+    // console.log('✅ Bookings fetched:', data?.bookings?.length || 0, 'items');
     return data;
   } catch (error) {
     console.error('💥 userFetchBookings error:', error);
@@ -111,7 +111,7 @@ export async function landlordFetchBookings(page: number, size: number) {
  */
 export async function createBooking(bookingData: BookingData, userId: string) {
   try {
-    console.log('BookingService - createBooking called with:', bookingData, 'userId:', userId);
+    // console.log('BookingService - createBooking called with:', bookingData, 'userId:', userId);
 
     const token = await AsyncStorage.getItem('accessToken');
 
@@ -124,8 +124,8 @@ export async function createBooking(bookingData: BookingData, userId: string) {
       body: JSON.stringify(bookingData),
     });
 
-    console.log('BookingService - Response status:', response.status);
-    console.log('BookingService - Response ok:', response.ok);
+    // console.log('BookingService - Response status:', response.status);
+    // console.log('BookingService - Response ok:', response.ok);
 
     if (!response.ok) {
       let errorMessage = 'Failed to create booking';
@@ -151,7 +151,7 @@ export async function createBooking(bookingData: BookingData, userId: string) {
     }
 
     const booking = await response.json();
-    console.log('BookingService - Success response:', booking);
+    // console.log('BookingService - Success response:', booking);
     return booking;
   } catch (error) {
     console.error('createBooking error:', error);
@@ -282,11 +282,11 @@ export async function uploadBillTransferImage(bookingId: string, fileUri: string
       throw new Error('Missing file URI');
     }
 
-    console.log('BookingService - uploadBillTransferImage called with:', {
-      bookingId,
-      fileName,
-      fileUri,
-    });
+    // console.log('BookingService - uploadBillTransferImage called with:', {
+    //   bookingId,
+    //   fileName,
+    //   fileUri,
+    // });
 
     const token = await AsyncStorage.getItem('accessToken');
 
@@ -310,8 +310,8 @@ export async function uploadBillTransferImage(bookingId: string, fileUri: string
       }
     );
 
-    console.log('BookingService - Upload response status:', response.status);
-    console.log('BookingService - Upload response ok:', response.ok);
+    // console.log('BookingService - Upload response status:', response.status);
+    // console.log('BookingService - Upload response ok:', response.ok);
 
     if (!response.ok) {
       const errorJson = await response.json();
@@ -325,7 +325,7 @@ export async function uploadBillTransferImage(bookingId: string, fileUri: string
     }
 
     const result = await response.json();
-    console.log('BookingService - Upload success response:', result);
+    // console.log('BookingService - Upload success response:', result);
     return result;
   } catch (error) {
     console.error('uploadBillTransferImage error:', error);

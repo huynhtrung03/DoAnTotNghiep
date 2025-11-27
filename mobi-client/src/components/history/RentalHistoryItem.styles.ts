@@ -211,6 +211,10 @@ export default StyleSheet.create({
     backgroundColor: '#1976D2',
   },
 
+  detailButton: {
+    backgroundColor: '#FF9800',
+  },
+
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',

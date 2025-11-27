@@ -20,6 +20,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 // Import Services
+import { API_URL, URL_IMAGE } from '../../../services/config/Constant';
 import {
   getLandlordPostedRoomCount,
   getLandlordRentedRoomCount,
@@ -30,6 +31,7 @@ import {
 } from '../../../services/LandLordStatisticsService';
 import { LandlordTaskService } from '../../../services/LandlordTaskService';
 import type { LandlordTaskResponseDto } from '../../../services/LandlordTaskService';
+import { getProfileById, getFullName } from '../../../services/profile/ProfileService';
 
 // Import Styles
 import { styles } from './styles/DashboardScreen.style';
@@ -67,6 +69,7 @@ export default function DashboardScreen() {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [landlordId, setLandlordId] = useState<string | null>(null);
   const [landlordName, setLandlordName] = useState<string>('Chủ trọ');
   const [landlordAvatar, setLandlordAvatar] = useState<string | null>(null);
@@ -97,39 +100,134 @@ export default function DashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (landlordId) {
-        fetchDashboardData();
-      }
-    }, [landlordId])
+      const loadData = async () => {
+        console.log('🔄 Dashboard focus effect triggered');
+        console.log('📌 Current landlordId:', landlordId);
+
+        // Đảm bảo có landlordId trước khi fetch
+        let currentLandlordId = landlordId;
+        if (!currentLandlordId) {
+          console.log('📋 Initializing landlord data...');
+          await initializeLandlordData();
+
+          // Lấy lại landlordId từ JWT token sau khi init
+          const accessToken = await AsyncStorage.getItem('accessToken');
+          if (accessToken) {
+            const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+            currentLandlordId = tokenPayload.id;
+            setLandlordId(currentLandlordId); // Update state
+            console.log('📌 Updated landlordId from JWT:', currentLandlordId);
+          }
+        }
+
+        // Fetch data với landlordId đã có
+        if (currentLandlordId) {
+          await fetchDashboardDataWithId(currentLandlordId);
+        } else {
+          console.warn('⚠️ No landlordId available, cannot fetch data');
+          setLoading(false);
+        }
+      };
+      loadData();
+    }, []) // Remove landlordId dependency to avoid multiple calls
   );
 
   const initializeLandlordData = async () => {
     try {
+      console.log('🔑 Initializing landlord data...');
+      const accessToken = await AsyncStorage.getItem('accessToken');
       const userProfileString = await AsyncStorage.getItem('userProfile');
-      if (userProfileString) {
-        const userProfile = JSON.parse(userProfileString);
-        setLandlordId(userProfile.id);
-        setLandlordName(userProfile.fullName || 'Chủ trọ');
-        setLandlordAvatar(userProfile.avatar || null);
+
+      if (accessToken && userProfileString) {
+        // Extract landlord ID from JWT token
+        const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+        const landlordId = tokenPayload.id;
+
+        console.log('👤 Landlord ID from JWT:', landlordId);
+
+        // Try to get fresh profile data from API first
+        let landlordName = 'Chủ trọ';
+        let landlordAvatar = null;
+
+        try {
+          console.log('📡 Fetching profile from API...');
+          const profileData = await getFullName(landlordId, accessToken);
+          if (profileData) {
+            landlordName = profileData.fullName || 'Chủ trọ';
+            // Build full avatar URL if avatar exists
+            let avatarUrl = null;
+            if (profileData.avatar) {
+              // If avatar starts with '/', it's a relative path, prepend URL_IMAGE
+              if (profileData.avatar.startsWith('/')) {
+                avatarUrl = `${URL_IMAGE}${profileData.avatar.substring(1)}`;
+              } else {
+                avatarUrl = profileData.avatar;
+              }
+            }
+            landlordAvatar = avatarUrl;
+            console.log('✅ Profile loaded from API:', { landlordName, avatarUrl, hasAvatar: !!landlordAvatar });
+          }
+        } catch (apiError) {
+          console.warn('⚠️ Failed to fetch profile from API, falling back to AsyncStorage:', apiError);
+          // Fallback to AsyncStorage if API fails
+          const userData = JSON.parse(userProfileString);
+          landlordName = userData.userProfile?.fullName || userData.fullName || 'Chủ trọ';
+          landlordAvatar = userData.userProfile?.avatar || userData.avatar || null;
+          console.log('📱 Profile loaded from AsyncStorage:', { landlordName, hasAvatar: !!landlordAvatar });
+        }
+
+        console.log('👤 Final landlord data:', { landlordId, landlordName, hasAvatar: !!landlordAvatar });
+        setLandlordId(landlordId);
+        setLandlordName(landlordName);
+        setLandlordAvatar(landlordAvatar);
+      } else {
+        console.warn('⚠️ No access token or user profile found in AsyncStorage');
       }
     } catch (error) {
-      console.error('Error initializing landlord data:', error);
+      console.error('❌ Error initializing landlord data:', error);
     }
   };
 
-  const fetchDashboardData = async () => {
-    if (!landlordId) return;
+  const fetchDashboardDataWithId = async (id: string) => {
+    console.log('🔄 Starting fetchDashboardDataWithId for landlord:', id);
     setLoading(true);
+
     try {
-      await Promise.all([fetchStatisticsData(), fetchTasksData()]);
+      console.log('📊 Fetching statistics and tasks concurrently...');
+      const [statisticsResult, tasksResult] = await Promise.allSettled([
+        fetchStatisticsDataWithId(id),
+        fetchTasksDataWithId(id),
+      ]);
+
+      // Handle statistics result
+      if (statisticsResult.status === 'fulfilled') {
+        console.log('✅ Statistics fetched successfully');
+      } else {
+        console.error('❌ Statistics fetch failed:', statisticsResult.reason);
+        setError('Không thể tải thống kê');
+      }
+
+      // Handle tasks result
+      if (tasksResult.status === 'fulfilled') {
+        console.log('✅ Tasks fetched successfully');
+      } else {
+        console.error('❌ Tasks fetch failed:', tasksResult.reason);
+        setError('Không thể tải danh sách công việc');
+      }
+
+      console.log('📈 Current statistics:', statistics);
+      console.log('📋 Current task stats:', taskStats);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('❌ Unexpected error in fetchDashboardDataWithId:', error);
+      setError('Lỗi không xác định khi tải dữ liệu');
     } finally {
       setLoading(false);
+      console.log('🏁 Dashboard data fetch completed');
     }
   };
 
-  const fetchStatisticsData = async () => {
+  const fetchStatisticsDataWithId = async (id: string) => {
+    console.log('📊 Fetching statistics for landlord:', id);
     try {
       const [
         postedRooms,
@@ -139,64 +237,141 @@ export default function DashboardScreen() {
         revenueStats,
         maintenanceStats,
       ] = await Promise.all([
-        getLandlordPostedRoomCount(),
-        getLandlordRentedRoomCount(),
-        getLandlordViewedRoomCount(),
-        getLandlordFavoritedRoomCount(),
-        getLandlordRevenueStatistics(),
-        getLandlordMaintenanceStatistics(),
+        getLandlordPostedRoomCount(id),
+        getLandlordRentedRoomCount(id),
+        getLandlordViewedRoomCount(id),
+        getLandlordFavoritedRoomCount(id),
+        getLandlordRevenueStatistics(id),
+        getLandlordMaintenanceStatistics(id),
       ]);
 
-      const currentMonth = new Date().getMonth();
-      const monthlyRevenue = revenueStats.revenueByMonth?.find(
-        (item) => new Date(item.month).getMonth() === currentMonth
-      )?.revenue || 0;
+      console.log('📊 All statistics results:');
+      console.log('🏠 Posted rooms:', postedRooms);
+      console.log('🏢 Rented rooms:', rentedRooms);
+      console.log('👁️ Viewed rooms:', viewedRooms);
+      console.log('❤️ Favorited rooms:', favoritedRooms);
+      console.log('💰 Revenue stats:', revenueStats);
+      console.log('🔧 Maintenance stats:', maintenanceStats);
 
-      setStatistics({
-        totalPostedRooms: postedRooms.count,
-        totalRentedRooms: rentedRooms.count,
-        totalViews: viewedRooms.count,
-        totalFavorites: favoritedRooms.count,
-        totalRevenue: revenueStats.totalRevenue,
-        totalMaintenanceCost: maintenanceStats.totalCost,
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth(); // 0-11
+      const currentYear = currentDate.getFullYear();
+      console.log('📅 Current month/year:', currentMonth, currentYear);
+
+      const monthlyRevenue = revenueStats?.revenueByMonth?.find((item) => {
+        const itemDate = new Date(item.month);
+        const itemMonth = itemDate.getMonth();
+        const itemYear = itemDate.getFullYear();
+        console.log('🔍 Checking revenue item:', item, 'month:', itemMonth, 'year:', itemYear);
+        return itemMonth === currentMonth && itemYear === currentYear;
+      })?.revenue || 0;
+
+      console.log('💰 Calculated monthly revenue:', monthlyRevenue);
+
+      const newStatistics = {
+        totalPostedRooms: postedRooms?.count || 0,
+        totalRentedRooms: rentedRooms?.count || 0,
+        totalViews: viewedRooms?.count || 0,
+        totalFavorites: favoritedRooms?.count || 0,
+        totalRevenue: revenueStats?.totalRevenue || 0,
+        totalMaintenanceCost: maintenanceStats?.totalCost || 0,
         monthlyRevenue,
-      });
+      };
+
+      console.log('📈 Setting statistics:', newStatistics);
+      setStatistics(newStatistics);
     } catch (error) {
-      console.error('Error fetching statistics:', error);
+      console.error('❌ Error fetching statistics:', error);
+      // Reset to default values on error
+      setStatistics({
+        totalPostedRooms: 0,
+        totalRentedRooms: 0,
+        totalViews: 0,
+        totalFavorites: 0,
+        totalRevenue: 0,
+        totalMaintenanceCost: 0,
+        monthlyRevenue: 0,
+      });
     }
   };
 
-  const fetchTasksData = async () => {
-    if (!landlordId) return;
+  const fetchTasksDataWithId = async (id: string) => {
+    console.log('📋 Fetching tasks for landlord:', id);
     try {
-      const tasks = await LandlordTaskService.getTasksByLandlord(landlordId);
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/landlord-tasks/landlord/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn('⚠️ Tasks API error:', errorText);
+        throw new Error('Failed to fetch landlord tasks');
+      }
+
+      const tasks = await response.json();
+      console.log('✅ Tasks fetched successfully:', tasks?.length || 0, 'tasks');
+
+      // Validate response
+      if (!Array.isArray(tasks)) {
+        console.warn('⚠️ Tasks API returned non-array:', tasks);
+        setTaskStats({
+          totalTasks: 0,
+          pendingTasks: 0,
+          inProgressTasks: 0,
+          completedTasks: 0,
+          overdueTasks: 0,
+        });
+        setRecentTasks([]);
+        return;
+      }
+
       const now = new Date();
       const taskStatistics: TaskStatistics = {
         totalTasks: tasks.length,
-        pendingTasks: tasks.filter((task) => task.status === 'PENDING').length,
-        inProgressTasks: tasks.filter((task) => task.status === 'IN_PROGRESS').length,
-        completedTasks: tasks.filter((task) => task.status === 'COMPLETED').length,
+        pendingTasks: tasks.filter((task: any) => task.status === 'PENDING').length,
+        inProgressTasks: tasks.filter((task: any) => task.status === 'IN_PROGRESS').length,
+        completedTasks: tasks.filter((task: any) => task.status === 'COMPLETED').length,
         overdueTasks: tasks.filter(
-          (task) =>
+          (task: any) =>
             task.dueDate &&
             new Date(task.dueDate) < now &&
             task.status !== 'COMPLETED' &&
             task.status !== 'CANCELLED'
         ).length,
       };
+
+      console.log('📋 Setting task stats:', taskStatistics);
       setTaskStats(taskStatistics);
-      const sortedTasks = tasks
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+      // Sort by startDate (descending) and take 5 most recent
+      const sortedTasks = [...tasks]
+        .sort((a: any, b: any) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
         .slice(0, 5);
+
       setRecentTasks(sortedTasks);
     } catch (error) {
-      console.error('Error fetching tasks:', error);
+      console.error('❌ Error fetching tasks:', error);
+      // Reset to default values on error
+      setTaskStats({
+        totalTasks: 0,
+        pendingTasks: 0,
+        inProgressTasks: 0,
+        completedTasks: 0,
+        overdueTasks: 0,
+      });
+      setRecentTasks([]);
     }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchDashboardData();
+    if (landlordId) {
+      await fetchDashboardDataWithId(landlordId);
+    }
     setRefreshing(false);
   };
 

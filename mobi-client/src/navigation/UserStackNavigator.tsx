@@ -12,6 +12,7 @@ import ProfileDetailScreen from '../screens/profile/ProfileScreen/ProfileDetailS
 import LanguageSelectionScreen from '../screens/profile/LanguageSelectionScreen/LanguageSelectionScreen';
 import RequestManagementScreen from '../screens/user/tabs/RequestManagement/RequestManagementScreen';
 import MyContracts from '../screens/user/tabs/MyContracts/MyContracts';
+import ContractDetailScreen from '../screens/user/tabs/MyContracts/ContractDetailScreen';
 import ChangePasswordScreen from '../screens/auth/ChangePassword/ChangePassword';
 import HistoryScreen from '../screens/history/RentalHistoryScreen/HistoryScreen';
 import BankScreen from '../screens/user/tabs/bank/BankScreen';
@@ -73,6 +74,15 @@ export default function UserStackNavigator() {
           title: 'My Contracts',
           headerBackTitle: 'Back',
           headerShown: false, // Màn hình có header riêng
+        }}
+      />
+      <Stack.Screen 
+        name="Users/ContractDetail" 
+        component={ContractDetailScreen}
+        options={{
+          title: 'Contract Detail',
+          headerBackTitle: 'Back',
+          headerShown: false, // Custom header trong component
         }}
       />
       <Stack.Screen 
