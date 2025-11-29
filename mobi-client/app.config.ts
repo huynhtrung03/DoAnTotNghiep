@@ -74,7 +74,8 @@ export default (): ExpoConfig => ({
 
     // Biến cho Mapbox
     NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN, // (pk... token)
-    eas: { projectId: 'd7274611-f5cc-40ec-b08a-13a634f545f3' },
+    eas: { projectId: 'd7274611-f5cc-40ec-b08a-13a634f545f3' }, //tính 
     // eas: { projectId: 'b079c809-771e-438d-8493-28884acfb643' },
+    // eas: { projectId: "56e01dbf-9835-4223-a614-301bdec1514b" },
   },
 });

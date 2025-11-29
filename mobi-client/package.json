@@ -25,6 +25,7 @@
     "@rnmapbox/maps": "^10.2.7",
     "axios": "^1.12.2",
     "babel-preset-expo": "~54.0.0",
+    "dotenv": "^17.2.3",
     "expo": "54.0.23",
     "expo-auth-session": "~7.0.8",
     "expo-av": "^16.0.7",
@@ -60,6 +61,7 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "@react-native-community/cli": "^20.0.2",
     "@types/point-in-polygon": "^1.1.5",
     "@types/react": "~19.1.0",
     "@types/react-native-vector-icons": "^6.4.18",
