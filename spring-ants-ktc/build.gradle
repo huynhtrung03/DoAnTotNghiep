@@ -59,6 +59,8 @@ dependencies {
 	// google map 
 	implementation 'com.google.maps:google-maps-services:0.18.1'
 	implementation 'org.json:json:20230227'
+
+	implementation 'com.google.firebase:firebase-admin:9.2.0'
 	
 	// Apache HttpClient 5
 	// implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { useZaloPayPayment, PaymentStatus } from '../hooks/useZaloPayPayment';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NotificationService from '../services/NotificationServiceMobi';
 
 export default function PaymentScreen() {
   const {
@@ -27,6 +28,9 @@ export default function PaymentScreen() {
       console.log(`[${successTime}] 🎉 [PaymentScreen] Payment SUCCESS detected`);
       console.log(`[${successTime}] 🎉 [PaymentScreen] Transaction ID:`, transactionId);
       console.log(`[${successTime}] 🎉 [PaymentScreen] Status:`, status);
+
+      // Gửi thông báo thành công
+      NotificationService.notifyPaymentSuccess(0, transactionId); // Amount sẽ được lấy từ hook sau
 
       Alert.alert(
         '🎉 Thanh toán thành công',
@@ -55,6 +59,9 @@ export default function PaymentScreen() {
       console.log(`[${failTime}] ❌ [PaymentScreen] Error:`, error);
       console.log(`[${failTime}] ❌ [PaymentScreen] Status:`, status);
 
+      // Gửi thông báo lỗi
+      NotificationService.notifyPaymentError(error || 'Vui lòng thử lại');
+
       Alert.alert('❌ Thanh toán thất bại', error || 'Vui lòng thử lại', [
         { text: 'Thử lại', onPress: () => {
           console.log(`[${new Date().toISOString()}] 🔄 [PaymentScreen] User clicked retry`);
@@ -75,6 +82,9 @@ export default function PaymentScreen() {
       const cancelTime = new Date().toISOString();
       console.log(`[${cancelTime}] ⚠️ [PaymentScreen] Payment CANCELED detected`);
       console.log(`[${cancelTime}] ⚠️ [PaymentScreen] Status:`, status);
+
+      // Gửi thông báo hủy
+      NotificationService.notifyPaymentCanceled();
 
       Alert.alert('⚠️ Đã hủy thanh toán', 'Bạn có muốn thử lại không?', [
         { text: 'Thử lại', onPress: () => {
@@ -97,6 +107,9 @@ export default function PaymentScreen() {
       const noAppTime = new Date().toISOString();
       console.log(`[${noAppTime}] 📱 [PaymentScreen] ZaloPay APP NOT INSTALLED detected`);
       console.log(`[${noAppTime}] 📱 [PaymentScreen] Status:`, status);
+
+      // Gửi thông báo cần cài đặt ZaloPay
+      NotificationService.notifyZaloPayNotInstalled();
 
       Alert.alert(
         '📱 Chưa cài đặt ZaloPay',
@@ -128,6 +141,7 @@ export default function PaymentScreen() {
 
       if (!userDataString) {
         console.error(`[${new Date().toISOString()}] ❌ [PaymentScreen] No userData found in storage`);
+        NotificationService.notifyPaymentError('Vui lòng đăng nhập để tiếp tục');
         Alert.alert('Lỗi', 'Vui lòng đăng nhập');
         return;
       }
@@ -138,6 +152,7 @@ export default function PaymentScreen() {
 
       if (!userId) {
         console.error(`[${new Date().toISOString()}] ❌ [PaymentScreen] No userId in userData:`, userData);
+        NotificationService.notifyPaymentError('Không tìm thấy thông tin người dùng');
         Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng');
         return;
       }
@@ -156,6 +171,7 @@ export default function PaymentScreen() {
       console.error(`[${errorTime}] ❌ [PaymentScreen] Error message:`, err instanceof Error ? err.message : 'Unknown error');
       console.error(`[${errorTime}] ❌ [PaymentScreen] Error stack:`, err instanceof Error ? err.stack : undefined);
 
+      NotificationService.notifyPaymentError('Có lỗi xảy ra, vui lòng thử lại');
       Alert.alert('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại');
     }
   };
