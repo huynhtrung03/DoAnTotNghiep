@@ -16,7 +16,7 @@ coverage/
 android/app/build/
 ios/build/
 *.keystore
-
+.firebase-service-account.json
 # Env
 .env
 .env.localmobi-client/*.apk
