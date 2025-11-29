@@ -18,7 +18,7 @@ import {
   getLandlordPaymentInfo,
   uploadBillTransferImage,
   updateBookingStatus,
-} from '../../services/rooms/BookingService';
+} from '../../services/BookingService';
 import { BillService } from '../../services/BillService';
 import { BillData, ContractData } from '../../types/types';
 import styles from './PaymentModal.styles';
@@ -417,7 +417,7 @@ const PaymentModal: React.FC<ExtendedPaymentModalProps> = ({
                       >
                         <Ionicons name="call-outline" size={20} color="#1976D2" />
                         <Text style={styles.contactText}>
-                          📞 Điện thoại: {paymentInfo.phoneNumber}
+                           Điện thoại: {paymentInfo.phoneNumber}
                         </Text>
                       </TouchableOpacity>
                       <View style={styles.divider} />
@@ -427,7 +427,7 @@ const PaymentModal: React.FC<ExtendedPaymentModalProps> = ({
                       >
                         <Ionicons name="mail-outline" size={20} color="#1976D2" />
                         <Text style={styles.contactText}>
-                          📧 Email: {paymentInfo.email}
+                           Email: {paymentInfo.email}
                         </Text>
                       </TouchableOpacity>
                     </View>

@@ -13,8 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createBooking } from '../../../services/rooms/BookingService';
-import { createBookingNotification } from '../../../services/statistics/NotificationService';
+import { createBooking } from '../../../services/BookingService';
+import { createBookingNotification } from '../../../services/NotificationService';
 import styles from './BookingModal.styles';
 
 interface BookingModalProps {
@@ -82,8 +82,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
       const userData = userDataStr ? JSON.parse(userDataStr) : null;
       const userId = userData?.id;
 
-      // ✅ STEP 1: Validate userId BEFORE proceeding
-      console.log("📋 Validating userId:", { userId, userData });
+      //  STEP 1: Validate userId BEFORE proceeding
+      console.log(" Validating userId:", { userId, userData });
       
       if (!userId) {
         throw new Error('Vui lòng đăng nhập để đặt phòng');
@@ -93,7 +93,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
         throw new Error('User ID không hợp lệ. Vui lòng đăng nhập lại');
       }
 
-      console.log("✅ userId validation passed:", userId);
+      console.log(" userId validation passed:", userId);
 
       const bookingData = {
         roomId: roomId,
@@ -104,19 +104,19 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
       console.log('Booking data to be sent:', bookingData);
 
-      // ✅ STEP 2: Create booking
+      //  STEP 2: Create booking
       const result = await createBooking(bookingData, userId.toString());
-      console.log('✅ Booking created successfully:', result);
+      console.log(' Booking created successfully:', result);
 
-      // ✅ STEP 3: Send notification in background (không block UI)
+      //  STEP 3: Send notification in background (không block UI)
       // Nếu notification lỗi, KHÔNG làm fail toàn bộ booking
-      console.log("📢 Sending notification to landlord...");
+      console.log(" Sending notification to landlord...");
       createBookingNotification(
         roomId,
         userId,
         `You have a new booking from a tenant for room: "${roomTitle}". Tenant count: ${tenantCount}, Duration: ${rentalMonths} months.`
       ).catch((notificationError) => {
-        console.warn("⚠️ Notification failed (non-critical):", notificationError);
+        console.warn("️ Notification failed (non-critical):", notificationError);
         // Không throw error - booking đã thành công, chỉ notification lỗi
       });
 

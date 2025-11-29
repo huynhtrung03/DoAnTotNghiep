@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '../../../styles/colors';
-import { API_URL } from '../../../services/config/Constant';
+import { API_URL } from '../../../services/Constant';
 import { StyleSheet } from 'react-native';
 
 const AI_API_URL = `${API_URL}/ai_chatbot`;

@@ -125,7 +125,7 @@ const CompletionViewModal: React.FC<CompletionViewModalProps> = ({
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Completed At:</Text>
                   <Text style={styles.value}>
-                    🕐 {formatDate(request.updatedAt)}
+                     {formatDate(request.updatedAt)}
                   </Text>
                 </View>
               )}

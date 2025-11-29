@@ -7,7 +7,7 @@ import { useFavoriteStore } from '../../stores/FavoriteStore';
 import { RoomInUser } from '../../types/types';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { addFavorite as addFavoriteAPI, removeFavorite as removeFavoriteAPI, getFavoriteCount } from '../../services/favorites/FavoriteService';
+import { addFavorite as addFavoriteAPI, removeFavorite as removeFavoriteAPI, getFavoriteCount } from '../../services/FavoriteService';
 
 export default function RoomCardActions({ room, showHeartOnly = false }: { room: RoomInUser; showHeartOnly?: boolean }) {
   const { items, addItem } = useCompareStore();
@@ -94,7 +94,7 @@ export default function RoomCardActions({ room, showHeartOnly = false }: { room:
           removeFavorite(room.id);
           decrementFavoriteCount(room.id);
           setLocalFavoriteCount(prev => Math.max(0, prev - 1));
-          ////console.log(`✅ Removed from favorites: ${room.id}`);
+          ////console.log(` Removed from favorites: ${room.id}`);
         } else {
           Alert.alert('Lỗi', 'Không thể xóa khỏi danh sách yêu thích');
         }
@@ -106,7 +106,7 @@ export default function RoomCardActions({ room, showHeartOnly = false }: { room:
           addFavorite(room.id);
           incrementFavoriteCount(room.id);
           setLocalFavoriteCount(prev => prev + 1);
-          //console.log(`✅ Added to favorites: ${room.id}`);
+          //console.log(` Added to favorites: ${room.id}`);
         } else {
           Alert.alert('Lỗi', 'Không thể thêm vào danh sách yêu thích');
         }

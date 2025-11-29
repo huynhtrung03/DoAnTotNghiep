@@ -1,7 +1,7 @@
 // Utility functions để lưu và quản lý thông tin thanh toán
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '../services/config/Constant';
+import { API_URL } from '../services/Constant';
 
 export interface PaymentRecord {
   id: string;

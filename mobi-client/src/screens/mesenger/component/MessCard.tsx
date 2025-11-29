@@ -20,7 +20,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ChatUser } from '../../../services/ChatService';
 import Colors from '../../../styles/colors';
 import styles from '../MesengerScreen.styles';
-import { URL_IMAGE } from '../../../services/config/Constant';
+import { URL_IMAGE } from '../../../services/Constant';
 
 interface MessCardProps {
   user: ChatUser;
@@ -34,8 +34,8 @@ export default function MessCard({ user, onPress, index = 0 }: MessCardProps) {
   // Reset avatar error khi user hoặc avatar thay đổi
   useEffect(() => {
     setAvatarError(false);
-    console.log('🖼️ MessCard avatar for user:', user.id, 'avatar:', user.avatar);
-    console.log('👤 Full user info:', {
+    console.log('️ MessCard avatar for user:', user.id, 'avatar:', user.avatar);
+    console.log(' Full user info:', {
       id: user.id,
       name: user.name,
       avatar: user.avatar,
@@ -115,7 +115,7 @@ export default function MessCard({ user, onPress, index = 0 }: MessCardProps) {
     : user.role === 'landlord' 
       ? (user.avatar ? 'landlord URL' : 'landlord placeholder') 
       : (user.avatar && user.avatar.trim() && !avatarError ? 'user URL' : 'user placeholder');
-  console.log('🖼️ Avatar display type:', avatarDisplayType, 'for user:', user.id, 'avatar:', user.avatar);
+  console.log('️ Avatar display type:', avatarDisplayType, 'for user:', user.id, 'avatar:', user.avatar);
 
   return (
     <Animated.View entering={FadeInDown.duration(400).delay(index * 50)}>
@@ -144,11 +144,11 @@ export default function MessCard({ user, onPress, index = 0 }: MessCardProps) {
                 style={styles.avatar}
                 resizeMode="cover"
                 onError={(error) => {
-                  console.warn('⚠️ Failed to load landlord avatar for user:', user.id);
+                  console.warn('️ Failed to load landlord avatar for user:', user.id);
                   setAvatarError(true);
                 }}
                 onLoad={() => {
-                  console.log('✅ Landlord avatar loaded successfully for user:', user.id);
+                  console.log(' Landlord avatar loaded successfully for user:', user.id);
                   setAvatarError(false);
                 }}
               />
@@ -164,11 +164,11 @@ export default function MessCard({ user, onPress, index = 0 }: MessCardProps) {
               style={styles.avatar}
               resizeMode="cover"
               onError={(error) => {
-                console.warn('⚠️ Failed to load avatar for user:', user.id);
+                console.warn('️ Failed to load avatar for user:', user.id);
                 setAvatarError(true);
               }}
               onLoad={() => {
-                console.log('✅ Avatar loaded successfully for user:', user.id);
+                console.log(' Avatar loaded successfully for user:', user.id);
                 setAvatarError(false);
               }}
             />

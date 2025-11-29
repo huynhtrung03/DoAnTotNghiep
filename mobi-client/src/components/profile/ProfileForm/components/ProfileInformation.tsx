@@ -18,7 +18,7 @@ import {
   isHaveBankAccount,
   getEmailNotifications,
   setEmailNotifications,
-} from '../../../../services/profile/ProfileService';
+} from '../../../../services/ProfileService';
 
 // Import Types
 import { ProfileInformationProps, UserProfile, Bank } from '../../types';

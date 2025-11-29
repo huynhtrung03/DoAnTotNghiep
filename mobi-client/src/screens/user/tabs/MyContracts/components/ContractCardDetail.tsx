@@ -16,7 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ContractData } from '../../../../../types/types';
 import { ContractService } from '../../../../../services/ContractService';
-import { URL_IMAGE } from '../../../../../services/config/Constant';
+import { URL_IMAGE } from '../../../../../services/Constant';
 import Colors from '../../../../../styles/colors';
 import styles from './ContractCardDetail.styles';
 

@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BillService } from '../../services/BillService';
 import { BillData, ContractData } from '../../types/types';
-import { URL_IMAGE } from '../../services/config/Constant';
+import { URL_IMAGE } from '../../services/Constant';
 import styles from './TenantBillsTab.styles';
 
 interface TenantBillsTabProps {

@@ -40,6 +40,15 @@ export default (): ExpoConfig => ({
           "photosPermission": "Ứng dụng cần quyền truy cập thư viện ảnh để bạn có thể chọn avatar."
         }
       ],
+
+          [
+      "./plugins/withZaloPayManual.js",
+      {
+        appId: 554,
+        scheme: 'mobi-client',
+      },
+    ],
+
   ],
 
   ios: {

@@ -4,7 +4,7 @@ export const historyScreenStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    paddingBottom: 100, // ✅ Add padding for tab bar
+    paddingBottom: 100, //  Add padding for tab bar
   },
   header: {
     backgroundColor: '#FFF',
@@ -33,7 +33,7 @@ export const historyScreenStyles = StyleSheet.create({
     padding: 20,
   },
   listContent: {
-    paddingBottom: 120, // ✅ Extra padding for tab bar + spacing
+    paddingBottom: 120, //  Extra padding for tab bar + spacing
   },
   listContentEmpty: {
     flexGrow: 1,

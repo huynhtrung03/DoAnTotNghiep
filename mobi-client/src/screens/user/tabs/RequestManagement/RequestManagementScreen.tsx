@@ -44,15 +44,15 @@ const RequestManagementScreen = () => {
   // ===== FETCH DATA =====
   const fetchData = useCallback(async (page: number = 0, size: number = 10) => {
     try {
-      console.log(`📋 Đang lấy danh sách yêu cầu - Trang ${page + 1}`);
+      console.log(` Đang lấy danh sách yêu cầu - Trang ${page + 1}`);
       setLoading(true);
       
       const result = await RequirementsService.userFetchRequirements(page, size);
       
-      console.log(`✅ Đã lấy ${result.data.length} yêu cầu`);
+      console.log(` Đã lấy ${result.data.length} yêu cầu`);
       setData(result);
     } catch (error: any) {
-      console.error('❌ Lỗi khi lấy danh sách yêu cầu:', error.message);
+      console.error(' Lỗi khi lấy danh sách yêu cầu:', error.message);
       Alert.alert('Lỗi', error.message || 'Không thể tải danh sách yêu cầu');
     } finally {
       setLoading(false);
@@ -93,7 +93,7 @@ const RequestManagementScreen = () => {
       );
       return;
     }
-    console.log('✏️ Mở modal chỉnh sửa:', request.id);
+    console.log('️ Mở modal chỉnh sửa:', request.id);
     setSelectedRequest(request);
     setEditModalVisible(true);
   };
@@ -103,13 +103,13 @@ const RequestManagementScreen = () => {
       Alert.alert('Thông báo', 'Yêu cầu này chưa được hoàn thành');
       return;
     }
-    console.log('👁️ Xem thông tin hoàn thành:', request.id);
+    console.log('️ Xem thông tin hoàn thành:', request.id);
     setSelectedRequest(request);
     setCompletionModalVisible(true);
   };
 
   const handleEditSuccess = () => {
-    console.log('✅ Cập nhật yêu cầu thành công');
+    console.log(' Cập nhật yêu cầu thành công');
     setEditModalVisible(false);
     setSelectedRequest(null);
     // Refresh lại trang hiện tại

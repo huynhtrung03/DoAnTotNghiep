@@ -1,5 +1,5 @@
 import firestore from "@react-native-firebase/firestore";
-import { getLandlordByRoomId } from "../rooms/RoomService";
+import { getLandlordByRoomId } from "./RoomService";
 
 // === HÀM QUAN TRỌNG: Lọc sạch dữ liệu trước khi gửi ===
 // Hàm này biến mọi giá trị không hợp lệ thành null để tránh crash Firebase
@@ -35,15 +35,15 @@ const sanitizeData = (data: Record<string, any>) => {
  */
 const validateReceiverId = (receiverId: any): boolean => {
   if (!receiverId) {
-    console.error("❌ VALIDATION FAILED: receiverId is missing or invalid", { receiverId });
+    console.error(" VALIDATION FAILED: receiverId is missing or invalid", { receiverId });
     return false;
   }
   if (typeof receiverId === "string" && receiverId.trim() === "") {
-    console.error("❌ VALIDATION FAILED: receiverId is empty string", { receiverId });
+    console.error(" VALIDATION FAILED: receiverId is empty string", { receiverId });
     return false;
   }
   if (typeof receiverId === "number" && (isNaN(receiverId) || receiverId === 0)) {
-    console.error("❌ VALIDATION FAILED: receiverId is invalid number", { receiverId });
+    console.error(" VALIDATION FAILED: receiverId is invalid number", { receiverId });
     return false;
   }
   return true;
@@ -54,15 +54,15 @@ const validateReceiverId = (receiverId: any): boolean => {
  */
 const validateSenderId = (senderId: any): boolean => {
   if (!senderId) {
-    console.error("❌ VALIDATION FAILED: senderId is missing or invalid", { senderId });
+    console.error(" VALIDATION FAILED: senderId is missing or invalid", { senderId });
     return false;
   }
   if (typeof senderId === "string" && senderId.trim() === "") {
-    console.error("❌ VALIDATION FAILED: senderId is empty string", { senderId });
+    console.error(" VALIDATION FAILED: senderId is empty string", { senderId });
     return false;
   }
   if (typeof senderId === "number" && (isNaN(senderId) || senderId === 0)) {
-    console.error("❌ VALIDATION FAILED: senderId is invalid number", { senderId });
+    console.error(" VALIDATION FAILED: senderId is invalid number", { senderId });
     return false;
   }
   return true;
@@ -74,36 +74,36 @@ export const createBookingNotification = async (
   message: string
 ) => {
   try {
-    // console.log("🔍 createBookingNotification START:", { roomId, tenantId, message });
+    // console.log(" createBookingNotification START:", { roomId, tenantId, message });
 
     // STEP 0: Validate input parameters
     if (!roomId) {
-      // console.warn("⚠️ ABORT: roomId is missing");
+      // console.warn("️ ABORT: roomId is missing");
       return;
     }
 
     if (!validateSenderId(tenantId)) {
-      // console.warn("⚠️ ABORT: Invalid senderId (tenantId)");
+      // console.warn("️ ABORT: Invalid senderId (tenantId)");
       return;
     }
 
     // STEP 1: Lấy thông tin chủ nhà
-    // console.log("📢 Calling getLandlordByRoomId...");
+    // console.log(" Calling getLandlordByRoomId...");
     let landlord;
     try {
       landlord = await getLandlordByRoomId(roomId as string);
-      // console.log("🏠 Landlord response received");
+      // console.log(" Landlord response received");
     } catch (fetchError) {
-      console.error("❌ getLandlordByRoomId threw error:", fetchError);
-      // console.warn("⚠️ Cannot send notification: Failed to fetch landlord info");
+      console.error(" getLandlordByRoomId threw error:", fetchError);
+      // console.warn("️ Cannot send notification: Failed to fetch landlord info");
       return;
     }
 
-    // console.log("🏠 Landlord object:", JSON.stringify(landlord, null, 2));
+    // console.log(" Landlord object:", JSON.stringify(landlord, null, 2));
 
     if (!landlord) {
-      console.error("❌ ABORT: landlord object is null or undefined");
-      // console.warn("⚠️ Cannot send notification: Landlord data is empty");
+      console.error(" ABORT: landlord object is null or undefined");
+      // console.warn("️ Cannot send notification: Landlord data is empty");
       return;
     }
 
@@ -115,11 +115,11 @@ export const createBookingNotification = async (
     // console.log("=================================");
 
     if (!validateReceiverId(landlord.id)) {
-      console.error("❌ ABORT: landlord.id is invalid or missing", { 
+      console.error(" ABORT: landlord.id is invalid or missing", { 
         landlord: JSON.stringify(landlord, null, 2),
         landlordId: landlord.id
       });
-      // console.warn("⚠️ Cannot send notification: No valid landlord ID");
+      // console.warn("️ Cannot send notification: No valid landlord ID");
       return;
     }
 
@@ -133,11 +133,11 @@ export const createBookingNotification = async (
       contractId: null,
     };
 
-    // console.log("📋 Raw data before sanitize:", JSON.stringify(rawData, null, 2));
+    // console.log(" Raw data before sanitize:", JSON.stringify(rawData, null, 2));
 
     // STEP 3: Làm sạch dữ liệu
     const cleanPayload = sanitizeData(rawData);
-    // console.log("🧹 Cleaned data:", JSON.stringify(cleanPayload, null, 2));
+    // console.log(" Cleaned data:", JSON.stringify(cleanPayload, null, 2));
 
     // STEP 4: Validate cleaned payload
     // console.log("=== VALIDATE CLEANED PAYLOAD ===");
@@ -149,14 +149,14 @@ export const createBookingNotification = async (
     // STEP 5: Thêm timestamp
     cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
 
-    // console.log("✅ FINAL PAYLOAD to Firestore:", JSON.stringify(cleanPayload, null, 2));
+    // console.log(" FINAL PAYLOAD to Firestore:", JSON.stringify(cleanPayload, null, 2));
 
     // STEP 6: Gửi lên Firestore
     await firestore().collection("notifications").add(cleanPayload);
     
-    // console.log("✨ SUCCESS: Booking notification created successfully");
+    // console.log(" SUCCESS: Booking notification created successfully");
   } catch (error) {
-    console.error("🔥 CRITICAL ERROR in createBookingNotification:", error);
+    console.error(" CRITICAL ERROR in createBookingNotification:", error);
   }
 };
 
@@ -168,7 +168,7 @@ export const bookingConfirmationNotification = async (
   message: string
 ) => {
   try {
-    // console.log("🔍 bookingConfirmationNotification START", { senderId, receiverId });
+    // console.log(" bookingConfirmationNotification START", { senderId, receiverId });
 
     // Validate
     if (!validateSenderId(senderId)) return;
@@ -186,9 +186,9 @@ export const bookingConfirmationNotification = async (
     cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
 
     await firestore().collection("notifications").add(cleanPayload);
-    // console.log("✨ SUCCESS: Booking confirmation notification created");
+    // console.log(" SUCCESS: Booking confirmation notification created");
   } catch (error) {
-    console.error("🔥 Error in bookingConfirmationNotification:", error);
+    console.error(" Error in bookingConfirmationNotification:", error);
   }
 };
 
@@ -198,15 +198,15 @@ export const createRequestNotification = async (
   message: string
 ) => {
   try {
-    // console.log("🔍 createRequestNotification START", { roomId, tenantId });
+    // console.log(" createRequestNotification START", { roomId, tenantId });
 
     if (!roomId) {
-      // console.warn("⚠️ ABORT: roomId is missing");
+      // console.warn("️ ABORT: roomId is missing");
       return;
     }
 
     if (!validateSenderId(tenantId)) {
-      // console.warn("⚠️ ABORT: Invalid senderId");
+      // console.warn("️ ABORT: Invalid senderId");
       return;
     }
 
@@ -215,12 +215,12 @@ export const createRequestNotification = async (
     try {
       landlord = await getLandlordByRoomId(roomId as string);
     } catch (error) {
-      console.error("❌ Failed to fetch landlord:", error);
+      console.error(" Failed to fetch landlord:", error);
       return;
     }
 
     if (!landlord || !validateReceiverId(landlord?.id)) {
-      console.error("❌ ABORT: Invalid landlord or landlord.id");
+      console.error(" ABORT: Invalid landlord or landlord.id");
       return;
     }
 
@@ -236,9 +236,9 @@ export const createRequestNotification = async (
     cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
 
     await firestore().collection("notifications").add(cleanPayload);
-    // console.log("✨ SUCCESS: Request notification created");
+    // console.log(" SUCCESS: Request notification created");
   } catch (error) {
-    console.error("🔥 Error in createRequestNotification:", error);
+    console.error(" Error in createRequestNotification:", error);
   }
 };
 
@@ -248,15 +248,15 @@ export const requestProcessedNotification = async (
   message: string
 ) => {
   try {
-    // console.log("🔍 requestProcessedNotification START", { landlordId, tenantId });
+    // console.log(" requestProcessedNotification START", { landlordId, tenantId });
 
     if (!validateReceiverId(tenantId)) {
-      // console.warn("⚠️ ABORT: Invalid receiverId (tenantId)");
+      // console.warn("️ ABORT: Invalid receiverId (tenantId)");
       return;
     }
 
     if (!validateSenderId(landlordId)) {
-      // console.warn("⚠️ ABORT: Invalid senderId (landlordId)");
+      // console.warn("️ ABORT: Invalid senderId (landlordId)");
       return;
     }
 
@@ -272,9 +272,9 @@ export const requestProcessedNotification = async (
     cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
 
     await firestore().collection("notifications").add(cleanPayload);
-    // console.log("✨ SUCCESS: Request processed notification created");
+    // console.log(" SUCCESS: Request processed notification created");
   } catch (error) {
-    console.error("🔥 Error in requestProcessedNotification:", error);
+    console.error(" Error in requestProcessedNotification:", error);
   }
 };
 
@@ -285,15 +285,15 @@ export const createResidentNotification = async (
   message: string
 ) => {
   try {
-    // console.log("🔍 createResidentNotification START", { landlordId, tenantId, contractId });
+    // console.log(" createResidentNotification START", { landlordId, tenantId, contractId });
 
     if (!validateReceiverId(landlordId)) {
-      // console.warn("⚠️ ABORT: Invalid receiverId (landlordId)");
+      // console.warn("️ ABORT: Invalid receiverId (landlordId)");
       return;
     }
 
     if (!validateSenderId(tenantId)) {
-      // console.warn("⚠️ ABORT: Invalid senderId (tenantId)");
+      // console.warn("️ ABORT: Invalid senderId (tenantId)");
       return;
     }
 
@@ -310,9 +310,9 @@ export const createResidentNotification = async (
     cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
 
     await firestore().collection("notifications").add(cleanPayload);
-    // console.log("✨ SUCCESS: Resident notification created");
+    // console.log(" SUCCESS: Resident notification created");
   } catch (error) {
-    console.error("🔥 Error in createResidentNotification:", error);
+    console.error(" Error in createResidentNotification:", error);
   }
 };
 
@@ -323,15 +323,15 @@ export const paymentNotification = async (
   message: string
 ) => {
   try {
-    // console.log("🔍 paymentNotification START", { senderId, receiverId, contractId });
+    // console.log(" paymentNotification START", { senderId, receiverId, contractId });
 
     if (!validateSenderId(senderId)) {
-      // console.warn("⚠️ ABORT: Invalid senderId");
+      // console.warn("️ ABORT: Invalid senderId");
       return;
     }
 
     if (!validateReceiverId(receiverId)) {
-      // console.warn("⚠️ ABORT: Invalid receiverId");
+      // console.warn("️ ABORT: Invalid receiverId");
       return;
     }
 
@@ -348,9 +348,9 @@ export const paymentNotification = async (
     cleanPayload.createdAt = firestore.FieldValue.serverTimestamp();
 
     await firestore().collection("notifications").add(cleanPayload);
-    // console.log("✨ SUCCESS: Payment notification created");
+    // console.log(" SUCCESS: Payment notification created");
   } catch (error) {
-    console.error("🔥 Error in paymentNotification:", error);
+    console.error(" Error in paymentNotification:", error);
   }
 };
 

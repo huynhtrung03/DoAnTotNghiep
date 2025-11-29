@@ -10,7 +10,7 @@ import MessengerScreen from '../screens/mesenger/MesengerScreen';
 import UserStackNavigator from './UserStackNavigator';
 import Colors, { withOpacity } from '../styles/colors';
 import { useFavoriteStore } from '../stores/FavoriteStore';
-import { getAllFavoriteIds } from '../services/favorites/FavoriteService';
+import { getAllFavoriteIds } from '../services/FavoriteService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Tab = createBottomTabNavigator();
@@ -162,22 +162,22 @@ export default function UserTabs() {
         // Kiểm tra đăng nhập
         const token = await AsyncStorage.getItem('accessToken');
         if (!token) {
-          console.log('⚠️ User not logged in, skipping favorites load');
+          console.log('️ User not logged in, skipping favorites load');
           setFavoriteRoomIds([]);
           return;
         }
 
         // Chỉ load nếu chưa khởi tạo
         if (!isInitialized) {
-          // console.log('🔄 Loading all favorite IDs...');
+          // console.log(' Loading all favorite IDs...');
           setLoading(true);
           const favoriteIds = await getAllFavoriteIds();
-          // console.log(`✅ Loaded ${favoriteIds.length} favorites into store`);
+          // console.log(` Loaded ${favoriteIds.length} favorites into store`);
           setFavoriteRoomIds(favoriteIds);
           setLoading(false);
         }
       } catch (error) {
-        console.error('❌ Error loading favorites in UserTabs:', error);
+        console.error(' Error loading favorites in UserTabs:', error);
         setLoading(false);
       }
     };

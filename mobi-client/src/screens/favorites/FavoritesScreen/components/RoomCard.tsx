@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RoomInUser } from '../types';
 import { styles } from '../styles';
 import Colors from '../../../../styles/colors';
-import { URL_IMAGE } from '../../../../services/config/Constant';
+import { URL_IMAGE } from '../../../../services/Constant';
 
 interface RoomCardProps {
   room: RoomInUser;

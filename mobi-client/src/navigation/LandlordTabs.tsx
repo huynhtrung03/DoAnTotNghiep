@@ -10,6 +10,7 @@ import DashboardScreen from '../screens/landlord/dashboard/DashboardScreen';
 import PaymentHistoryScreen from '../screens/landlord/paymenthistory/PaymentHistoryScreen';
 import UserScreen from '../screens/user/UserScreen';
 import MesengerScreen from '../screens/mesenger/MesengerScreen';
+import PaymentScreen from '../screens/PaymentScreen';
 import Colors, { withOpacity } from '../styles/colors';
 
 const Tab = createBottomTabNavigator();
@@ -224,15 +225,15 @@ export default function LandlordTabs() {
       />
       <Tab.Screen 
         name="Contracts" 
-        component={ContractManagementScreen}
+        component={PaymentScreen}
         options={{
           tabBarLabel: ({ focused }) => (
-            <TabLabel label="Hợp đồng" focused={focused} tabIndex={2} />
+            <TabLabel label="Thanh toán" focused={focused} tabIndex={2} />
           ),
           tabBarIcon: ({ size, focused }) => (
             <TabIcon 
-              name="document-text-outline" 
-              focusedName="document-text"
+              name="card-outline" 
+              focusedName="card"
               size={size} 
               focused={focused}
               tabIndex={2}

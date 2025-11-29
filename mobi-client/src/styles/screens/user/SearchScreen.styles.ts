@@ -17,7 +17,7 @@ export default StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    paddingBottom: 100, // ✅ Add padding for tab bar
+    paddingBottom: 100, //  Add padding for tab bar
   },
 
   // ==================== MODERN HEADER ====================

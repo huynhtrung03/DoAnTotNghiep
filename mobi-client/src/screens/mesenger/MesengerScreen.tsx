@@ -57,7 +57,7 @@ export default function MessengerScreen() {
       if (userDataStr) {
         const userData = JSON.parse(userDataStr);
         setCurrentUserId(userData.id);
-        console.log('👤 Current user ID:', userData.id);
+        console.log(' Current user ID:', userData.id);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -68,7 +68,7 @@ export default function MessengerScreen() {
   useEffect(() => {
     if (!currentUserId) return;
 
-    console.log('🔄 Setting up all messages listener');
+    console.log(' Setting up all messages listener');
     const unsubscribe = listenForConversations(
       currentUserId,
       lastReadTimestamps,
@@ -78,7 +78,7 @@ export default function MessengerScreen() {
     );
 
     return () => {
-      console.log('🔌 Unsubscribing from messages');
+      console.log(' Unsubscribing from messages');
       unsubscribe();
     };
   }, [currentUserId, refreshTrigger]);
@@ -87,7 +87,7 @@ export default function MessengerScreen() {
   useEffect(() => {
     if (!currentUserId) return;
 
-    console.log('👂 Listening for read statuses for user:', currentUserId);
+    console.log(' Listening for read statuses for user:', currentUserId);
 
     const unsubscribeReadStatuses = onSnapshot(
       query(
@@ -103,18 +103,18 @@ export default function MessengerScreen() {
           }
         });
         lastReadTimestamps.current = newTimestamps;
-        console.log('📚 Read timestamps updated:', newTimestamps.size, 'conversations');
+        console.log(' Read timestamps updated:', newTimestamps.size, 'conversations');
 
         // Trigger recalculation of unread counts
         setRefreshTrigger(prev => prev + 1);
       },
       (error) => {
-        console.error('❌ Error listening to read statuses:', error);
+        console.error(' Error listening to read statuses:', error);
       }
     );
 
     return () => {
-      console.log('🔌 Unsubscribing from read statuses');
+      console.log(' Unsubscribing from read statuses');
       unsubscribeReadStatuses();
     };
   }, [currentUserId]);
@@ -165,9 +165,9 @@ export default function MessengerScreen() {
     // Mark conversation as read in Firebase
     try {
       await markConversationAsRead(currentUserId, user.id);
-      console.log('✅ Conversation marked as read:', user.id);
+      console.log(' Conversation marked as read:', user.id);
     } catch (error) {
-      console.error('❌ Error marking conversation as read:', error);
+      console.error(' Error marking conversation as read:', error);
     }
 
     navigation.navigate('Chat', {

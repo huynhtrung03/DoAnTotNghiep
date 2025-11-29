@@ -44,6 +44,8 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/auth/change-password").authenticated()
                                                 .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/api/zalopay/callback").permitAll()
+                                                .requestMatchers("/api/zalopay/confirm-payment").hasAnyRole("Landlords", "Administrators", "Users")
                                                 // .requestMatchers("/api/approval-queue/**").hasRole("Administrators")
                                                 // Cho phép GET /api/post-types/** cho cả Landlords và Administrators
                                                 // admin

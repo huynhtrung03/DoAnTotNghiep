@@ -48,7 +48,7 @@ interface FilterOptions {
 }
 
 const PaymentHistoryScreen: React.FC = () => {
-  // console.log('🔄 PaymentHistoryScreen - Component rendered');
+  // console.log(' PaymentHistoryScreen - Component rendered');
 
   const [isLandlord, setIsLandlord] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,7 @@ const PaymentHistoryScreen: React.FC = () => {
   const [landlordInfo, setLandlordInfo] = useState<any>(null);
   const [accountBalance, setAccountBalance] = useState<number>(0);
 
-  // console.log('📊 PaymentHistoryScreen - State initialized:', {
+  // console.log(' PaymentHistoryScreen - State initialized:', {
   //   isLandlord,
   //   loading,
   //   transactionsCount: transactions.length,
@@ -82,10 +82,10 @@ const PaymentHistoryScreen: React.FC = () => {
 
   // Check if user is landlord
   useEffect(() => {
-    // console.log('🔐 PaymentHistoryScreen - useEffect checkUserRole triggered');
+    // console.log(' PaymentHistoryScreen - useEffect checkUserRole triggered');
     const checkUserRole = async () => {
       try {
-        // console.log('🔍 PaymentHistoryScreen - Checking user roles...');
+        // console.log(' PaymentHistoryScreen - Checking user roles...');
         const roles = await getUserRoles();
         // console.log('PaymentHistoryScreen - User roles:', roles);
         // Check for both 'LANDLORD' and 'Landlords' to handle different naming conventions
@@ -94,17 +94,17 @@ const PaymentHistoryScreen: React.FC = () => {
         setIsLandlord(isUserLandlord);
 
         if (!isUserLandlord) {
-          // console.log('🚫 PaymentHistoryScreen - User is not landlord, showing access denied');
+          // console.log(' PaymentHistoryScreen - User is not landlord, showing access denied');
           Alert.alert(
             'Truy cập bị từ chối',
             'Chỉ chủ nhà mới có thể truy cập trang này.',
             [{ text: 'OK' }]
           );
         } else {
-          // console.log('✅ PaymentHistoryScreen - User is landlord, proceeding...');
+          // console.log(' PaymentHistoryScreen - User is landlord, proceeding...');
         }
       } catch (error) {
-        console.error('❌ PaymentHistoryScreen - Error checking user role:', error);
+        console.error(' PaymentHistoryScreen - Error checking user role:', error);
         setIsLandlord(false);
       }
     };
@@ -114,10 +114,10 @@ const PaymentHistoryScreen: React.FC = () => {
 
   // Load transactions
   const loadTransactions = useCallback(async (page: number = 1, filterOptions?: FilterOptions, isRefresh: boolean = false) => {
-    // console.log('📥 PaymentHistoryScreen - loadTransactions called with:', { page, filterOptions, isRefresh });
+    // console.log(' PaymentHistoryScreen - loadTransactions called with:', { page, filterOptions, isRefresh });
 
     try {
-      // console.log('⏳ PaymentHistoryScreen - Setting loading to true');
+      // console.log(' PaymentHistoryScreen - Setting loading to true');
       // Only set loading for initial load, not refresh
       if (!isRefresh) {
         setLoading(true);
@@ -128,24 +128,24 @@ const PaymentHistoryScreen: React.FC = () => {
       let data;
 
       if (filterOptions && (filterOptions.startDate || filterOptions.endDate)) {
-        // console.log('📅 PaymentHistoryScreen - Using date range filter');
+        // console.log(' PaymentHistoryScreen - Using date range filter');
         // Filter by date range
         const startDate = filterOptions.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const endDate = filterOptions.endDate || new Date().toISOString().split('T')[0];
         // console.log('PaymentHistoryScreen - Filtering by date range:', startDate, 'to', endDate);
         data = await getTransactionsByUserIdAndDateRange(startDate, endDate, apiPage, pageSize);
       } else {
-        // console.log('📋 PaymentHistoryScreen - Getting all transactions');
+        // console.log(' PaymentHistoryScreen - Getting all transactions');
         // Get all transactions
         // console.log('PaymentHistoryScreen - Getting all transactions');
         data = await getTransactionsByUserIdPaginated(apiPage, pageSize);
       }
 
-      // console.log('📦 PaymentHistoryScreen - API response received:', data);
+      // console.log(' PaymentHistoryScreen - API response received:', data);
 
       // Filter by status if needed
       let filteredTransactions = Array.isArray(data.transactions) ? data.transactions : [];
-      // console.log('🔍 PaymentHistoryScreen - Raw transactions count:', filteredTransactions.length);
+      // console.log(' PaymentHistoryScreen - Raw transactions count:', filteredTransactions.length);
 
       if (filterOptions && filterOptions.status !== 'all') {
         const statusFilter = filterOptions.status === 'success' ? 1 : 0;
@@ -153,7 +153,7 @@ const PaymentHistoryScreen: React.FC = () => {
         // console.log('PaymentHistoryScreen - Filtered by status:', filterOptions.status, '->', filteredTransactions.length, 'transactions');
       }
 
-      // console.log('💾 PaymentHistoryScreen - Setting state with:', {
+      // console.log(' PaymentHistoryScreen - Setting state with:', {
       //   transactionsCount: filteredTransactions.length,
       //   totalRecords: data.totalRecords,
       //   currentPage: page,
@@ -164,28 +164,28 @@ const PaymentHistoryScreen: React.FC = () => {
       setTotalRecords(data.totalRecords || filteredTransactions.length || 0);
       setCurrentPage(page);
 
-      // console.log('✅ PaymentHistoryScreen - State updated successfully:', {
+      // console.log(' PaymentHistoryScreen - State updated successfully:', {
       //   transactionsCount: filteredTransactions.length,
       //   totalRecords: data.totalRecords || filteredTransactions.length || 0,
       //   currentPage: page
       // });
 
       // Calculate stats
-      // console.log('📊 PaymentHistoryScreen - Calculating stats...');
+      // console.log(' PaymentHistoryScreen - Calculating stats...');
       calculateStats(filteredTransactions);
     } catch (error: any) {
-      console.error('❌ PaymentHistoryScreen - Error loading transactions:', error);
-      console.error('❌ PaymentHistoryScreen - Error details:', {
+      console.error(' PaymentHistoryScreen - Error loading transactions:', error);
+      console.error(' PaymentHistoryScreen - Error details:', {
         message: error.message,
         status: error.status,
         response: error.response
       });
       const errorMessage = error.message || 'Không thể tải dữ liệu giao dịch';
-      // console.log('🚨 PaymentHistoryScreen - Showing error alert:', errorMessage);
+      // console.log(' PaymentHistoryScreen - Showing error alert:', errorMessage);
       Alert.alert('Lỗi', errorMessage + '. Vui lòng thử lại.');
       // Only reset data on initial load error, preserve data on refresh error
       if (!isRefresh) {
-        // console.log('🗑️ PaymentHistoryScreen - Resetting data due to initial load error');
+        // console.log('️ PaymentHistoryScreen - Resetting data due to initial load error');
         setTransactions([]);
         setTotalRecords(0);
         setStats({
@@ -196,11 +196,11 @@ const PaymentHistoryScreen: React.FC = () => {
         });
         setAccountBalance(0);
       } else {
-        // console.log('🔄 PaymentHistoryScreen - Preserving existing data due to refresh error');
+        // console.log(' PaymentHistoryScreen - Preserving existing data due to refresh error');
       }
     } finally {
-      // console.log('🏁 PaymentHistoryScreen - loadTransactions completed, setting loading to false, refreshing to false');
-      // console.log('🏁 PaymentHistoryScreen - Final state:', {
+      // console.log(' PaymentHistoryScreen - loadTransactions completed, setting loading to false, refreshing to false');
+      // console.log(' PaymentHistoryScreen - Final state:', {
       //   loading: false,
       //   refreshing: false,
       //   transactionsCount: transactions.length
@@ -212,7 +212,7 @@ const PaymentHistoryScreen: React.FC = () => {
 
   // Calculate payment statistics
   const calculateStats = (transactionList: Transaction[]) => {
-    // console.log('🧮 PaymentHistoryScreen - calculateStats called with', transactionList.length, 'transactions');
+    // console.log(' PaymentHistoryScreen - calculateStats called with', transactionList.length, 'transactions');
 
     const statsData: PaymentStatsData = {
       successCount: 0,
@@ -236,43 +236,43 @@ const PaymentHistoryScreen: React.FC = () => {
 
       // Log every 10th transaction to avoid spam
       // if (index % 10 === 0 || index === transactionList.length - 1) {
-      //   console.log(`📈 PaymentHistoryScreen - Processed ${index + 1}/${transactionList.length} transactions`);
+      //   console.log(` PaymentHistoryScreen - Processed ${index + 1}/${transactionList.length} transactions`);
       // }
     });
 
-    // console.log('📊 PaymentHistoryScreen - Final stats calculated:', statsData);
+    // console.log(' PaymentHistoryScreen - Final stats calculated:', statsData);
     setStats(statsData);
 
     // Calculate account balance (total in - total out)
     const balance = statsData.totalIn - statsData.totalOut;
-    // console.log('💰 PaymentHistoryScreen - Account balance calculated:', balance);
+    // console.log(' PaymentHistoryScreen - Account balance calculated:', balance);
     setAccountBalance(balance);
   };
 
   // Handle filter apply
   const handleFilterApply = (newFilters: FilterOptions) => {
-    // console.log('🔄 PaymentHistoryScreen - Filter apply triggered:', newFilters);
+    // console.log(' PaymentHistoryScreen - Filter apply triggered:', newFilters);
     setFilters(newFilters);
     loadTransactions(1, newFilters, false);
   };
 
   // Handle page change
   const handlePageChange = (page: number) => {
-    // console.log('📄 PaymentHistoryScreen - Page change to:', page);
+    // console.log(' PaymentHistoryScreen - Page change to:', page);
     loadTransactions(page, filters, false);
   };
 
   // Handle deposit
   const handleDeposit = () => {
-    // console.log('💰 PaymentHistoryScreen - Deposit completed, refreshing data...');
+    // console.log(' PaymentHistoryScreen - Deposit completed, refreshing data...');
     // Refresh transactions and balance after successful deposit
     loadTransactions(1, filters, false);
   };
 
   // Handle refresh
   const handleRefresh = () => {
-    // console.log('🔄 PaymentHistoryScreen - Refresh triggered, current filters:', filters);
-    // console.log('🔄 PaymentHistoryScreen - Current transactions count:', transactions.length);
+    // console.log(' PaymentHistoryScreen - Refresh triggered, current filters:', filters);
+    // console.log(' PaymentHistoryScreen - Current transactions count:', transactions.length);
     setRefreshing(true);
     loadTransactions(1, filters, true);
   };
@@ -363,51 +363,51 @@ const PaymentHistoryScreen: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    // console.log('🚀 PaymentHistoryScreen - Initial load useEffect triggered, isLandlord:', isLandlord);
+    // console.log(' PaymentHistoryScreen - Initial load useEffect triggered, isLandlord:', isLandlord);
 
     const fetchLandlordInfo = async () => {
       try {
-        // console.log('👤 PaymentHistoryScreen - Fetching landlord info...');
+        // console.log(' PaymentHistoryScreen - Fetching landlord info...');
         // Get userId from JWT token (same as DashboardScreen)
         const accessToken = await AsyncStorage.getItem('accessToken');
-        // console.log('🔑 PaymentHistoryScreen - Access token exists:', !!accessToken);
+        // console.log(' PaymentHistoryScreen - Access token exists:', !!accessToken);
 
         if (accessToken) {
           const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
           const userId = tokenPayload.id;
           // console.log('PaymentHistoryScreen - User ID from JWT:', userId);
 
-          // console.log('🌐 PaymentHistoryScreen - Calling landlordService.getLandlordById...');
+          // console.log(' PaymentHistoryScreen - Calling landlordService.getLandlordById...');
           const info = await landlordService.getLandlordById(userId);
-          // console.log('✅ PaymentHistoryScreen - Landlord info fetched:', info);
+          // console.log(' PaymentHistoryScreen - Landlord info fetched:', info);
           setLandlordInfo(info);
         } else {
-          // console.warn('⚠️ PaymentHistoryScreen - No access token found');
+          // console.warn('️ PaymentHistoryScreen - No access token found');
         }
       } catch (error) {
-        console.error('❌ PaymentHistoryScreen - Error fetching landlord info:', error);
+        console.error(' PaymentHistoryScreen - Error fetching landlord info:', error);
       }
     };
 
     if (isLandlord === true) {
-      // console.log('🎯 PaymentHistoryScreen - User is landlord, loading data...');
-      // console.log('🔄 PaymentHistoryScreen - Page reload/load triggered, calling loadTransactions');
+      // console.log(' PaymentHistoryScreen - User is landlord, loading data...');
+      // console.log(' PaymentHistoryScreen - Page reload/load triggered, calling loadTransactions');
       loadTransactions(1, undefined, false);
       fetchLandlordInfo();
     } else {
-      // console.log('⏸️ PaymentHistoryScreen - User is not landlord yet, waiting...');
+      // console.log('️ PaymentHistoryScreen - User is not landlord yet, waiting...');
     }
   }, [isLandlord, loadTransactions]);
 
   // Reload data when screen comes back into focus (after payment)
   useFocusEffect(
     useCallback(() => {
-      // console.log('🎯 PaymentHistoryScreen - Screen focused, checking if payment was completed...');
+      // console.log(' PaymentHistoryScreen - Screen focused, checking if payment was completed...');
       // This will trigger when returning from PaymentWebView
       // We can add logic here to check if payment was successful
       // For now, just reload data to ensure fresh state
       if (isLandlord === true) {
-        // console.log('🔄 PaymentHistoryScreen - Reloading data after potential payment completion');
+        // console.log(' PaymentHistoryScreen - Reloading data after potential payment completion');
         loadTransactions(1, filters, false);
       }
     }, [isLandlord, filters, loadTransactions])

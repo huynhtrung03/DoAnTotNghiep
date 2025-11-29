@@ -169,4 +169,5 @@ public class TransactionService {
     public boolean existsByTransactionCode(String transactionCode) {
         return transactionsJpaRepository.existsByTransactionCode(transactionCode);
     }
+
 }

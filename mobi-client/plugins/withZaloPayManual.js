@@ -3,14 +3,12 @@ const {
   withDangerousMod,
   withAndroidManifest,
   withMainApplication,
-  AndroidConfig,
 } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
 // --- NỘI DUNG FILE JAVA ---
-// Chúng ta nhúng code Java trực tiếp vào đây để plugin tự sinh file khi build
-const getZPModuleJava = (packageName) => `package ${packageName};
+const getZPModuleJava = (packageName, appId, scheme) => `package ${packageName};
 
 import android.app.Activity;
 import android.content.Intent;
@@ -57,16 +55,18 @@ public class ZPModule extends ReactContextBaseJavaModule {
         Activity currentActivity = getCurrentActivity();
         if (currentActivity == null) return;
 
-        // Khởi tạo SDK với AppID (Demo Sandbox: 2553)
-        // Trong thực tế nên init ở onCreate, nhưng init ở đây cho tiện với Expo Plugin
-        ZaloPaySDK.init(2553, vn.zalopay.sdk.Environment.SANDBOX);
+        // Khởi tạo SDK với AppID
+        // Environment.SANDBOX cho môi trường test
+        // Environment.PRODUCTION cho môi trường thật
+        ZaloPaySDK.init(${appId}, vn.zalopay.sdk.Environment.SANDBOX);
 
-        ZaloPaySDK.getInstance().payOrder(currentActivity, zpTransToken, "demozpdk://app", new PayOrderListener() {
+        ZaloPaySDK.getInstance().payOrder(currentActivity, zpTransToken, "${scheme}://app", new PayOrderListener() {
             @Override
             public void onPaymentSucceeded(final String transactionId, final String transToken, final String appTransID) {
                 WritableMap params = Arguments.createMap();
                 params.putString("returnCode", "1");
                 params.putString("transactionId", transactionId);
+                params.putString("transToken", transToken);
                 params.putString("appTransID", appTransID);
                 sendEvent("EventPayZalo", params);
             }
@@ -75,6 +75,7 @@ public class ZPModule extends ReactContextBaseJavaModule {
             public void onPaymentCanceled(String transToken, String appTransID) {
                 WritableMap params = Arguments.createMap();
                 params.putString("returnCode", "4");
+                params.putString("transToken", transToken);
                 params.putString("appTransID", appTransID);
                 sendEvent("EventPayZalo", params);
             }
@@ -82,8 +83,9 @@ public class ZPModule extends ReactContextBaseJavaModule {
             @Override
             public void onPaymentError(ZaloPayError zaloPayError, String transToken, String appTransID) {
                 WritableMap params = Arguments.createMap();
-                params.putString("returnCode", "0");
+                params.putString("returnCode", "-1");
                 params.putString("error", zaloPayError.toString());
+                params.putString("transToken", transToken);
                 params.putString("appTransID", appTransID);
                 sendEvent("EventPayZalo", params);
             }
@@ -117,7 +119,11 @@ public class ZPPackage implements ReactPackage {
 }
 `;
 
-const withZaloPayManual = (config) => {
+const withZaloPayManual = (config, props) => {
+  // Lấy config từ app.json hoặc props
+  const appId = props?.appId || 2553; // Default sandbox
+  const scheme = props?.scheme || 'mobi-client'; // Thay bằng scheme app của bạn
+  
   // 1. COPY FILE .AAR
   config = withDangerousMod(config, [
     'android',
@@ -126,39 +132,61 @@ const withZaloPayManual = (config) => {
       const androidAppLibs = path.join(projectRoot, 'android', 'app', 'libs');
       const sourceAar = path.join(projectRoot, 'local-libs', 'zpdk-release-v3.1.aar');
       
-      if (!fs.existsSync(androidAppLibs)) fs.mkdirSync(androidAppLibs, { recursive: true });
+      if (!fs.existsSync(androidAppLibs)) {
+        fs.mkdirSync(androidAppLibs, { recursive: true });
+      }
+      
       if (fs.existsSync(sourceAar)) {
         fs.copyFileSync(sourceAar, path.join(androidAppLibs, 'zpdk-release-v3.1.aar'));
+        console.log('✅ Đã copy zpdk-release-v3.1.aar');
+      } else {
+        console.warn('⚠️ Không tìm thấy file zpdk-release-v3.1.aar tại local-libs/');
       }
       return config;
     },
   ]);
 
-  // 2. CONFIG BUILD.GRADLE (Thêm dependencies)
+  // 2. CONFIG BUILD.GRADLE
   config = withAppBuildGradle(config, (config) => {
-    const buildGradle = config.modResults.contents;
-    if (!buildGradle.includes("zpdk-release-v3.1.aar")) {
-      config.modResults.contents = buildGradle.replace(
+    let buildGradle = config.modResults.contents;
+    
+    // Thêm flatDir repository nếu chưa có
+    if (!buildGradle.includes('flatDir')) {
+      buildGradle = buildGradle.replace(
+        /repositories\s*\{/,
+        `repositories {\n        flatDir {\n            dirs 'libs'\n        }`
+      );
+    }
+    
+    // Thêm dependency
+    if (!buildGradle.includes('zpdk-release-v3.1')) {
+      buildGradle = buildGradle.replace(
         /dependencies\s*\{/,
         `dependencies {\n    implementation files('libs/zpdk-release-v3.1.aar')`
       );
     }
+    
+    config.modResults.contents = buildGradle;
     return config;
   });
 
-  // 3. SINH FILE JAVA (ZPModule.java và ZPPackage.java)
+  // 3. SINH FILE JAVA
   config = withDangerousMod(config, [
     'android',
     async (config) => {
       const projectRoot = config.modRequest.projectRoot;
-      const packageName = config.android.package || 'com.namaesieunhangao.mobiclient';
+      const packageName = config.android?.package || 'com.namaesieunhangao.mobiclient';
       const packagePath = packageName.replace(/\./g, '/');
       const javaSrcPath = path.join(projectRoot, 'android', 'app', 'src', 'main', 'java', packagePath);
+
+      if (!fs.existsSync(javaSrcPath)) {
+        fs.mkdirSync(javaSrcPath, { recursive: true });
+      }
 
       // Ghi file ZPModule.java
       fs.writeFileSync(
         path.join(javaSrcPath, 'ZPModule.java'), 
-        getZPModuleJava(packageName)
+        getZPModuleJava(packageName, appId, scheme)
       );
 
       // Ghi file ZPPackage.java
@@ -167,77 +195,92 @@ const withZaloPayManual = (config) => {
         getZPPackageJava(packageName)
       );
       
-      console.log('✅ Đã tạo file ZaloPay Bridge Java thành công!');
+      console.log('✅ Đã tạo file ZaloPay Bridge Java!');
       return config;
     },
   ]);
 
   // 4. ĐĂNG KÝ PACKAGE VÀO MAIN APPLICATION
+  // config = withMainApplication(config, (config) => {
+  //   let mainAppContent = config.modResults.contents;
+  //   const packageName = config.android?.package || 'com.namaesieunhangao.mobiclient';
+    
+  //   // Thêm import
+  //   if (!mainAppContent.includes('ZPPackage')) {
+  //     const importPattern = /import\s+expo\.modules\.ReactActivityDelegateWrapper/;
+  //     if (importPattern.test(mainAppContent)) {
+  //       mainAppContent = mainAppContent.replace(
+  //         importPattern,
+  //         `$&\nimport ${packageName}.ZPPackage`
+  //       );
+  //     } else {
+  //       // Fallback: thêm sau package declaration
+  //       mainAppContent = mainAppContent.replace(
+  //         `package ${packageName}`,
+  //         `package ${packageName}\n\nimport ${packageName}.ZPPackage`
+  //       );
+  //     }
+  //   }
+
+  //   // Đăng ký package trong getPackages()
+  //   if (!mainAppContent.includes('ZPPackage()')) {
+  //     // Với Kotlin (Expo SDK 50+)
+  //     if (mainAppContent.includes('override fun getPackages()')) {
+  //       mainAppContent = mainAppContent.replace(
+  //         /return\s+PackageList\(this\)\.packages/,
+  //         `val packages = PackageList(this).packages.toMutableList()\n        packages.add(ZPPackage())\n        return packages`
+  //       );
+  //     }
+  //     // Với Java
+  //     else if (mainAppContent.includes('getPackages()')) {
+  //       mainAppContent = mainAppContent.replace(
+  //         /return\s+new\s+PackageList\(this\)\.getPackages\(\);/,
+  //         `List<ReactPackage> packages = new PackageList(this).getPackages();\n        packages.add(new ZPPackage());\n        return packages;`
+  //       );
+  //     }
+  //   }
+    
+  //   config.modResults.contents = mainAppContent;
+  //   return config;
+  // });
+
   config = withMainApplication(config, (config) => {
-    const mainAppContent = config.modResults.contents;
-    const packageName = config.android.package || 'com.namaesieunhangao.mobiclient';
-    
-    // Thêm import
-    if (!mainAppContent.includes('import ' + packageName + '.ZPPackage;')) {
-        const importAnchor = 'import android.app.Application'; // Điểm neo an toàn
-        config.modResults.contents = mainAppContent.replace(
-            importAnchor,
-            `${importAnchor}\nimport ${packageName}.ZPPackage;`
-        );
-    }
+  let content = config.modResults.contents;
+  const packageName = config.android?.package || 'com.namaesieunhangao.mobiclient';
 
-    // Đăng ký package: thêm new ZPPackage() vào list
-    // Expo 50+ dùng Kotlin hoặc Java với getPackages() hoặc PackageList
-    // Logic tìm chỗ chèn "new ZPPackage()"
-    if (!config.modResults.contents.includes('new ZPPackage()')) {
-       // Tìm hàm getPackages() và chèn vào
-       // Đây là regex tìm PackageList để chèn thêm
-       // Lưu ý: Cấu trúc MainApplication của Expo có thể thay đổi, đây là cách chèn cơ bản
-       // Nếu dùng Expo SDK mới, thường file là MainApplication.kt
-    }
-    
-    // LƯU Ý: Với Expo Managed, việc inject vào MainApplication khá rủi ro vì Regex.
-    // Cách tốt nhất là để cho Expo Autolinking (nhưng ta đang làm thủ công).
-    // => Tạm thời bước này ta sẽ làm thủ công bằng cách sửa file MainApplication.kt nếu plugin tự động thất bại.
-    // Nhưng tôi sẽ thêm đoạn code chèn vào MainApplication.kt (Kotlin) cho bạn:
-    
-    // Pattern cho Kotlin MainApplication (Expo SDK 50+)
-    if (mainAppContent.includes('override fun getPackages(): List<ReactPackage>')) {
-        if(!mainAppContent.includes('ZPPackage()')) {
-             config.modResults.contents = mainAppContent.replace(
-                /PackageList\(this\)\.packages/,
-                `let list = PackageList(this).packages\n      list.add(ZPPackage())\n      list`
-             );
-             // Hoặc cách đơn giản hơn là add vào list trả về
-             config.modResults.contents = config.modResults.contents.replace(
-                 /return PackageList\(this\)\.packages/,
-                 `val packages = PackageList(this).packages\n        packages.add(ZPPackage())\n        return packages`
-             );
-        }
-    } 
-    // Pattern cho Java MainApplication (Cũ hơn)
-    else if (mainAppContent.includes('getPackages()')) {
-         if(!mainAppContent.includes('new ZPPackage()')) {
-             config.modResults.contents = mainAppContent.replace(
-                 /new PackageList\(this\)\.getPackages\(\);/,
-                 `List<ReactPackage> packages = new PackageList(this).getPackages();\n      packages.add(new ZPPackage());\n      return packages;`
-             );
-         }
-    }
+  // Thêm import
+  if (!content.includes('import ' + packageName + '.ZPPackage')) {
+    content = content.replace(
+      /import expo\.modules\.ReactNativeHostWrapper/,
+      `import expo.modules.ReactNativeHostWrapper\nimport ${packageName}.ZPPackage`
+    );
+  }
 
-    return config;
-  });
+  // TÌM ĐOẠN getPackages() TRONG DefaultReactNativeHost VÀ THÊM ZPPackage()
+  const getPackagesRegex = /override fun getPackages\(\): List<ReactPackage>[\s\S]*?PackageList\(this\)\.packages\.apply \{/;
+  
+  if (getPackagesRegex.test(content)) {
+    content = content.replace(
+      /PackageList\(this\)\.packages\.apply \{/,
+      `PackageList(this).packages.apply {\n              add(ZPPackage()) // ZaloPay Bridge`
+    );
+    console.log('Đã thêm ZPPackage() vào MainApplication.kt');
+  } else {
+    console.warn('Không tìm thấy getPackages() để thêm ZPPackage – có thể SDK quá mới');
+  }
+
+  config.modResults.contents = content;
+  return config;
+});
 
   // 5. CẤU HÌNH MANIFEST (Deep Link)
   config = withAndroidManifest(config, (config) => {
     const mainActivity = config.modResults.manifest.application[0].activity.find(
       (a) => a.$['android:name'] === '.MainActivity'
     );
+    
     if (mainActivity) {
-      // Scheme phải trùng với code Java ở trên: demozpdk
-      // Bạn có thể đổi lại thành mobi-client trong file Java và ở đây
-      const scheme = 'demozpdk'; 
-      const intent = {
+      const intentFilter = {
         action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
         category: [
           { $: { 'android:name': 'android.intent.category.DEFAULT' } },
@@ -245,8 +288,20 @@ const withZaloPayManual = (config) => {
         ],
         data: [{ $: { 'android:scheme': scheme, 'android:host': 'app' } }],
       };
-      if (!mainActivity['intent-filter']) mainActivity['intent-filter'] = [];
-      mainActivity['intent-filter'].push(intent);
+      
+      if (!mainActivity['intent-filter']) {
+        mainActivity['intent-filter'] = [];
+      }
+      
+      // Kiểm tra xem đã có intent-filter này chưa
+      const hasScheme = mainActivity['intent-filter'].some(filter => 
+        filter.data && filter.data.some(d => d.$['android:scheme'] === scheme)
+      );
+      
+      if (!hasScheme) {
+        mainActivity['intent-filter'].push(intentFilter);
+        console.log(`✅ Đã thêm deep link: ${scheme}://app`);
+      }
     }
     return config;
   });

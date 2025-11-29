@@ -25,7 +25,7 @@ export default function SearchScreen() {
   const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
   const { NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN } = extra as { NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?: string };
 
-  // ✅ Sử dụng custom hook
+  //  Sử dụng custom hook
   const {
     userLocation,
     currentCity,
@@ -50,9 +50,9 @@ export default function SearchScreen() {
   useEffect(() => {
     if (NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
       MapboxGL.setAccessToken(NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN);
-      // if (__DEV__) //console.log('✅ Mapbox token set.');
+      // if (__DEV__) //console.log(' Mapbox token set.');
     } else {
-      console.error('❌ Mapbox Access Token không tìm thấy!');
+      console.error(' Mapbox Access Token không tìm thấy!');
     }
   }, [NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN]);
 
@@ -67,7 +67,7 @@ export default function SearchScreen() {
   useEffect(() => {
     const params = route.params as any;
     if (params?.appliedFilters && params?.filterType) {
-      //console.log('🎯 Applied filters from HomeScreen:', params);
+      //console.log(' Applied filters from HomeScreen:', params);
       
       // Apply filters based on type
       switch (params.filterType) {
@@ -123,7 +123,7 @@ export default function SearchScreen() {
     }
   }, [route.params]);
 
-  // ✅ Hàm sắp xếp danh sách phòng
+  //  Hàm sắp xếp danh sách phòng
   const getSortedRooms = () => {
     const roomsCopy = [...roomsOnMap];
 
@@ -468,7 +468,7 @@ export default function SearchScreen() {
             style={StyleSheet.absoluteFillObject}
             styleURL={MapboxGL.StyleURL.Street}
             onDidFinishLoadingMap={() => {
-              //console.log('✅ Map loaded');
+              //console.log(' Map loaded');
               setIsMapLoading(false);
             }}
             onRegionDidChange={() => handleMapIdle(mapRef)}

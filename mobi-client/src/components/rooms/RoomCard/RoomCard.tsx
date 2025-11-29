@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Dimensions }
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RoomInUser } from '../../../types/types';
-import { URL_IMAGE } from '../../../services/config/Constant';
+import { URL_IMAGE } from '../../../services/Constant';
 import RoomCardActions from '../RoomCardActions';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getNotificationsForUser, markNotificationAsRead } from '../../services/statistics/NotificationService';
+import { getNotificationsForUser, markNotificationAsRead } from '../../services/NotificationService';
 import { styles } from './NotificationScreen.style';
 
 interface Notification {

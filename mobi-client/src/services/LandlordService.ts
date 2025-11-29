@@ -1,61 +1,42 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from './config/Constant';
 import { PageResponse, LandlordDetailByRoom, Landlord, RoomInUser } from '../types/types';
+import { BaseApiClient } from './api/BaseApiClient';
 
 export const landlordService = {
+  /**
+   * Lấy danh sách tất cả chủ nhà với phân trang
+   */
   async getAllLandlords(page: number = 0, size: number = 6): Promise<PageResponse<Landlord>> {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/landlords?page=${page}&size=${size}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch landlords');
-      }
-      return await response.json();
+      const result = await BaseApiClient.get<PageResponse<Landlord>>('/landlords', { page, size });
+      return result;
     } catch (error) {
-      console.error('Error fetching landlords:', error);
+      console.error('Lỗi khi lấy danh sách chủ nhà:', error);
       throw error;
     }
   },
 
+  /**
+   * Lấy chi tiết chủ nhà theo ID
+   */
   async getLandlordById(landlordId: string): Promise<LandlordDetailByRoom> {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/landlords/${landlordId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch landlord detail');
-      }
-      return await response.json();
+      const result = await BaseApiClient.get<LandlordDetailByRoom>(`/landlords/${landlordId}`);
+      return result;
     } catch (error) {
-      console.error('Error fetching landlord detail:', error);
+      console.error('Lỗi khi lấy chi tiết chủ nhà:', error);
       throw error;
     }
   },
 
+  /**
+   * Lấy danh sách phòng của chủ nhà với phân trang
+   */
   async getLandlordRooms(landlordId: string, page: number = 0, size: number = 9): Promise<PageResponse<RoomInUser>> {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/landlords/${landlordId}/rooms?page=${page}&size=${size}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch landlord rooms');
-      }
-      return await response.json();
+      const result = await BaseApiClient.get<PageResponse<RoomInUser>>(`/landlords/${landlordId}/rooms`, { page, size });
+      return result;
     } catch (error) {
-      console.error('Error fetching landlord rooms:', error);
+      console.error('Lỗi khi lấy danh sách phòng của chủ nhà:', error);
       throw error;
     }
   },

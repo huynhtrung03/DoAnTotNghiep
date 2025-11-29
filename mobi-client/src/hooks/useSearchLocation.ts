@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import * as Location from 'expo-location';
 import pointInPolygon from 'point-in-polygon';
 import MapboxGL from '@rnmapbox/maps';
-import { getRoomsInBounds } from '../services/rooms/RoomService';
+import { getRoomsInBounds } from '../services/RoomService';
 import { cityBoundariesData } from '../data/cityBoundaries';
 import Constants from 'expo-constants';
 
@@ -32,7 +32,7 @@ if (cityBoundariesData && cityBoundariesData.features) {
 }
 
 if (__DEV__) {
-  //console.log('📍 Loaded city boundaries:', Object.keys(CITY_BOUNDARIES).length, 'cities');
+  //console.log(' Loaded city boundaries:', Object.keys(CITY_BOUNDARIES).length, 'cities');
 }
 
 // Hàm xác định thành phố dựa trên tọa độ
@@ -43,7 +43,7 @@ export const detectCity = (latitude: number, longitude: number): string | null =
     for (const polygon of polygons) {
       if (pointInPolygon(point, polygon)) {
         if (__DEV__) {
-          //console.log(`✅ Phát hiện thành phố: "${cityName}" tại [${latitude.toFixed(4)}, ${longitude.toFixed(4)}]`);
+          //console.log(` Phát hiện thành phố: "${cityName}" tại [${latitude.toFixed(4)}, ${longitude.toFixed(4)}]`);
         }
         return cityName;
       }
@@ -51,7 +51,7 @@ export const detectCity = (latitude: number, longitude: number): string | null =
   }
   
   if (__DEV__) {
-    //console.log(`⚠️ Không xác định được thành phố tại [${latitude.toFixed(4)}, ${longitude.toFixed(4)}]`);
+    //console.log(`️ Không xác định được thành phố tại [${latitude.toFixed(4)}, ${longitude.toFixed(4)}]`);
   }
   return null;
 };
@@ -124,14 +124,14 @@ export const useSearchLocation = () => {
         `language=vi`; // Ưu tiên tiếng Việt
 
       if (__DEV__) {
-        //console.log('🔍 Tìm kiếm địa chỉ:', searchText);
+        //console.log(' Tìm kiếm địa chỉ:', searchText);
       }
 
       const response = await fetch(geocodingUrl);
       const data = await response.json();
 
       if (__DEV__) {
-        //console.log('📍 Mapbox Geocoding Response:', data);
+        //console.log(' Mapbox Geocoding Response:', data);
       }
 
       if (!data.features || data.features.length === 0) {
@@ -149,7 +149,7 @@ export const useSearchLocation = () => {
       const placeName = firstResult.place_name;
 
       if (__DEV__) {
-        //console.log('📌 Tìm thấy vị trí:', { latitude, longitude, placeName });
+        //console.log(' Tìm thấy vị trí:', { latitude, longitude, placeName });
       }
 
       // Di chuyển camera đến vị trí
@@ -184,11 +184,11 @@ export const useSearchLocation = () => {
       }, 1600);
 
       if (__DEV__) {
-        //console.log('✅ Di chuyển đến:', placeName);
+        //console.log(' Di chuyển đến:', placeName);
       }
 
     } catch (error) {
-      console.error('❌ Lỗi geocoding:', error);
+      console.error(' Lỗi geocoding:', error);
       Alert.alert('Lỗi', 'Không thể tìm kiếm địa chỉ. Vui lòng thử lại.');
       setIsLoadingRooms(false);
     }
@@ -231,7 +231,7 @@ export const useSearchLocation = () => {
         const data = await response.json();
 
         if (__DEV__) {
-          //console.log('💡 Suggestions:', data.features?.length || 0);
+          //console.log(' Suggestions:', data.features?.length || 0);
         }
 
         if (data.features && data.features.length > 0) {
@@ -242,7 +242,7 @@ export const useSearchLocation = () => {
         
         setIsLoadingSuggestions(false);
       } catch (error) {
-        console.error('❌ Lỗi lấy gợi ý:', error);
+        console.error(' Lỗi lấy gợi ý:', error);
         setAddressSuggestions([]);
         setIsLoadingSuggestions(false);
       }
@@ -263,7 +263,7 @@ export const useSearchLocation = () => {
       const placeName = suggestion.place_name;
 
       if (__DEV__) {
-        //console.log('📌 Chọn địa chỉ:', placeName);
+        //console.log(' Chọn địa chỉ:', placeName);
       }
 
       // Di chuyển camera
@@ -296,7 +296,7 @@ export const useSearchLocation = () => {
       }, 1600);
 
     } catch (error) {
-      console.error('❌ Lỗi chọn địa chỉ:', error);
+      console.error(' Lỗi chọn địa chỉ:', error);
       setIsLoadingRooms(false);
     }
   };
@@ -322,7 +322,7 @@ export const useSearchLocation = () => {
           currentMapCenterRef.current = { latitude, longitude };
           
           if (__DEV__) {
-            //console.log('✅ Vị trí hiện tại:', { latitude, longitude });
+            //console.log(' Vị trí hiện tại:', { latitude, longitude });
           }
         } else {
           Alert.alert(
@@ -331,7 +331,7 @@ export const useSearchLocation = () => {
           );
         }
       } catch (error) {
-        console.error('❌ Lỗi lấy vị trí:', error);
+        console.error(' Lỗi lấy vị trí:', error);
       }
     })();
   }, []);
@@ -355,7 +355,7 @@ export const useSearchLocation = () => {
       
       if (currentZoom < 8) {
         if (__DEV__) {
-          //console.log(`⚠️ Zoom level quá thấp (${currentZoom.toFixed(1)}), cần >= 8 để load phòng`);
+          //console.log(`️ Zoom level quá thấp (${currentZoom.toFixed(1)}), cần >= 8 để load phòng`);
         }
         setRoomsOnMap([]);
         setIsLoadingRooms(false);
@@ -369,20 +369,20 @@ export const useSearchLocation = () => {
       
   
       
-      // ✅ Gọi API với tham số đúng theo backend: (minLat, minLng, maxLat, maxLng)
+      //  Gọi API với tham số đúng theo backend: (minLat, minLng, maxLat, maxLng)
       const data = await getRoomsInBounds(actualMinLat, actualMinLng, actualMaxLat, actualMaxLng);
       
       if (__DEV__) {
-        //console.log('📦 API Response:', data);
+        //console.log(' API Response:', data);
       }
       
       // Check if data is an array (direct array response)
       if (data && Array.isArray(data)) {
         setRoomsOnMap(data);
         if (__DEV__) {
-          //console.log(`✅ Tìm thấy ${data.length} phòng trọ trong vùng bản đồ`);
+          //console.log(` Tìm thấy ${data.length} phòng trọ trong vùng bản đồ`);
           if (data.length > 0) {
-            //console.log('🏠 Phòng đầu tiên:', data[0]);
+            //console.log(' Phòng đầu tiên:', data[0]);
           }
         }
       } 
@@ -391,18 +391,18 @@ export const useSearchLocation = () => {
         const nestedData = (data as any).data;
         setRoomsOnMap(nestedData);
         if (__DEV__) {
-          //console.log(`✅ Tìm thấy ${nestedData.length} phòng trọ (nested)`);
+          //console.log(` Tìm thấy ${nestedData.length} phòng trọ (nested)`);
         }
       } 
       // No data found
       else {
         setRoomsOnMap([]);
         if (__DEV__) {
-          //console.log('⚠️ Không tìm thấy phòng trọ nào');
+          //console.log('️ Không tìm thấy phòng trọ nào');
         }
       }
     } catch (error) {
-      console.error('❌ Lỗi khi lấy danh sách phòng:', error);
+      console.error(' Lỗi khi lấy danh sách phòng:', error);
       setRoomsOnMap([]);
     } finally {
       setIsLoadingRooms(false);
@@ -441,11 +441,11 @@ export const useSearchLocation = () => {
       setIsMapLoading(false);
 
       if (__DEV__) {
-        //console.log('📍 Di chuyển đến vị trí:', { latitude, longitude });
+        //console.log(' Di chuyển đến vị trí:', { latitude, longitude });
       }
     } catch (error) {
       setIsMapLoading(false);
-      console.error('❌ Lỗi lấy vị trí hiện tại:', error);
+      console.error(' Lỗi lấy vị trí hiện tại:', error);
       Alert.alert('Lỗi', 'Không thể lấy vị trí hiện tại. Vui lòng thử lại.');
     }
   };
@@ -461,12 +461,12 @@ export const useSearchLocation = () => {
       const [[minLng, minLat], [maxLng, maxLat]] = bounds;
       
       if (__DEV__) {
-        //console.log('🔍 Tìm kiếm thủ công trong vùng bản đồ:', { minLat, minLng, maxLat, maxLng });
+        //console.log(' Tìm kiếm thủ công trong vùng bản đồ:', { minLat, minLng, maxLat, maxLng });
       }
       
       await fetchRoomsInBounds(minLat, minLng, maxLat, maxLng);
     } catch (error) {
-      console.error('❌ Lỗi tìm kiếm thủ công:', error);
+      console.error(' Lỗi tìm kiếm thủ công:', error);
       Alert.alert('Lỗi', 'Không thể tìm kiếm phòng. Vui lòng thử lại.');
     }
   };
@@ -489,13 +489,13 @@ export const useSearchLocation = () => {
       if (zoom) {
         setCurrentZoom(zoom);
         if (__DEV__) {
-          //console.log('🔍 Zoom level:', zoom.toFixed(1));
+          //console.log(' Zoom level:', zoom.toFixed(1));
         }
       }
       
       if (zoom && zoom < 8) {
         if (__DEV__) {
-          //console.log('⚠️ Zoom quá thấp, xóa marker');
+          //console.log('️ Zoom quá thấp, xóa marker');
         }
         setRoomsOnMap([]);
         return;
@@ -507,9 +507,9 @@ export const useSearchLocation = () => {
       setCurrentCity(detectedCity);
 
       if (__DEV__) {
-        //console.log('🗺️ Vùng bản đồ hiện tại:', { minLat, minLng, maxLat, maxLng });
-        //console.log('📍 Tâm bản đồ:', { latitude, longitude });
-        //console.log('🏙️ Thành phố:', detectedCity || 'Không xác định');
+        //console.log('️ Vùng bản đồ hiện tại:', { minLat, minLng, maxLat, maxLng });
+        //console.log(' Tâm bản đồ:', { latitude, longitude });
+        //console.log('️ Thành phố:', detectedCity || 'Không xác định');
       }
 
       const distance = Math.sqrt(
@@ -519,7 +519,7 @@ export const useSearchLocation = () => {
 
       if (distance > 0.005) {
         if (__DEV__) {
-          //console.log('🗺️ Map di chuyển, đợi 1s trước khi load phòng...');
+          //console.log('️ Map di chuyển, đợi 1s trước khi load phòng...');
         }
 
         setCameraPosition({
@@ -530,12 +530,12 @@ export const useSearchLocation = () => {
         if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
         debounceTimerRef.current = setTimeout(() => {
-          if (__DEV__) //console.log('⏰ Load phòng trong vùng bản đồ mới');
+          if (__DEV__) //console.log(' Load phòng trong vùng bản đồ mới');
           fetchRoomsInBounds(minLat, minLng, maxLat, maxLng);
         }, 1000);
       }
     } catch (error) {
-      console.error('❌ Lỗi handleMapIdle:', error);
+      console.error(' Lỗi handleMapIdle:', error);
     }
   };
 

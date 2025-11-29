@@ -222,15 +222,15 @@ export default function LoginScreen() {
     //console.log('getRouteByRole - Checking roles:', roles);
     
     if (roles.includes('Landlords')) {
-      //console.log('✅ Navigating to LandlordApp');
+      //console.log(' Navigating to LandlordApp');
       return 'LandlordApp';
     }
     if (roles.includes('Users')) {
-      //console.log('✅ Navigating to UserApp');
+      //console.log(' Navigating to UserApp');
       return 'UserApp';
     }
     
-    //console.log('⚠️ Navigating to UserApp (default)');
+    //console.log('️ Navigating to UserApp (default)');
     return 'UserApp';
   };
 

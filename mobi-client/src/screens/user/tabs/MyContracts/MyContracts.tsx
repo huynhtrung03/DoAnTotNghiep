@@ -83,7 +83,7 @@ const MyContracts = () => {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      console.log('📋 Đang lấy danh sách hợp đồng...');
+      console.log(' Đang lấy danh sách hợp đồng...');
 
       // Lấy userData từ AsyncStorage
       const userDataStr = await AsyncStorage.getItem('userData');
@@ -101,30 +101,30 @@ const MyContracts = () => {
       const primaryRole = isLandlord ? 'Landlords' : 'Users';
       setUserRole(primaryRole);
 
-      console.log('👤 User ID:', userId, 'Roles:', userRoles, 'Primary Role:', primaryRole);
+      console.log(' User ID:', userId, 'Roles:', userRoles, 'Primary Role:', primaryRole);
 
       let data: ContractData[] = [];
 
       // Kiểm tra role để gọi API phù hợp
       if (userRoles.includes('Landlords')) {
         // Landlord: lấy hợp đồng với pageSize lớn
-        console.log('🏠 Landlord mode - fetching contracts by landlord');
+        console.log(' Landlord mode - fetching contracts by landlord');
         const response = await ContractService.getByLandlord(userId, 0, pageSize);
         data = response.content || [];
       } else {
         // Tenant/User: lấy hợp đồng của tenant
-        console.log('👨‍💼 Tenant mode - fetching contracts by tenant');
+        console.log('‍ Tenant mode - fetching contracts by tenant');
         data = await ContractService.getByTenant(userId);
       }
 
       // Transform data để hiển thị
       const displayData = data.map(transformContractData);
       
-      console.log(`✅ Đã lấy ${displayData.length} hợp đồng`);
+      console.log(` Đã lấy ${displayData.length} hợp đồng`);
       setContracts(displayData);
       setError(null);
     } catch (err: any) {
-      console.error('❌ Lỗi khi lấy hợp đồng:', err.message);
+      console.error(' Lỗi khi lấy hợp đồng:', err.message);
       setError(err.message || 'Không thể tải danh sách hợp đồng');
       setContracts([]);
     } finally {
@@ -200,13 +200,13 @@ const MyContracts = () => {
 
   // ===== HANDLERS =====
   const handleViewDetail = (contract: ContractDisplayData) => {
-    console.log('👁️ Navigate to contract detail:', contract.id);
+    console.log('️ Navigate to contract detail:', contract.id);
     (navigation as any).navigate('Users/ContractDetail', { contract });
   };
 
   const handleFilterByStatus = (status: ContractStatus | null) => {
     setStatusFilter(status);
-    console.log('🔍 Lọc theo trạng thái:', status !== null ? statusMap[status].text : 'All');
+    console.log(' Lọc theo trạng thái:', status !== null ? statusMap[status].text : 'All');
   };
 
   // ===== RENDER ITEM =====

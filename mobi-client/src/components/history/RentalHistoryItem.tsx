@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RentalHistoryItemProps, BookingStatus, PaymentMethod } from '../../types/rental';
-import { URL_IMAGE } from '../../services/config/Constant';
+import { URL_IMAGE } from '../../services/Constant';
 import PaymentList from '../payment/PaymentList';
 import styles from './RentalHistoryItem.styles';
 

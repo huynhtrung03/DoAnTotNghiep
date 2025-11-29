@@ -6,7 +6,7 @@ export const homeScreenStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    paddingBottom: 100, // ✅ Add padding for tab bar
+    paddingBottom: 100, //  Add padding for tab bar
   },
   loadingContainer: {
     flex: 1,

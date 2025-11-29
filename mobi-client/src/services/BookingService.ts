@@ -1,5 +1,6 @@
-import { API_URL } from './config/Constant';
+import { API_URL } from './Constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BaseApiClient } from './api/BaseApiClient';
 
 interface LandlordPaymentInfo {
   bankName: string;
@@ -16,131 +17,58 @@ interface BookingData {
 }
 
 /**
- * Lấy danh sách booking của user (tenant)
+ * Lay danh sach booking cua user (tenant)
  */
 export async function userFetchBookings(page: number, size: number) {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
     const userDataStr = await AsyncStorage.getItem('userData');
 
     if (!userDataStr) {
-      throw new Error('User not logged in. Please login again.');
+      throw new Error('Nguoi dung chua dang nhap. Vui long dang nhap lai.');
     }
 
     const userData = JSON.parse(userDataStr);
     const userId = userData.id;
 
     if (!userId) {
-      throw new Error('User ID not found. Please login again.');
+      throw new Error('Khong tim thay ID nguoi dung. Vui long dang nhap lai.');
     }
 
-    console.log('🔍 userFetchBookings - Fetching:', `${API_URL}/booking/user?page=${page}&size=${size}`);
-    console.log('🔑 Token:', token ? `${token.substring(0, 20)}...` : 'NULL');
-    console.log('👤 UserId:', userId);
+    console.log(`Lay danh sach booking cua user ${userId}, trang ${page}, kich thuoc ${size}`);
 
-    const response = await fetch(
-      `${API_URL}/booking/user?page=${page}&size=${size}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
-
-    console.log('📡 Response status:', response.status);
-    console.log('📡 Response ok:', response.ok);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Error response text:', errorText);
-
-      let errorJson;
-      try {
-        errorJson = JSON.parse(errorText);
-      } catch (e) {
-        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch bookings'}`);
-      }
-
-      throw new Error(errorJson.message || errorJson.error || 'Failed to fetch bookings');
-    }
-
-    const data = await response.json();
-    console.log('✅ Bookings fetched:', data?.bookings?.length || 0, 'items');
-    return data;
+    const params = { page, size };
+    return await BaseApiClient.get(`/bookings/user/${userId}/paging`, params);
   } catch (error) {
-    console.error('💥 userFetchBookings error:', error);
+    console.error('Loi khi lay danh sach booking cua user:', error);
     throw error;
   }
 }
 
 /**
- * Lấy danh sách booking của landlord (chủ nhà)
+ * Lay danh sach booking cua landlord (chu nha)
  */
 export async function landlordFetchBookings(page: number, size: number) {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
+    console.log(`Lay danh sach booking cua landlord, trang ${page}, kich thuoc ${size}`);
 
-    const response = await fetch(
-      `${API_URL}/booking/landlord?page=${page}&size=${size}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const errorJson = await response.json();
-      throw new Error(errorJson.message || 'Failed to fetch bookings');
-    }
-
-    const data = await response.json();
-    return data;
+    const params = { page, size };
+    return await BaseApiClient.get('/bookings/landlord', params);
   } catch (error) {
-    console.error('landlordFetchBookings error:', error);
+    console.error('Loi khi lay danh sach booking cua landlord:', error);
     throw error;
   }
 }
 
 /**
- * Tạo booking mới - Sử dụng format giống như backend API
+ * Tao booking moi - Su dung format giong nhu backend API
  */
 export async function createBooking(bookingData: BookingData, userId: string) {
   try {
-    console.log('BookingService - createBooking called with:', bookingData, 'userId:', userId);
+    console.log(`Tao booking moi cho user ${userId}:`, bookingData);
 
-    const token = await AsyncStorage.getItem('accessToken');
-
-    const response = await fetch(`${API_URL}/bookings/user/${userId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(bookingData),
-    });
-
-    console.log('BookingService - Response status:', response.status);
-    console.log('BookingService - Response ok:', response.ok);
-
-    if (!response.ok) {
-      const errorJson = await response.json();
-      console.error('BookingService - Error response:', errorJson);
-
-      const errorMessage =
-        errorJson.details || errorJson.message || 'Failed to create booking';
-      throw new Error(errorMessage);
-    }
-
-    const booking = await response.json();
-    console.log('BookingService - Success response:', booking);
-    return booking;
+    return await BaseApiClient.post(`/bookings/user/${userId}`, bookingData);
   } catch (error) {
-    console.error('createBooking error:', error);
+    console.error('Loi khi tao booking:', error);
     throw error;
   }
 }
@@ -155,26 +83,11 @@ export async function updateBookingStatus(
   newStatus: number
 ) {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
+    console.log(`Cập nhật trạng thái booking ${bookingId}: ${newStatus}`);
 
-    const response = await fetch(`${API_URL}/booking?bookingId=${bookingId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ newStatus }),
-    });
-
-    if (!response.ok) {
-      const errorJson = await response.json();
-      throw new Error(errorJson.message || 'Failed to update booking status');
-    }
-
-    const booking = await response.json();
-    return booking;
+    return await BaseApiClient.patch(`/bookings/${bookingId}/status`, { status: newStatus });
   } catch (error) {
-    console.error('updateBookingStatus error:', error);
+    console.error('Lỗi khi cập nhật trạng thái booking:', error);
     throw error;
   }
 }
@@ -186,28 +99,11 @@ export async function getLandlordPaymentInfo(
   bookingId: string
 ): Promise<LandlordPaymentInfo> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
+    console.log(`Lấy thông tin thanh toán của landlord cho booking ${bookingId}`);
 
-    const response = await fetch(
-      `${API_URL}/booking?bookingId=${bookingId}&action=landlord-payment-info`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const errorJson = await response.json();
-      throw new Error(errorJson.message || 'Failed to get landlord payment info');
-    }
-
-    const paymentInfo = await response.json();
-    return paymentInfo;
+    return await BaseApiClient.get<LandlordPaymentInfo>(`/bookings/${bookingId}/landlord-payment-info`);
   } catch (error) {
-    console.error('getLandlordPaymentInfo error:', error);
+    console.error('Lỗi khi lấy thông tin thanh toán landlord:', error);
     throw error;
   }
 }
@@ -218,38 +114,15 @@ export async function getLandlordPaymentInfo(
 export async function deleteBooking(bookingId: string) {
   try {
     if (!bookingId) {
-      throw new Error('Missing bookingId');
+      throw new Error('Thiếu bookingId');
     }
 
-    const token = await AsyncStorage.getItem('accessToken');
+    console.log(`️ Xóa booking ${bookingId}`);
 
-    const response = await fetch(
-      `${API_URL}/booking/landlord?bookingId=${encodeURIComponent(bookingId)}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const text = await response.text();
-      let message = 'Failed to delete booking';
-      try {
-        const parsed = JSON.parse(text);
-        message = parsed.message || text || message;
-      } catch (_) {
-        message = text || message;
-      }
-      throw new Error(message);
-    }
-
-    const successText = await response.text();
-    return { success: true, message: successText };
+    const result = await BaseApiClient.delete<{ message?: string }>(`/bookings/${bookingId}`);
+    return { success: true, message: result.message || 'Đã xóa booking thành công' };
   } catch (error) {
-    console.error('deleteBooking error:', error);
+    console.error('Lỗi khi xóa booking:', error);
     throw error;
   }
 }
@@ -261,19 +134,17 @@ export async function deleteBooking(bookingId: string) {
 export async function uploadBillTransferImage(bookingId: string, fileUri: string, fileName: string, fileType: string) {
   try {
     if (!bookingId) {
-      throw new Error('Missing bookingId');
+      throw new Error('Thiếu bookingId');
     }
 
     if (!fileUri) {
-      throw new Error('Missing file URI');
+      throw new Error('Thiếu URI file');
     }
 
-    console.log('BookingService - uploadBillTransferImage called with:', {
-      bookingId,
+    console.log(` Upload ảnh chuyển khoản cho booking ${bookingId}:`, {
       fileName,
+      fileUri,
     });
-
-    const token = await AsyncStorage.getItem('accessToken');
 
     // Tạo FormData cho React Native
     const formData = new FormData();
@@ -283,37 +154,9 @@ export async function uploadBillTransferImage(bookingId: string, fileUri: string
       name: fileName || 'bill-transfer.jpg',
     } as any);
 
-    const response = await fetch(
-      `${API_URL}/booking/${bookingId}/upload-bill-transfer`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData,
-      }
-    );
-
-    console.log('BookingService - Upload response status:', response.status);
-    console.log('BookingService - Upload response ok:', response.ok);
-
-    if (!response.ok) {
-      const errorJson = await response.json();
-      console.error('BookingService - Upload error response:', errorJson);
-
-      const errorMessage =
-        errorJson.error ||
-        errorJson.message ||
-        'Failed to upload bill transfer image';
-      throw new Error(errorMessage);
-    }
-
-    const result = await response.json();
-    console.log('BookingService - Upload success response:', result);
-    return result;
+    return await BaseApiClient.uploadFile(`/bookings/${bookingId}/upload-bill-transfer`, formData);
   } catch (error) {
-    console.error('uploadBillTransferImage error:', error);
+    console.error('Lỗi khi upload ảnh chuyển khoản:', error);
     throw error;
   }
 }
@@ -323,28 +166,11 @@ export async function uploadBillTransferImage(bookingId: string, fileUri: string
  */
 export async function getBookingById(bookingId: string) {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
+    console.log(`Lấy chi tiết booking ${bookingId}`);
 
-    const response = await fetch(
-      `${API_URL}/booking/${bookingId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const errorJson = await response.json();
-      throw new Error(errorJson.message || 'Failed to fetch booking details');
-    }
-
-    const booking = await response.json();
-    return booking;
+    return await BaseApiClient.get(`/bookings/${bookingId}`);
   } catch (error) {
-    console.error('getBookingById error:', error);
+    console.error('Lỗi khi lấy chi tiết booking:', error);
     throw error;
   }
 }
@@ -354,29 +180,11 @@ export async function getBookingById(bookingId: string) {
  */
 export async function cancelBooking(bookingId: string, reason?: string) {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
+    console.log(`Hủy booking ${bookingId}`, reason ? `với lý do: ${reason}` : '');
 
-    const response = await fetch(
-      `${API_URL}/booking/${bookingId}/cancel`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ reason }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorJson = await response.json();
-      throw new Error(errorJson.message || 'Failed to cancel booking');
-    }
-
-    const result = await response.json();
-    return result;
+    return await BaseApiClient.post(`/bookings/${bookingId}/cancel`, { reason });
   } catch (error) {
-    console.error('cancelBooking error:', error);
+    console.error('Lỗi khi hủy booking:', error);
     throw error;
   }
 }

@@ -37,10 +37,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import các component và service cần thiết
 import { RoomInUser, PaginatedResponse } from '../../../types/types';
-import { getRoomNormalUser, getRoomVipUser, getRoomsInMap, filterRooms } from '../../../services/rooms/RoomService';
-import { getPublicStatistics, PublicStatistics } from '../../../services/statistics/StatisticsService';
-import { getAllFavoriteIds } from '../../../services/favorites/FavoriteService';
-import { getNotificationsForUser } from '../../../services/statistics/NotificationService';
+import { getRoomNormalUser, getRoomVipUser, getRoomsInMap, filterRooms } from '../../../services/RoomService';
+import { getPublicStatistics, PublicStatistics } from '../../../services/StatisticsService';
+import { getAllFavoriteIds } from '../../../services/FavoriteService';
+import { getNotificationsForUser } from '../../../services/NotificationService';
 import RoomCard from '../../../components/rooms/RoomCard/RoomCard';
 import styles from '../../../styles/screens/user/HomeScreen.styles';
 import Colors from '../../../styles/colors';
@@ -346,7 +346,7 @@ export default function UserHomeScreen() {
   const navigation = useNavigation<any>();
   const { setFavoriteRoomIds } = useFavoriteStore();
 
-  // ✅ Sử dụng custom hook để lấy userLocation
+  //  Sử dụng custom hook để lấy userLocation
   const { userLocation } = useSearchLocation();
 
   // --- Logic và State được chuyển từ RoomsList (index.tsx) ---
@@ -397,10 +397,10 @@ export default function UserHomeScreen() {
           if (token) {
             const favoriteIds = await getAllFavoriteIds();
             setFavoriteRoomIds(favoriteIds);
-            //console.log(`🔄 HomeScreen: Reloaded ${favoriteIds.length} favorites`);
+            //console.log(` HomeScreen: Reloaded ${favoriteIds.length} favorites`);
           }
         } catch (error) {
-          console.error('❌ Error reloading favorites in HomeScreen:', error);
+          console.error(' Error reloading favorites in HomeScreen:', error);
         }
       };
       reloadFavorites();
@@ -412,12 +412,12 @@ export default function UserHomeScreen() {
   const loadUserProfile = async () => {
     try {
       const userProfileStr = await AsyncStorage.getItem('userProfile');
-      //console.log('🔍 userProfileStr:', userProfileStr);
+      //console.log(' userProfileStr:', userProfileStr);
       
       if (userProfileStr) {
         const userProfile = JSON.parse(userProfileStr);
-        //console.log('🔍 userProfile:', userProfile);
-        //console.log('🔍 userProfile.avatar:', userProfile.avatar);
+        //console.log(' userProfile:', userProfile);
+        //console.log(' userProfile.avatar:', userProfile.avatar);
         
         if (userProfile.avatar) {
           let avatarUrl = userProfile.avatar;
@@ -425,16 +425,16 @@ export default function UserHomeScreen() {
           if (!avatarUrl.startsWith('http')) {
             avatarUrl = `https://res.cloudinary.com${avatarUrl}`;
           }
-          //console.log('✅ Final avatarUrl:', avatarUrl);
+          //console.log(' Final avatarUrl:', avatarUrl);
           setUserAvatar(avatarUrl);
         } else {
-          //console.log('❌ No avatar in userProfile');
+          //console.log(' No avatar in userProfile');
         }
       } else {
-        //console.log('❌ No userProfile in AsyncStorage');
+        //console.log(' No userProfile in AsyncStorage');
       }
     } catch (error) {
-      console.error('❌ Error loading user profile:', error);
+      console.error(' Error loading user profile:', error);
     }
   };
 
@@ -449,7 +449,7 @@ export default function UserHomeScreen() {
         setUnreadCount(unread);
       }
     } catch (error) {
-      console.error('❌ Error loading unread count:', error);
+      console.error(' Error loading unread count:', error);
     }
   };
 
@@ -457,10 +457,10 @@ export default function UserHomeScreen() {
   const loadStatistics = async () => {
     try {
       const stats = await getPublicStatistics();
-      //console.log('📊 Public statistics loaded:', stats);
+      //console.log(' Public statistics loaded:', stats);
       setStatistics(stats);
     } catch (error) {
-      console.error('❌ Error loading statistics:', error);
+      console.error(' Error loading statistics:', error);
     }
   };
 
@@ -760,7 +760,7 @@ export default function UserHomeScreen() {
     setNearbyLoading(true);
     try {
       // Log các thông tin được chọn từ popup
-      //console.log('🔍 Nearby Search Filters:', {
+      //console.log(' Nearby Search Filters:', {
       //   distance: selectedFilters.distance,
       //   sortBy: selectedFilters.sortBy,
       //   userLocation: {
@@ -771,7 +771,7 @@ export default function UserHomeScreen() {
     // );
 
       const radius = parseInt(selectedFilters.distance) * 1000; // Convert km to meters
-      //console.log(`📍 Searching rooms within ${selectedFilters.distance}km (${radius}m) radius`);
+      //console.log(` Searching rooms within ${selectedFilters.distance}km (${radius}m) radius`);
 
       const rooms = await getRoomsInMap(
         userLocation.latitude,
@@ -785,12 +785,12 @@ export default function UserHomeScreen() {
         // Sắp xếp danh sách phòng dựa trên thông tin được chọn trong popup
         let sortedRooms = [...rooms];
         
-        //console.log(`🔄 Applying sort: "${selectedFilters.sortBy}" to ${rooms.length} rooms`);
+        //console.log(` Applying sort: "${selectedFilters.sortBy}" to ${rooms.length} rooms`);
         
         switch (selectedFilters.sortBy) {
           case 'Khoảng cách':
             // API đã sắp xếp theo khoảng cách, giữ nguyên thứ tự
-            //console.log('📊 Sort by distance: Keeping API order (already sorted by proximity)');
+            //console.log(' Sort by distance: Keeping API order (already sorted by proximity)');
             break;
             
           case 'Giá tăng dần':
@@ -799,7 +799,7 @@ export default function UserHomeScreen() {
               const priceB = b.priceMonth || 0;
               return priceA - priceB;
             });
-            //console.log(`📊 Sort by price ascending: ${sortedRooms.slice(0, 3).map(r => `${r.priceMonth}tr`).join(', ')}...`);
+            //console.log(` Sort by price ascending: ${sortedRooms.slice(0, 3).map(r => `${r.priceMonth}tr`).join(', ')}...`);
             break;
             
           case 'Lượt xem':
@@ -808,26 +808,26 @@ export default function UserHomeScreen() {
               const viewsB = b.viewCount || 0;
               return viewsB - viewsA; // Descending order
             });
-            //console.log(`📊 Sort by view count descending: ${sortedRooms.slice(0, 3).map(r => `${r.viewCount || 0} views`).join(', ')}...`);
+            //console.log(` Sort by view count descending: ${sortedRooms.slice(0, 3).map(r => `${r.viewCount || 0} views`).join(', ')}...`);
             break;
             
           default:
-            //console.log('📊 No sorting applied - using default order');
+            //console.log(' No sorting applied - using default order');
         }
 
         // Log kết quả sau khi sắp xếp
-        //console.log(`✅ Final sorted results (${sortedRooms.length} rooms):`, {
+        //console.log(` Final sorted results (${sortedRooms.length} rooms):`, {
         //  s
 
         setNearbyRooms(sortedRooms);
         setShowNearbyResults(true);
-        //console.log(`✅ Displayed ${sortedRooms.length} sorted nearby rooms`);
+        //console.log(` Displayed ${sortedRooms.length} sorted nearby rooms`);
       } else {
-        //console.log('❌ No rooms found nearby');
+        //console.log(' No rooms found nearby');
         Alert.alert('Thông báo', 'Không tìm thấy phòng nào gần vị trí của bạn.');
       }
     } catch (error) {
-      console.error('❌ Error searching nearby rooms:', error);
+      console.error(' Error searching nearby rooms:', error);
       Alert.alert('Lỗi', 'Không thể tìm phòng gần đây. Vui lòng thử lại.');
     } finally {
       setNearbyLoading(false);
@@ -842,24 +842,24 @@ export default function UserHomeScreen() {
       const now = new Date();
 
       // Log các thông tin được chọn từ popup
-      //console.log('🔥 Popular Rooms Filters:', {
+      //console.log(' Popular Rooms Filters:', {
       //   timeRange: selectedFilters.timeRange,
       //   sortBy: selectedFilters.sortBy,
       //   currentDate: now.toISOString().split('T')[0]
       // });
 
-      //console.log('📅 Applied time filter object:', filters);
+      //console.log(' Applied time filter object:', filters);
 
       // Gọi API filter-rooms để lấy tất cả phòng
       const response = await filterRooms(0, 100, filters); // Lấy nhiều phòng để có đủ dữ liệu lọc
 
       if (response && response.data) {
-        //console.log(`✅ Found ${response.data.length} rooms from filter API`);
+        //console.log(` Found ${response.data.length} rooms from filter API`);
 
         // Filter client-side dựa trên postStartDate và timeRange được chọn
         let filteredRooms = [...response.data];
 
-        //console.log(`🔄 Applying client-side time filter: "${selectedFilters.timeRange}" to ${filteredRooms.length} rooms`);
+        //console.log(` Applying client-side time filter: "${selectedFilters.timeRange}" to ${filteredRooms.length} rooms`);
 
         // Tính toán khoảng thời gian dựa trên timeRange
         let timeThreshold: Date | null = null;
@@ -867,23 +867,23 @@ export default function UserHomeScreen() {
         switch (selectedFilters.timeRange) {
           case 'Hôm nay':
             timeThreshold = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            //console.log(`📅 Filtering rooms created from: ${timeThreshold.toISOString().split('T')[0]} (today)`);
+            //console.log(` Filtering rooms created from: ${timeThreshold.toISOString().split('T')[0]} (today)`);
             break;
           case 'Tuần này':
             timeThreshold = new Date(now);
             timeThreshold.setDate(now.getDate() - now.getDay()); // Chủ nhật tuần này
-            //console.log(`📅 Filtering rooms created from: ${timeThreshold.toISOString().split('T')[0]} (start of this week)`);
+            //console.log(` Filtering rooms created from: ${timeThreshold.toISOString().split('T')[0]} (start of this week)`);
             break;
           case 'Tháng này':
             timeThreshold = new Date(now.getFullYear(), now.getMonth(), 1); // Ngày 1 tháng này
-            //console.log(`📅 Filtering rooms created from: ${timeThreshold.toISOString().split('T')[0]} (start of this month)`);
+            //console.log(` Filtering rooms created from: ${timeThreshold.toISOString().split('T')[0]} (start of this month)`);
             break;
           case 'Năm này':
             timeThreshold = new Date(now.getFullYear(), 0, 1); // Ngày 1 tháng 1 năm này
-            //console.log(`📅 Filtering rooms created from: ${timeThreshold.toISOString().split('T')[0]} (start of this year)`);
+            //console.log(` Filtering rooms created from: ${timeThreshold.toISOString().split('T')[0]} (start of this year)`);
             break;
           default:
-            //console.log(`📅 No time filtering applied for: ${selectedFilters.timeRange}`);
+            //console.log(` No time filtering applied for: ${selectedFilters.timeRange}`);
             break;
         }
 
@@ -899,11 +899,11 @@ export default function UserHomeScreen() {
             return roomDate >= timeThreshold!;
           });
           
-          //console.log(`✅ After time filtering: ${filteredRooms.length} rooms (filtered from ${beforeFilter})`);
+          //console.log(` After time filtering: ${filteredRooms.length} rooms (filtered from ${beforeFilter})`);
         }
 
         // Sau đó sắp xếp dựa trên sortBy
-        //console.log(`🔄 Applying sort: "${selectedFilters.sortBy}" to ${filteredRooms.length} rooms`);
+        //console.log(` Applying sort: "${selectedFilters.sortBy}" to ${filteredRooms.length} rooms`);
 
         switch (selectedFilters.sortBy) {
           case 'Lượt xem':
@@ -912,7 +912,7 @@ export default function UserHomeScreen() {
               const viewsB = b.viewCount || 0;
               return viewsB - viewsA; // Descending order
             });
-            //console.log(`📊 Sort by view count: ${filteredRooms.slice(0, 3).map(r => `${r.viewCount || 0} views`).join(', ')}...`);
+            //console.log(` Sort by view count: ${filteredRooms.slice(0, 3).map(r => `${r.viewCount || 0} views`).join(', ')}...`);
             break;
 
           case 'Đặt phòng':
@@ -922,7 +922,7 @@ export default function UserHomeScreen() {
               const bookingsB = (b as any).bookingCount || b.viewCount || 0;
               return bookingsB - bookingsA; // Descending order
             });
-            //console.log(`📊 Sort by bookings: ${filteredRooms.slice(0, 3).map(r => `${(r as any).bookingCount || r.viewCount || 0} bookings`).join(', ')}...`);
+            //console.log(` Sort by bookings: ${filteredRooms.slice(0, 3).map(r => `${(r as any).bookingCount || r.viewCount || 0} bookings`).join(', ')}...`);
             break;
 
           case 'Đánh giá':
@@ -932,19 +932,19 @@ export default function UserHomeScreen() {
               const ratingB = (b as any).rating || b.viewCount || 0;
               return ratingB - ratingA; // Descending order
             });
-            //console.log(`📊 Sort by rating: ${filteredRooms.slice(0, 3).map(r => `${(r as any).rating || r.viewCount || 0} rating`).join(', ')}...`);
+            //console.log(` Sort by rating: ${filteredRooms.slice(0, 3).map(r => `${(r as any).rating || r.viewCount || 0} rating`).join(', ')}...`);
             break;
 
           default:
-            //console.log('📊 No sorting applied - using default order');
+            //console.log(' No sorting applied - using default order');
         }
 
         // Lấy top 20 phòng phổ biến nhất
         const topRooms = filteredRooms.slice(0, 20);
 
-        //console.log(`✅ After client-side filtering and sorting: ${topRooms.length} top rooms (from ${filteredRooms.length} time-filtered rooms)`);
+        //console.log(` After client-side filtering and sorting: ${topRooms.length} top rooms (from ${filteredRooms.length} time-filtered rooms)`);
 
-        //console.log(`✅ Final popular results (${topRooms.length} rooms):`, {
+        //console.log(` Final popular results (${topRooms.length} rooms):`, {
         //   timeRange: selectedFilters.timeRange,
         //   sortBy: selectedFilters.sortBy,
         //   firstRoom: topRooms[0] ? {
@@ -958,13 +958,13 @@ export default function UserHomeScreen() {
 
         setPopularRooms(topRooms);
         setShowPopularResults(true);
-        //console.log(`✅ Displayed ${topRooms.length} popular rooms`);
+        //console.log(` Displayed ${topRooms.length} popular rooms`);
       } else {
-        //console.log('❌ No rooms found for popular filter');
+        //console.log(' No rooms found for popular filter');
         Alert.alert('Thông báo', 'Không tìm thấy phòng phổ biến nào.');
       }
     } catch (error) {
-      console.error('❌ Error searching popular rooms:', error);
+      console.error(' Error searching popular rooms:', error);
       Alert.alert('Lỗi', 'Không thể tìm phòng phổ biến. Vui lòng thử lại.');
     } finally {
       setPopularLoading(false);
@@ -975,7 +975,7 @@ export default function UserHomeScreen() {
     setCheapLoading(true);
     try {
     //   // Log các thông tin được chọn từ popup
-    //   //console.log('💰 Cheap Rooms Filters:', {
+    //   //console.log(' Cheap Rooms Filters:', {
     //     priceRange: selectedFilters.priceRange,
     //     sortBy: selectedFilters.sortBy,
     //   });
@@ -984,12 +984,12 @@ export default function UserHomeScreen() {
       const response = await filterRooms(0, 100, {}); // Lấy nhiều phòng để có đủ dữ liệu lọc
 
       if (response && response.data) {
-        //console.log(`✅ Found ${response.data.length} rooms from filter API`);
+        //console.log(` Found ${response.data.length} rooms from filter API`);
 
         // Filter client-side dựa trên priceRange được chọn
         let filteredRooms = [...response.data];
 
-        //console.log(`🔄 Applying client-side price filter: "${selectedFilters.priceRange}" to ${filteredRooms.length} rooms`);
+        //console.log(` Applying client-side price filter: "${selectedFilters.priceRange}" to ${filteredRooms.length} rooms`);
 
         // Áp dụng filter giá dựa trên priceRange
         if (selectedFilters.priceRange) {
@@ -1019,11 +1019,11 @@ export default function UserHomeScreen() {
             return matches;
           });
 
-          //console.log(`✅ After price filtering: ${filteredRooms.length} rooms (filtered from ${beforeFilter})`);
+          //console.log(` After price filtering: ${filteredRooms.length} rooms (filtered from ${beforeFilter})`);
         }
 
         // Sau đó sắp xếp dựa trên sortBy
-        //console.log(`🔄 Applying sort: "${selectedFilters.sortBy}" to ${filteredRooms.length} rooms`);
+        //console.log(` Applying sort: "${selectedFilters.sortBy}" to ${filteredRooms.length} rooms`);
 
         switch (selectedFilters.sortBy) {
           case 'Giá tăng dần':
@@ -1032,7 +1032,7 @@ export default function UserHomeScreen() {
               const priceB = b.priceMonth || 0;
               return priceA - priceB;
             });
-            //console.log(`📊 Sort by price ascending: ${filteredRooms.slice(0, 3).map(r => `${r.priceMonth}tr`).join(', ')}...`);
+            //console.log(` Sort by price ascending: ${filteredRooms.slice(0, 3).map(r => `${r.priceMonth}tr`).join(', ')}...`);
             break;
 
           case 'Giá giảm dần':
@@ -1041,7 +1041,7 @@ export default function UserHomeScreen() {
               const priceB = b.priceMonth || 0;
               return priceB - priceA;
             });
-            //console.log(`📊 Sort by price descending: ${filteredRooms.slice(0, 3).map(r => `${r.priceMonth}tr`).join(', ')}...`);
+            //console.log(` Sort by price descending: ${filteredRooms.slice(0, 3).map(r => `${r.priceMonth}tr`).join(', ')}...`);
             break;
 
           case 'Lượt xem':
@@ -1050,19 +1050,19 @@ export default function UserHomeScreen() {
               const viewsB = b.viewCount || 0;
               return viewsB - viewsA; // Descending order
             });
-            //console.log(`📊 Sort by view count: ${filteredRooms.slice(0, 3).map(r => `${r.viewCount || 0} views`).join(', ')}...`);
+            //console.log(` Sort by view count: ${filteredRooms.slice(0, 3).map(r => `${r.viewCount || 0} views`).join(', ')}...`);
             break;
 
           default:
-            //console.log('📊 No sorting applied - using default order');
+            //console.log(' No sorting applied - using default order');
         }
 
         // Lấy top 20 phòng giá rẻ nhất
         const topRooms = filteredRooms.slice(0, 20);
 
-        //console.log(`✅ After client-side filtering and sorting: ${topRooms.length} top cheap rooms`);
+        //console.log(` After client-side filtering and sorting: ${topRooms.length} top cheap rooms`);
 
-        //console.log(`✅ Final cheap results (${topRooms.length} rooms):`, {
+        //console.log(` Final cheap results (${topRooms.length} rooms):`, {
         //   priceRange: selectedFilters.priceRange,
         //   sortBy: selectedFilters.sortBy,
         //   firstRoom: topRooms[0] ? {
@@ -1076,13 +1076,13 @@ export default function UserHomeScreen() {
 
         setCheapRooms(topRooms);
         setShowCheapResults(true);
-        //console.log(`✅ Displayed ${topRooms.length} cheap rooms`);
+        //console.log(` Displayed ${topRooms.length} cheap rooms`);
       } else {
-          //console.log('❌ No rooms found for cheap filter');
+          //console.log(' No rooms found for cheap filter');
           Alert.alert('Thông báo', 'Không tìm thấy phòng giá rẻ nào.');
         }
     } catch (error) {
-      console.error('❌ Error searching cheap rooms:', error);
+      console.error(' Error searching cheap rooms:', error);
       Alert.alert('Lỗi', 'Không thể tìm phòng giá rẻ. Vui lòng thử lại.');
     } finally {
       setCheapLoading(false);
