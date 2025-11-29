@@ -1,5 +1,4 @@
-import { API_URL } from './Constant';
-import axios from 'axios';
+import { BaseApiClient } from './api/BaseApiClient';
 
 export interface IRegisterInputs {
   fullName: string;
@@ -10,24 +9,21 @@ export interface IRegisterInputs {
   accountType: '0' | '1';
 }
 
+/**
+ * Dang ky tai khoan moi
+ */
 export async function RegisterService(data: IRegisterInputs) {
   try {
-    const response = await axios.post(`${API_URL}/auth/register`, data, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    return response.data;
+    return await BaseApiClient.post('/auth/register', data);
   } catch (error: any) {
-    console.error('Error during registration:', error);
-    
-    // Handle different error formats
-    const errorMsg = 
+    console.error('Loi dang ky:', error);
+
+    // Xu ly cac dinh dang loi khac nhau
+    const errorMsg =
       Array.isArray(error.response?.data?.message) ? error.response.data.message[0]
       : Array.isArray(error.response?.data?.errors) ? error.response.data.errors[0]
-      : error.response?.data?.message || error.response?.data?.error || "Registration failed";
-    
+      : error.response?.data?.message || error.response?.data?.error || 'Dang ky that bai';
+
     throw new Error(errorMsg);
   }
 }

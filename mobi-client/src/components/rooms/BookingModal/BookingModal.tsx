@@ -11,10 +11,10 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createBooking } from '../../../services/rooms/BookingService';
-import { createBookingNotification } from '../../../services/statistics/NotificationService';
+import { createBooking } from '../../../services/BookingService';
+import { createBookingNotification } from '../../../services/NotificationService';
 import styles from './BookingModal.styles';
 
 interface BookingModalProps {
@@ -36,66 +36,42 @@ const BookingModal: React.FC<BookingModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 1 month from now
-  );
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
-  const [numberOfTenants, setNumberOfTenants] = useState('1');
+  const navigation = useNavigation();
+  const [rentalMonths, setRentalMonths] = useState(1);
+  const [tenantCount, setTenantCount] = useState(1);
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const calculateMonths = () => {
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.ceil(diffDays / 30);
+
+  // Helper to get ISO string at midnight (00:00:00.000Z)
+  const getISODateAtMidnight = (date: Date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
   };
 
+  const startDate = new Date(); // Ngày bắt đầu luôn là hôm nay
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + rentalMonths);
+
   const calculateTotal = () => {
-    const months = calculateMonths();
-    return months * priceMonth;
+    return rentalMonths * priceMonth;
   };
 
   const calculateDeposit = () => {
     return priceMonth; // 1 tháng tiền cọc
   };
 
-  const handleStartDateChange = (event: any, selectedDate?: Date) => {
-    setShowStartPicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setStartDate(selectedDate);
-      // Tự động set end date = start date + 1 tháng nếu end date < start date
-      if (selectedDate >= endDate) {
-        const newEndDate = new Date(selectedDate);
-        newEndDate.setMonth(newEndDate.getMonth() + 1);
-        setEndDate(newEndDate);
-      }
-    }
-  };
-
-  const handleEndDateChange = (event: any, selectedDate?: Date) => {
-    setShowEndPicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setEndDate(selectedDate);
-    }
-  };
-
   const handleSubmit = async () => {
     // Validation
-    const tenants = parseInt(numberOfTenants);
-    if (isNaN(tenants) || tenants < 1) {
+    if (tenantCount < 1) {
       Alert.alert('Lỗi', 'Vui lòng nhập số người hợp lệ');
       return;
     }
 
-    if (tenants > maxPeople) {
+    if (tenantCount > maxPeople) {
       Alert.alert('Lỗi', `Số người tối đa là ${maxPeople}`);
-      return;
-    }
-
-    if (startDate >= endDate) {
-      Alert.alert('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu');
       return;
     }
 
@@ -106,276 +82,326 @@ const BookingModal: React.FC<BookingModalProps> = ({
       const userData = userDataStr ? JSON.parse(userDataStr) : null;
       const userId = userData?.id;
 
+      //  STEP 1: Validate userId BEFORE proceeding
+      console.log(" Validating userId:", { userId, userData });
+      
       if (!userId) {
         throw new Error('Vui lòng đăng nhập để đặt phòng');
       }
 
+      if (typeof userId === 'string' && userId.trim() === '') {
+        throw new Error('User ID không hợp lệ. Vui lòng đăng nhập lại');
+      }
+
+      console.log(" userId validation passed:", userId);
+
       const bookingData = {
         roomId: roomId,
-        userId: userId,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        totalPrice: calculateTotal(),
-        depositAmount: calculateDeposit(),
-        numberOfTenants: tenants,
-        note: note.trim() || undefined,
+        rentalDate: getISODateAtMidnight(startDate),
+        rentalExpires: getISODateAtMidnight(endDate),
+        tenantCount: tenantCount,
       };
 
-      // Create booking
-      const result = await createBooking(bookingData);
+      console.log('Booking data to be sent:', bookingData);
 
-      // Send notification to landlord
-      await createBookingNotification(
+      //  STEP 2: Create booking
+      const result = await createBooking(bookingData, userId.toString());
+      console.log(' Booking created successfully:', result);
+
+      //  STEP 3: Send notification in background (không block UI)
+      // Nếu notification lỗi, KHÔNG làm fail toàn bộ booking
+      console.log(" Sending notification to landlord...");
+      createBookingNotification(
         roomId,
         userId,
-        `Có booking mới cho phòng "${roomTitle}". Số người: ${tenants}, Thời gian: ${calculateMonths()} tháng.`
-      );
+        `You have a new booking from a tenant for room: "${roomTitle}". Tenant count: ${tenantCount}, Duration: ${rentalMonths} months.`
+      ).catch((notificationError) => {
+        console.warn("️ Notification failed (non-critical):", notificationError);
+        // Không throw error - booking đã thành công, chỉ notification lỗi
+      });
 
-      Alert.alert(
-        'Thành công! 🎉',
-        'Đặt phòng thành công! Vui lòng chờ chủ nhà xác nhận và thanh toán tiền cọc.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              handleClose();
-              onSuccess();
-            },
-          },
-        ]
-      );
+      // Đóng modal booking trước
+      handleClose();
+
+      // Hiển thị modal xác nhận sau khi đóng modal booking
+      setTimeout(() => {
+        setShowConfirmModal(true);
+      }, 300);
+
     } catch (error: any) {
-      console.error('Booking error:', error);
-      Alert.alert('Lỗi', error.message || 'Không thể đặt phòng. Vui lòng thử lại.');
+      console.error('BookingForm - Error occurred:', error);
+
+      let errorMessage = 'Failed to create booking';
+
+      if (error instanceof Error) {
+        console.error('BookingForm - Error message:', error.message);
+
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.details) {
+            errorMessage = errorData.details;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch {
+          errorMessage = error.message;
+        }
+      }
+
+      Alert.alert('Lỗi', errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setStartDate(new Date());
-    setEndDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-    setNumberOfTenants('1');
+    setRentalMonths(1);
+    setTenantCount(1);
     setNote('');
     onClose();
   };
 
+  const handleConfirmModalClose = () => {
+    setShowConfirmModal(false);
+  };
+
+  const handleViewRentalHistory = () => {
+    setShowConfirmModal(false);
+    // Navigate to History tab
+    navigation.navigate('History' as never);
+  };
+
+  const handleStayHere = () => {
+    setShowConfirmModal(false);
+    onSuccess?.();
+  };
+
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Đặt phòng</Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#757575" />
-            </TouchableOpacity>
-          </View>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent
+        onRequestClose={handleClose}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Ionicons name="calendar" size={24} color="#1976D2" />
+              <Text style={styles.title}>Book Room</Text>
+              <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color="#757575" />
+              </TouchableOpacity>
+            </View>
 
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Room Info */}
-            <View style={styles.roomInfoCard}>
-              <Ionicons name="home" size={24} color="#1976D2" />
-              <View style={styles.roomInfoText}>
-                <Text style={styles.roomTitle} numberOfLines={1}>
-                  {roomTitle}
-                </Text>
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Room Info Card */}
+              <View style={styles.roomInfoCard}>
+                <Text style={styles.roomTitle}>{roomTitle}</Text>
                 <Text style={styles.roomPrice}>
-                  {priceMonth.toLocaleString()} ₫/tháng
+                  {priceMonth?.toLocaleString('vi-VN')} VND/month
                 </Text>
               </View>
-            </View>
 
-            {/* Date Selection */}
-            <View style={styles.section}>
-              <Text style={styles.label}>
-                <Ionicons name="calendar-outline" size={16} color="#1976D2" />{' '}
-                Thời gian thuê *
-              </Text>
-
-              {/* Start Date */}
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => setShowStartPicker(true)}
-              >
-                <View style={styles.dateButtonContent}>
-                  <Text style={styles.dateLabel}>Ngày bắt đầu:</Text>
-                  <Text style={styles.dateValue}>
-                    {startDate.toLocaleDateString('vi-VN')}
-                  </Text>
+              {/* Rental Period Section */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="calendar-outline" size={20} color="#1976D2" />
+                  <Text style={styles.sectionTitle}>Rental Period</Text>
                 </View>
-                <Ionicons name="calendar" size={20} color="#1976D2" />
-              </TouchableOpacity>
 
-              {showStartPicker && (
-                <DateTimePicker
-                  value={startDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleStartDateChange}
-                  minimumDate={new Date()}
-                />
-              )}
+                <View style={styles.periodCard}>
+                  <View style={styles.periodRow}>
+                    <Text style={styles.periodLabel}>Start Date:</Text>
+                    <Text style={styles.periodValue}>
+                      {startDate.toLocaleDateString('vi-VN')} (Today)
+                    </Text>
+                  </View>
 
-              {/* End Date */}
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => setShowEndPicker(true)}
-              >
-                <View style={styles.dateButtonContent}>
-                  <Text style={styles.dateLabel}>Ngày kết thúc:</Text>
-                  <Text style={styles.dateValue}>
-                    {endDate.toLocaleDateString('vi-VN')}
-                  </Text>
+                  <View style={styles.periodRow}>
+                    <Text style={styles.periodLabel}>End Date:</Text>
+                    <Text style={styles.periodValue}>
+                      {endDate.toLocaleDateString('vi-VN')}
+                    </Text>
+                  </View>
                 </View>
-                <Ionicons name="calendar" size={20} color="#1976D2" />
-              </TouchableOpacity>
-
-              {showEndPicker && (
-                <DateTimePicker
-                  value={endDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleEndDateChange}
-                  minimumDate={startDate}
-                />
-              )}
-
-              {/* Duration */}
-              <View style={styles.durationCard}>
-                <Text style={styles.durationText}>
-                  Thời gian: <Text style={styles.durationValue}>{calculateMonths()} tháng</Text>
-                </Text>
               </View>
-            </View>
 
-            {/* Number of Tenants */}
-            <View style={styles.section}>
-              <Text style={styles.label}>
-                <Ionicons name="people-outline" size={16} color="#1976D2" />{' '}
-                Số người ở *
-              </Text>
-              <View style={styles.inputContainer}>
+              {/* Rental Duration Select */}
+              <View style={styles.section}>
+                <Text style={styles.label}>Rental Duration (Months) *</Text>
+                <View style={styles.selectContainer}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => (
+                    <TouchableOpacity
+                      key={month}
+                      style={[
+                        styles.selectOption,
+                        rentalMonths === month && styles.selectOptionSelected,
+                      ]}
+                      onPress={() => setRentalMonths(month)}
+                    >
+                      <Text
+                        style={[
+                          styles.selectOptionText,
+                          rentalMonths === month && styles.selectOptionTextSelected,
+                        ]}
+                      >
+                        {month} {month === 1 ? 'Month' : 'Months'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Total Cost Preview */}
+              {rentalMonths > 0 && (
+                <View style={styles.costCard}>
+                  <View style={styles.costHeader}>
+                    <Ionicons name="calculator" size={20} color="#10B981" />
+                    <Text style={styles.costTitle}>Total Cost</Text>
+                  </View>
+
+                  <View style={styles.costRow}>
+                    <Text style={styles.costLabel}>{rentalMonths} months ×</Text>
+                    <Text style={styles.costValue}>
+                      {priceMonth.toLocaleString('vi-VN')} VND/month
+                    </Text>
+                  </View>
+
+                  <View style={styles.costDivider} />
+
+                  <View style={styles.totalCostRow}>
+                    <Text style={styles.totalCostLabel}>Total:</Text>
+                    <Text style={styles.totalCostValue}>
+                      {calculateTotal().toLocaleString('vi-VN')} VND
+                    </Text>
+                  </View>
+
+                  <View style={styles.depositRow}>
+                    <Text style={styles.depositLabel}>Deposit (1 month):</Text>
+                    <Text style={styles.depositValue}>
+                      {calculateDeposit().toLocaleString('vi-VN')} VND
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Number of Tenants */}
+              <View style={styles.section}>
+                <Text style={styles.label}>Number of Tenants *</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter number of tenants"
+                    placeholderTextColor="#BDBDBD"
+                    value={tenantCount.toString()}
+                    onChangeText={(text) => {
+                      const num = parseInt(text);
+                      if (!isNaN(num) && num >= 1) {
+                        setTenantCount(num);
+                      }
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                  <Text style={styles.inputSuffix}>people</Text>
+                </View>
+                <Text style={styles.hint}>Maximum: {maxPeople} people</Text>
+              </View>
+
+              {/* Note */}
+              <View style={styles.section}>
+                <Text style={styles.label}>Note (Optional)</Text>
                 <TextInput
-                  style={styles.input}
-                  placeholder={`Tối đa ${maxPeople} người`}
+                  style={styles.textArea}
+                  placeholder="Add a note for the landlord..."
                   placeholderTextColor="#BDBDBD"
-                  value={numberOfTenants}
-                  onChangeText={setNumberOfTenants}
-                  keyboardType="number-pad"
-                  maxLength={2}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
                 />
-                <Text style={styles.inputSuffix}>người</Text>
               </View>
-              <Text style={styles.hint}>Số người tối đa: {maxPeople}</Text>
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={handleClose}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.submitButton,
+                  loading && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <ActivityIndicator size="small" color="#FFF" />
+                    <Text style={styles.submitButtonText}>Processing...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
+                    <Text style={styles.submitButtonText}>Confirm Booking</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
-
-            {/* Note */}
-            <View style={styles.section}>
-              <Text style={styles.label}>
-                <Ionicons name="document-text-outline" size={16} color="#1976D2" />{' '}
-                Ghi chú (tùy chọn)
-              </Text>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Thêm ghi chú cho chủ nhà..."
-                placeholderTextColor="#BDBDBD"
-                value={note}
-                onChangeText={setNote}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
-
-            {/* Summary */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Tổng quan</Text>
-              
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Thời gian:</Text>
-                <Text style={styles.summaryValue}>{calculateMonths()} tháng</Text>
-              </View>
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Giá thuê/tháng:</Text>
-                <Text style={styles.summaryValue}>{priceMonth.toLocaleString()} ₫</Text>
-              </View>
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Tiền cọc:</Text>
-                <Text style={[styles.summaryValue, styles.depositValue]}>
-                  {calculateDeposit().toLocaleString()} ₫
-                </Text>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.totalLabel}>Tổng tiền:</Text>
-                <Text style={styles.totalValue}>
-                  {calculateTotal().toLocaleString()} ₫
-                </Text>
-              </View>
-            </View>
-
-            {/* Instructions */}
-            <View style={styles.instructionsCard}>
-              <Ionicons name="information-circle-outline" size={20} color="#FF9800" />
-              <View style={styles.instructionsContent}>
-                <Text style={styles.instructionsTitle}>Lưu ý:</Text>
-                <Text style={styles.instructionsText}>
-                  • Chủ nhà sẽ xem xét và xác nhận booking{'\n'}
-                  • Bạn cần thanh toán tiền cọc sau khi được xác nhận{'\n'}
-                  • Tiền cọc = 1 tháng tiền phòng{'\n'}
-                  • Kiểm tra kỹ thông tin trước khi xác nhận
-                </Text>
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={handleClose}
-            >
-              <Text style={styles.cancelButtonText}>Hủy</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.submitButton,
-                loading && styles.submitButtonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <ActivityIndicator size="small" color="#FFF" />
-                  <Text style={styles.submitButtonText}>Đang xử lý...</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
-                  <Text style={styles.submitButtonText}>Xác nhận đặt phòng</Text>
-                </>
-              )}
-            </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      {/* Success Confirmation Modal */}
+      <Modal
+        visible={showConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleConfirmModalClose}
+      >
+        <View style={styles.confirmModalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <View style={styles.confirmModalHeader}>
+              <Ionicons name="checkmark-circle" size={48} color="#10B981" />
+              <Text style={styles.confirmModalTitle}>Đặt phòng thành công!</Text>
+            </View>
+
+            <Text style={styles.confirmModalMessage}>
+              Bạn có muốn xem lịch sử thuê phòng hoặc ở lại trang này không?
+            </Text>
+
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.stayButton]}
+                onPress={handleStayHere}
+              >
+                <Text style={styles.stayButtonText}>Ở lại đây</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.historyButton]}
+                onPress={handleViewRentalHistory}
+              >
+                <Ionicons name="list" size={20} color="#FFF" />
+                <Text style={styles.historyButtonText}>Xem lịch sử thuê</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };
 

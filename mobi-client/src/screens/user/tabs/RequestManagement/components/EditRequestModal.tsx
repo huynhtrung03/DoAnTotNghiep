@@ -10,6 +10,8 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Colors from '../../../../../styles/colors';
 import * as ImagePicker from 'expo-image-picker';
 import {
   RequirementsService,
@@ -47,7 +49,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
   // ===== PICK IMAGE =====
   const handlePickImage = async () => {
     try {
-      console.log('🖼️ Mở thư viện ảnh...');
+      console.log('️ Mở thư viện ảnh...');
       
       // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -77,10 +79,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
           name: fileName,
         });
         
-        console.log('✅ Đã chọn ảnh:', fileName);
+        console.log(' Đã chọn ảnh:', fileName);
       }
     } catch (error: any) {
-      console.error('❌ Lỗi khi chọn ảnh:', error.message);
+      console.error(' Lỗi khi chọn ảnh:', error.message);
       Alert.alert('Lỗi', 'Không thể chọn ảnh');
     }
   };
@@ -88,7 +90,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
   // ===== REMOVE IMAGE =====
   const handleRemoveImage = () => {
     setNewImageFile(null);
-    console.log('🗑️ Đã xóa ảnh mới');
+    console.log('️ Đã xóa ảnh mới');
   };
 
   // ===== SUBMIT =====
@@ -115,12 +117,12 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
     }
 
     try {
-      console.log(`📤 Đang cập nhật yêu cầu ${request.id}...`);
+      console.log(` Đang cập nhật yêu cầu ${request.id}...`);
       setUploading(true);
 
       // Case 1: Có ảnh mới → Upload ảnh
       if (newImageFile) {
-        console.log('📷 Đang upload ảnh mới...');
+        console.log(' Đang upload ảnh mới...');
         
         // Chuyển đổi sang File object (cần cho updateRequirementWithImage)
         const imageFile = {
@@ -135,20 +137,20 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
           imageFile
         );
         
-        console.log('✅ Đã cập nhật yêu cầu với ảnh mới');
+        console.log(' Đã cập nhật yêu cầu với ảnh mới');
       } 
       // Case 2: Chỉ cập nhật mô tả
       else {
-        console.log('📝 Đang cập nhật mô tả...');
+        console.log(' Đang cập nhật mô tả...');
         await RequirementsService.updateRequirement(request.id, description.trim());
-        console.log('✅ Đã cập nhật mô tả');
+        console.log(' Đã cập nhật mô tả');
       }
 
       Alert.alert('Thành công', 'Request updated successfully!', [
         { text: 'OK', onPress: onSuccess },
       ]);
     } catch (error: any) {
-      console.error('❌ Lỗi khi cập nhật yêu cầu:', error.message);
+      console.error(' Lỗi khi cập nhật yêu cầu:', error.message);
       Alert.alert('Lỗi', error.message || 'Failed to update request.');
     } finally {
       setUploading(false);
@@ -239,7 +241,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
                   onPress={handlePickImage}
                   disabled={uploading}
                 >
-                  <Text>📷</Text>
+                  <Ionicons name="camera" size={16} color={Colors.primary} />
                   <Text style={styles.imagePickerText}>
                     {newImageFile ? 'Select New Image' : 'Select New Image'}
                   </Text>
@@ -266,7 +268,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
                       disabled={uploading}
                     >
                       <Text style={{ fontSize: 13, color: '#ff4d4f', textAlign: 'center' }}>
-                        🗑️ Remove new image
+                        [Xoa anh moi]
                       </Text>
                     </TouchableOpacity>
                   </>

@@ -10,8 +10,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 import { RentalData, BookingResponse } from '../../../types/rental';
-import { userFetchBookings } from '../../../services/rooms/BookingService';
+import { userFetchBookings } from '../../../services/BookingService';
 import RentalHistoryItem from '../../../components/history/RentalHistoryItem';
 import PaymentModal from '../../../components/history/PaymentModal';
 import RequestModal from '../../../components/history/RequestModal';
@@ -19,6 +20,7 @@ import ImageViewModal from '../../../components/history/ImageViewModal';
 import styles from '../../../styles/screens/user/HistoryScreen.styles';
 
 export default function HistoryScreen() {
+  const navigation = useNavigation<any>();
   const [bookings, setBookings] = useState<RentalData[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -75,17 +77,17 @@ export default function HistoryScreen() {
         setRefreshing(true);
       }
 
-      console.log('📚 HistoryScreen - Fetching bookings, page:', pageNum, 'append:', append);
+      //console.log(' HistoryScreen - Fetching bookings, page:', pageNum, 'append:', append);
       
       const response = await userFetchBookings(pageNum, 10);
       
-      console.log('📚 HistoryScreen - Response:', JSON.stringify(response, null, 2));
+      //console.log(' HistoryScreen - Response:', JSON.stringify(response, null, 2));
       
       const fetchedBookings = response.bookings || response;
       const total = response.totalPages || 1;
 
-      console.log('📚 HistoryScreen - Fetched bookings count:', fetchedBookings.length);
-      console.log('📚 HistoryScreen - Total pages:', total);
+      //console.log(' HistoryScreen - Fetched bookings count:', fetchedBookings.length);
+      //console.log(' HistoryScreen - Total pages:', total);
 
       const mappedBookings = fetchedBookings.map(mapBookingToRentalData);
 
@@ -98,8 +100,8 @@ export default function HistoryScreen() {
       setTotalPages(total);
       setHasMore(pageNum + 1 < total);
     } catch (error) {
-      console.error('💥 HistoryScreen - Failed to fetch bookings:', error);
-      console.error('💥 Error details:', JSON.stringify(error, null, 2));
+      console.error(' HistoryScreen - Failed to fetch bookings:', error);
+      console.error(' Error details:', JSON.stringify(error, null, 2));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -111,9 +113,9 @@ export default function HistoryScreen() {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem('accessToken');
       const userData = await AsyncStorage.getItem('userData');
-      console.log('🔐 Auth Check - Token exists:', !!token);
-      console.log('🔐 Auth Check - Token preview:', token ? `${token.substring(0, 30)}...` : 'NULL');
-      console.log('🔐 Auth Check - UserData:', userData);
+      //console.log(' Auth Check - Token exists:', !!token);
+      //console.log(' Auth Check - Token preview:', token ? `${token.substring(0, 30)}...` : 'NULL');
+      //console.log(' Auth Check - UserData:', userData);
     };
     
     checkAuth();
@@ -149,6 +151,11 @@ export default function HistoryScreen() {
     setImageModalVisible(true);
   };
 
+  const handlePressRoomDetail = (roomId: string) => {
+    // Navigate to HistoryRoomDetail screen
+    navigation.navigate('HistoryRoomDetail', { roomId });
+  };
+
   const handleModalSuccess = () => {
     handleRefresh();
   };
@@ -159,6 +166,7 @@ export default function HistoryScreen() {
       onPressRequest={handlePressRequest}
       onPressPayment={handlePressPayment}
       onPressImage={handlePressImage}
+      onPressRoomDetail={handlePressRoomDetail}
     />
   );
 
@@ -168,13 +176,13 @@ export default function HistoryScreen() {
     return (
       <View style={styles.emptyState}>
         <Ionicons name="document-text-outline" size={80} color="#BDBDBD" />
-        <Text style={styles.emptyTitle}>No rental history</Text>
+        <Text style={styles.emptyTitle}>Không có lịch sử thuê phòng</Text>
         <Text style={styles.emptySubtitle}>
-          Your rental history will appear here once you start renting
+          Lịch sử thuê phòng của bạn sẽ xuất hiện ở đây khi bạn bắt đầu thuê phòng
         </Text>
         <TouchableOpacity style={styles.browseButton}>
           <Ionicons name="search-outline" size={20} color="#FFF" />
-          <Text style={styles.browseButtonText}>Find Rooms</Text>
+          <Text style={styles.browseButtonText}>Tìm phòng</Text>
         </TouchableOpacity>
       </View>
     );
@@ -186,7 +194,7 @@ export default function HistoryScreen() {
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color="#1976D2" />
-        <Text style={styles.footerLoaderText}>Loading more...</Text>
+        <Text style={styles.footerLoaderText}>Đang tải thêm...</Text>
       </View>
     );
   };
@@ -197,7 +205,7 @@ export default function HistoryScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Lịch sử thuê phòng</Text>
         <Text style={styles.headerSubtitle}>
-          {bookings.length} {bookings.length === 1 ? 'đặt phòng' : 'đặt phòng'}
+          {bookings.length} {bookings.length === 1 ? 'phòng đã thuê' : 'phòng đã thuê'}
         </Text>
       </View>
 

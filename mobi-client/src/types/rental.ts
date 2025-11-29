@@ -2,6 +2,13 @@
  * Rental History Types
  */
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  icon: string;
+  description?: string;
+}
+
 export interface RentalData {
   key: string; // bookingId
   name_landlord: string;
@@ -87,7 +94,9 @@ export interface RentalHistoryItemProps {
   item: RentalData;
   onPressRequest: (roomId: string) => void;
   onPressPayment: (bookingId: string) => void;
+  onSelectPaymentMethod?: (bookingId: string, method: PaymentMethod) => void;
   onPressImage: (imageUrl: string) => void;
+  onPressRoomDetail: (roomId: string) => void;
 }
 
 export interface FilterOptions {

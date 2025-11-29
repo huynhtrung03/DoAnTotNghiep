@@ -28,14 +28,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors, { withOpacity } from '../../../styles/colors';
-import { getLandlordByRoomId } from '../../../services/rooms/RoomService';
+import { getLandlordByRoomId } from '../../../services/RoomService';
 import { 
   addFavorite, 
   removeFavorite, 
   getFavoriteCount, 
   isFavorited as checkIsFavorited,
-} from '../../../services/favorites/FavoriteService';
-import { URL_IMAGE } from '../../../services/config/Constant';
+} from '../../../services/FavoriteService';
+import { URL_IMAGE } from '../../../services/Constant';
 
 interface UserInfoCardProps {
   roomId: string;
@@ -103,7 +103,7 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
     try {
       setLoading(true);
       
-      console.log('🔍 UserInfoCard: Loading data for roomId:', roomId);
+      console.log(' UserInfoCard: Loading data for roomId:', roomId);
       
       // Load parallel để nhanh hơn
       const [landlordData, favoriteStatus, favCount] = await Promise.all([
@@ -112,22 +112,22 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
         getFavoriteCount(roomId),
       ]);
 
-      console.log('📦 UserInfoCard: Landlord data:', landlordData);
-      console.log('🖼️ UserInfoCard: Avatar URL:', landlordData?.avatar);
-      console.log('🔗 UserInfoCard: Full avatar URL:', landlordData?.avatar ? URL_IMAGE + landlordData.avatar : 'No avatar');
-      console.log('❤️ UserInfoCard: Favorite status:', favoriteStatus, 'Count:', favCount);
+      console.log(' UserInfoCard: Landlord data:', landlordData);
+      console.log('️ UserInfoCard: Avatar URL:', landlordData?.avatar);
+      console.log(' UserInfoCard: Full avatar URL:', landlordData?.avatar ? `${URL_IMAGE}${landlordData.avatar.startsWith('/') ? landlordData.avatar.slice(1) : landlordData.avatar}` : 'No avatar');
+      console.log('️ UserInfoCard: Favorite status:', favoriteStatus, 'Count:', favCount);
 
       if (landlordData) {
         setLandlord(landlordData);
       } else {
-        console.warn('⚠️ UserInfoCard: No landlord data received');
+        console.warn('️ UserInfoCard: No landlord data received');
       }
       
       setIsFavorited(favoriteStatus);
       setFavoriteCount(favCount);
 
     } catch (error) {
-      console.error('❌ UserInfoCard: Error loading data:', error);
+      console.error(' UserInfoCard: Error loading data:', error);
       Alert.alert('Lỗi', 'Không thể tải thông tin chủ nhà');
     } finally {
       setLoading(false);
@@ -329,7 +329,7 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
                 source={{ 
                   uri: landlord.avatar.startsWith('http') 
                     ? landlord.avatar 
-                    : URL_IMAGE + landlord.avatar 
+                    : `${URL_IMAGE}${landlord.avatar.startsWith('/') ? landlord.avatar.slice(1) : landlord.avatar}` 
                 }} 
                 style={styles.compactAvatar}
               />
@@ -429,14 +429,14 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
                 source={{ 
                   uri: landlord.avatar.startsWith('http') 
                     ? landlord.avatar 
-                    : URL_IMAGE + landlord.avatar 
+                    : `${URL_IMAGE}${landlord.avatar.startsWith('/') ? landlord.avatar.slice(1) : landlord.avatar}` 
                 }} 
                 style={styles.avatar}
                 onError={(error) => {
-                  console.warn('⚠️ UserInfoCard: Error loading avatar:', error.nativeEvent.error);
+                  console.warn('️ UserInfoCard: Error loading avatar:', error.nativeEvent.error);
                   if (landlord.avatar) {
-                    console.warn('⚠️ UserInfoCard: Attempted URL:', 
-                      landlord.avatar.startsWith('http') ? landlord.avatar : URL_IMAGE + landlord.avatar
+                    console.warn('️ UserInfoCard: Attempted URL:', 
+                      landlord.avatar.startsWith('http') ? landlord.avatar : `${URL_IMAGE}${landlord.avatar.startsWith('/') ? landlord.avatar.slice(1) : landlord.avatar}`
                     );
                   }
                 }}

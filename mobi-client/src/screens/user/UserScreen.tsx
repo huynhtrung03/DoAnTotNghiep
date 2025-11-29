@@ -206,13 +206,13 @@ export default function UserScreen() {
                 'locationEnabled',
               ]);
 
-              console.log('✅ User data cleared, reloading app...');
+              console.log(' User data cleared, reloading app...');
 
               // Reload the app to reset all state
               try {
                 await Updates.reloadAsync();
               } catch (reloadError) {
-                console.error('❌ Reload failed, using navigation fallback:', reloadError);
+                console.error(' Reload failed, using navigation fallback:', reloadError);
                 // Fallback: navigate to login if reload fails
                 navigation.dispatch(
                   CommonActions.reset({
@@ -250,8 +250,8 @@ export default function UserScreen() {
     navigation.navigate('Users/RequestManagement' as never);
   };
 
-  const handleNavigateToFavorites = () => {
-    Alert.alert(t('user.favorites'), t('features.inDevelopment'));
+  const handleNavigateToPaymentMethod = () => {
+    navigation.navigate('Users/Bank' as never);
   };
 
   const handleNavigateToPassword = () => {
@@ -318,12 +318,12 @@ export default function UserScreen() {
       onPress: handleNavigateToRequests,
     },
     {
-      key: 'favorites',
-      label: t('user.favorites'),
-      icon: 'heart-outline',
-      iconColor: '#EC4899',
-      iconBg: '#FDF2F8',
-      onPress: handleNavigateToFavorites,
+      key: 'paymentMethod',
+      label: 'Phương thức thanh toán',
+      icon: 'card-outline',
+      iconColor: '#10B981',
+      iconBg: '#ECFDF5',
+      onPress: handleNavigateToPaymentMethod,
     },
     {
       key: 'password',
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
   logoutContainer: {
     paddingHorizontal: 16,
     marginTop: 24,
-    marginBottom: 100, // ✅ Add bottom margin for tab bar
+    marginBottom: 100, //  Add bottom margin for tab bar
   },
   logoutButton: {
     flexDirection: 'row',
@@ -738,6 +738,6 @@ const styles = StyleSheet.create({
   
   // Bottom Spacing
   bottomSpacing: {
-    height: 120, // ✅ Increased from 32 to 120 for tab bar
+    height: 120, //  Increased from 32 to 120 for tab bar
   },
 });

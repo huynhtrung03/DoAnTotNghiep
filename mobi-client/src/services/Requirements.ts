@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from './config/Constant';
+import { API_URL } from './Constant';
+import { BaseApiClient } from './api/BaseApiClient';
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -25,8 +26,8 @@ export interface RequirementDetail extends Requirement {
   userName?: string;
   roomName?: string;
   landlordName?: string;
-  completionNote?: string; // Ghi chú khi hoàn thành
-  rejectionReason?: string; // Lý do từ chối
+  completionNote?: string; // Ghi chu khi hoan thanh
+  rejectionReason?: string; // Ly do tu choi
 }
 
 export interface RequirementRequestRoomDto {
@@ -42,7 +43,7 @@ export interface UpdateRequestRoomDto {
 }
 
 /**
- * Tạo request mới (React Native version)
+ * Tao yeu cau moi
  */
 export async function createRequest(
   data: RequirementRequestRoomDto,
@@ -51,13 +52,12 @@ export async function createRequest(
   imageType?: string
 ): Promise<RequirementRequestRoomDto> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
     const formData = new FormData();
-    
-    // Append data as JSON string
+
+    // Them du lieu nhu JSON string
     formData.append('data', JSON.stringify(data));
-    
-    // Append image if provided (React Native format)
+
+    // Them anh neu co
     if (imageUri) {
       formData.append('image', {
         uri: imageUri,
@@ -66,31 +66,15 @@ export async function createRequest(
       } as any);
     }
 
-    const response = await fetch(`${API_URL}/requirements/create`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-      body: formData,
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
-      let errorMsg = result?.error || result?.message || 'Failed to create request';
-      if (Array.isArray(errorMsg)) {
-        errorMsg = errorMsg[0];
-      }
-      throw new Error(errorMsg);
-    }
-    return result;
+    return await BaseApiClient.uploadFile<RequirementRequestRoomDto>('/requirements/create', formData);
   } catch (error) {
-    console.error('createRequest error:', error);
+    console.error('Loi tao yeu cau:', error);
     throw error;
   }
 }
+
 /**
- * Upload image + update requirement (React Native version)
+ * Cap nhat yeu cau voi anh
  */
 export async function updateRequirementWithImage(
   idRequirement: string,
@@ -100,16 +84,15 @@ export async function updateRequirementWithImage(
   imageType?: string
 ): Promise<RequirementRequestRoomDto> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
     const formData = new FormData();
-    
+
     const updateData = {
       id: idRequirement,
       description: description,
     };
-    
+
     formData.append('data', JSON.stringify(updateData));
-    
+
     if (imageUri) {
       formData.append('image', {
         uri: imageUri,
@@ -118,64 +101,24 @@ export async function updateRequirementWithImage(
       } as any);
     }
 
-    const response = await fetch(
-      `${API_URL}/requirements/${idRequirement}/update-with-image`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData,
-      }
-    );
-
-    const result = await response.json();
-    if (!response.ok) {
-      let errorMsg = result?.error || result?.message || 'Failed to update requirement';
-      if (Array.isArray(errorMsg)) {
-        errorMsg = errorMsg[0];
-      }
-      throw new Error(errorMsg);
-    }
-    return result;
+    return await BaseApiClient.patchUpload<RequirementRequestRoomDto>(`/requirements/${idRequirement}/update-with-image`, formData);
   } catch (error) {
-    console.error('updateRequirementWithImage error:', error);
+    console.error('Loi cap nhat yeu cau voi anh:', error);
     throw error;
   }
 }
 
 /**
- * Lấy requests của landlord (React Native version)
+ * Lay yeu cau cua chu nha
  */
 export async function getRequestsByLandlordId(
   page = 0,
   size = 5
 ): Promise<PaginatedResponse<Requirement>> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
-    
-    const response = await fetch(
-      `${API_URL}/requirements/requirements-landlord?page=${page}&size=${size}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
+    const result = await BaseApiClient.get<any>('/requirements/requirements-landlord', { page, size });
 
-    const result = await response.json();
-    if (!response.ok) {
-      let errorMsg = result?.error || result?.message || 'Failed to fetch requests';
-      if (Array.isArray(errorMsg)) {
-        errorMsg = errorMsg[0];
-      }
-      throw new Error(errorMsg);
-    }
-
-    // Normalize backend response
+    // Chuan hoa response tu backend
     const normalized: PaginatedResponse<Requirement> = {
       data: result.data || [],
       page: result.pageNumber ?? 0,
@@ -187,43 +130,25 @@ export async function getRequestsByLandlordId(
 
     return normalized;
   } catch (error) {
-    console.error('getRequestsByLandlordId error:', error);
+    console.error('Loi lay yeu cau cua chu nha:', error);
     throw error;
   }
 }
 
 /**
- * Update requirement status (React Native version)
+ * Cap nhat trang thai yeu cau
  */
 export async function updateRequirementStatus(id: string): Promise<void> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
-    
-    const response = await fetch(`${API_URL}/requirements/update-status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ id }),
-    });
-
-    if (!response.ok) {
-      const result = await response.json();
-      let errorMsg = result?.error || result?.message || 'Failed to update requirement status';
-      if (Array.isArray(errorMsg)) {
-        errorMsg = errorMsg[0];
-      }
-      throw new Error(errorMsg);
-    }
+    await BaseApiClient.patch('/requirements/update-status', { id });
   } catch (error) {
-    console.error('updateRequirementStatus error:', error);
+    console.error('Loi cap nhat trang thai yeu cau:', error);
     throw error;
   }
 }
 
 /**
- * Upload requirement image (React Native version)
+ * Upload anh yeu cau
  */
 export async function uploadRequirementImage(
   idRequirement: string,
@@ -232,9 +157,8 @@ export async function uploadRequirementImage(
   imageType?: string
 ): Promise<void> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
     const formData = new FormData();
-    
+
     formData.append('idRequirement', idRequirement);
     formData.append('image', {
       uri: imageUri,
@@ -242,61 +166,27 @@ export async function uploadRequirementImage(
       name: imageFileName || 'requirement-image.jpg',
     } as any);
 
-    const response = await fetch(`${API_URL}/requirements/upload-image`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const result = await response.json();
-      let errorMsg = result?.error || result?.message || 'Failed to upload image';
-      if (Array.isArray(errorMsg)) {
-        errorMsg = errorMsg[0];
-      }
-      throw new Error(errorMsg);
-    }
+    await BaseApiClient.uploadFile('/requirements/upload-image', formData);
   } catch (error) {
-    console.error('uploadRequirementImage error:', error);
+    console.error('Loi upload anh yeu cau:', error);
     throw error;
   }
 }
 
 /**
- * Reject requirement (React Native version)
+ * Tu choi yeu cau
  */
 export async function rejectRequirement(id: string): Promise<void> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
-    
-    const response = await fetch(`${API_URL}/requirements/reject`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ id }),
-    });
-
-    if (!response.ok) {
-      const result = await response.json();
-      let errorMsg = result?.error || result?.message || 'Failed to reject requirement';
-      if (Array.isArray(errorMsg)) {
-        errorMsg = errorMsg[0];
-      }
-      throw new Error(errorMsg);
-    }
+    await BaseApiClient.patch('/requirements/reject', { id });
   } catch (error) {
-    console.error('rejectRequirement error:', error);
+    console.error('Loi tu choi yeu cau:', error);
     throw error;
   }
 }
 
 /**
- * Lấy requests của user (React Native version)
+ * Lay yeu cau cua nguoi dung
  */
 export async function getRequestsByUser(
   userId: string | number,
@@ -304,33 +194,13 @@ export async function getRequestsByUser(
   size = 5
 ): Promise<PaginatedResponse<RequirementDetail>> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
-    
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Can co User ID');
     }
 
-    const response = await fetch(
-      `${API_URL}/requirements/user/${userId}/requests?page=${page}&size=${size}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
+    const result = await BaseApiClient.get<any>(`/requirements/user/${userId}/requests`, { page, size });
 
-    const result = await response.json();
-    if (!response.ok) {
-      let errorMsg = result?.error || result?.message || 'Failed to fetch requests';
-      if (Array.isArray(errorMsg)) {
-        errorMsg = errorMsg[0];
-      }
-      throw new Error(errorMsg);
-    }
-
-    // Normalize backend response
+    // Chuan hoa response tu backend
     const normalized: PaginatedResponse<RequirementDetail> = {
       data: result.data || [],
       page: result.pageNumber ?? 0,
@@ -342,88 +212,49 @@ export async function getRequestsByUser(
 
     return normalized;
   } catch (error) {
-    console.error('getRequestsByUser error:', error);
+    console.error('Loi lay yeu cau cua nguoi dung:', error);
     throw error;
   }
 }
 
 /**
- * Update request (React Native version)
+ * Cap nhat yeu cau
  */
 export async function updateRequest(
   data: UpdateRequestRoomDto
 ): Promise<UpdateRequestRoomDto> {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
-    
-    const response = await fetch(`${API_URL}/requirements/update`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
-      let errorMsg = result?.error || result?.message || 'Failed to update request';
-      if (Array.isArray(errorMsg)) {
-        errorMsg = errorMsg[0];
-      }
-      throw new Error(errorMsg);
-    }
-    return result;
+    return await BaseApiClient.patch<UpdateRequestRoomDto>('/requirements/update', data);
   } catch (error) {
-    console.error('updateRequest error:', error);
+    console.error('Loi cap nhat yeu cau:', error);
     throw error;
   }
 }
 
-// ===== SERVICE OBJECT (dùng cho RequestManagementScreen) =====
+// ===== SERVICE OBJECT (dung cho RequestManagementScreen) =====
 export const RequirementsService = {
   /**
-   * 📋 Lấy danh sách yêu cầu của user (có phân trang)
-   * Tự động lấy userId từ AsyncStorage
+   * Lay danh sach yeu cau cua nguoi dung (co phan trang)
+   * Tu dong lay userId tu AsyncStorage
    */
   async userFetchRequirements(
     page: number = 0,
     size: number = 10
   ): Promise<PaginatedResponse<RequirementDetail>> {
     try {
-      console.log(`📋 Đang lấy yêu cầu - Trang ${page + 1}`);
-      
       const token = await AsyncStorage.getItem('accessToken');
       const userDataStr = await AsyncStorage.getItem('userData');
-      
+
       if (!token || !userDataStr) {
-        throw new Error('Yêu cầu đăng nhập');
+        throw new Error('Yeu cau dang nhap');
       }
-      
+
       const userData = JSON.parse(userDataStr);
       const userId = userData.id;
 
-      const response = await fetch(
-        `${API_URL}/requirements/user/${userId}/requests?page=${page}&size=${size}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
+      const result = await BaseApiClient.get<any>(`/requirements/user/${userId}/requests`, { page, size });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Lỗi API:', response.status, errorText);
-        throw new Error(`Không thể lấy danh sách yêu cầu`);
-      }
-
-      const result = await response.json();
-      console.log(`✅ Đã lấy ${result.data?.length || 0} yêu cầu`);
-
-      // Chuẩn hóa response từ backend
+      // Chuan hoa response tu backend
       return {
         data: result.data || [],
         page: result.pageNumber ?? page,
@@ -433,45 +264,25 @@ export const RequirementsService = {
         totalRecords: result.totalRecords ?? 0,
       };
     } catch (error: any) {
-      console.error('❌ Lỗi userFetchRequirements:', error.message);
+      console.error('Loi userFetchRequirements:', error.message);
       throw error;
     }
   },
 
   /**
-   * ✏️ Cập nhật yêu cầu (chỉ mô tả, không có ảnh)
+   * Cap nhat yeu cau (chi mo ta, khong co anh)
    */
   async updateRequirement(
     requirementId: string,
     description: string
   ): Promise<void> {
     try {
-      console.log(`✏️ Đang cập nhật yêu cầu ${requirementId}...`);
-      
-      const token = await AsyncStorage.getItem('accessToken');
-      if (!token) throw new Error('Yêu cầu đăng nhập');
-
-      const response = await fetch(`${API_URL}/requirements/update`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          id: requirementId,
-          description: description,
-        }),
+      await BaseApiClient.patch('/requirements/update', {
+        id: requirementId,
+        description: description,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData?.message || 'Không thể cập nhật yêu cầu';
-        throw new Error(errorMsg);
-      }
-
-      console.log('✅ Đã cập nhật yêu cầu thành công');
     } catch (error: any) {
-      console.error('❌ Lỗi updateRequirement:', error.message);
+      console.error('Loi updateRequirement:', error.message);
       throw error;
     }
   },

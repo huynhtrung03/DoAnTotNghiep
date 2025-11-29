@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { RequestModalProps } from '../../types/rental';
 import { createRequest } from '../../services/Requirements';
-import { createRequestNotification } from '../../services/statistics/NotificationService';
+import { createRequestNotification } from '../../services/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './RequestModal.styles';
 

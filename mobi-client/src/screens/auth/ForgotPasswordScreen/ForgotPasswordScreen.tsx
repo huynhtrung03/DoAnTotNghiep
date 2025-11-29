@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AuthLayout, FormCard, FormInput } from '../../../components/auth/shared';
-import { API_URL } from '../../../services/config/Constant';
+import { API_URL } from '../../../services/Constant';
 import axios from 'axios';
 import { styles } from './ForgotPasswordScreen.styles';
 import Colors from '../../../styles/colors';

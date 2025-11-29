@@ -5,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import RoomCartDetail from '../../../components/rooms/RoomDetail/components/RoomCartDetail';
 import Colors from '../../../styles/colors';
 import { useFavoriteStore } from '../../../stores/FavoriteStore';
-import { getAllFavoriteIds } from '../../../services/favorites/FavoriteService';
+import { getAllFavoriteIds } from '../../../services/FavoriteService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RoomDetailScreen({ route, navigation }: any) {
@@ -21,10 +21,10 @@ export default function RoomDetailScreen({ route, navigation }: any) {
           if (token) {
             const favoriteIds = await getAllFavoriteIds();
             setFavoriteRoomIds(favoriteIds);
-            console.log(`🔄 RoomDetailScreen: Reloaded ${favoriteIds.length} favorites`);
+            //console.log(` RoomDetailScreen: Reloaded ${favoriteIds.length} favorites`);
           }
         } catch (error) {
-          console.error('❌ Error reloading favorites in RoomDetailScreen:', error);
+          console.error(' Error reloading favorites in RoomDetailScreen:', error);
         }
       };
       reloadFavorites();

@@ -1,8 +1,8 @@
 # /api_gemini
 /dockers
-
+/.expo
 .fake
-
+/.idea
 /.venv
 .cursor/plans/rn-cafec4e0.plan.md
 node_modules/

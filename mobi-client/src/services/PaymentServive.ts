@@ -1,106 +1,141 @@
-import { API_URL } from './config/Constant';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from './Constant';
+import { BaseApiClient } from './api/BaseApiClient';
 
-// ===== TYPES =====
+/**
+ * Lay giao dich theo ID nguoi dung voi phan trang
+ */
+export async function getTransactionsByUserIdPaginated(
+  page: number,
+  size: number,
+  userId?: string
+) {
+  try {
+    // Neu userId khong duoc cung cap, lay tu JWT token
+    let targetUserId = userId;
+    if (!targetUserId) {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      if (accessToken) {
+        const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+        targetUserId = tokenPayload.id;
+      }
+    }
 
-/** Dữ liệu giao dịch phân trang */
-export interface PaginatedTransactions {
-  transactions: Transaction[];
-  pageNumber: number;
-  pageSize: number;
-  totalRecords: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
+    const endpoint = targetUserId
+      ? `/transactions/by-user/${targetUserId}/paging`
+      : `/landlord/payment-history`;
+
+    return await BaseApiClient.get(endpoint, { page, size });
+  } catch (error) {
+    console.error('Loi lay giao dich phan trang:', error);
+    return {
+      transactions: [],
+      pageNumber: page,
+      pageSize: size,
+      totalRecords: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
+    };
+  }
 }
 
-/** Thông tin giao dịch */
-export interface Transaction {
-  id?: string;
-  amount: number;
-  transactionType: number;
-  bankTransactionName: string;
-  transactionCode: string;
-  transactionDate: string | null;
-  status: number;
-  description: string;
-  userId?: string;
-  createdAt?: string;
-  updatedAt?: string;
+/**
+ * Tao giao dich moi theo ID nguoi dung
+ */
+export async function createTransactionByUserId(transactionData: any) {
+  try {
+    const data = await BaseApiClient.post<any>('/landlord/payment-result-client', transactionData);
+    return data.transaction || data;
+  } catch (error) {
+    console.error('Loi tao giao dich:', error);
+    throw error;
+  }
 }
 
-/** Dữ liệu thanh toán từ VNPay */
-export interface PaymentData {
+/**
+ * Lay giao dich theo ID nguoi dung va khoang thoi gian
+ */
+export async function getTransactionsByUserIdAndDateRange(
+  startDate: string,
+  endDate: string,
+  page: number = 0,
+  size: number = 5,
+  userId?: string
+) {
+  try {
+    // Neu userId khong duoc cung cap, lay tu JWT token
+    let targetUserId = userId;
+    if (!targetUserId) {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      if (accessToken) {
+        const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+        targetUserId = tokenPayload.id;
+      }
+    }
+
+    // Dinh dang endDate neu can
+    let formattedEndDate = endDate;
+    if (endDate && !endDate.includes('T')) {
+      formattedEndDate = `${endDate}T23:59:59`;
+    }
+
+    const params = {
+      startDate,
+      endDate: formattedEndDate,
+      page,
+      size,
+    };
+
+    const endpoint = targetUserId
+      ? `/transactions/by-user/${targetUserId}/date-range`
+      : `/landlord/payment-history/filter-by-date`;
+
+    return await BaseApiClient.get(endpoint, params);
+  } catch (error) {
+    console.error('Loi lay giao dich theo khoang thoi gian:', error);
+    return {
+      transactions: [],
+      pageNumber: page,
+      pageSize: size,
+      totalRecords: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
+    };
+  }
+}
+
+type PaymentData = {
   amount: number;
   vnp_BankCode?: string;
   vnp_TxnRef: string;
   vnp_PayDate?: string | null;
   transactionStatus?: { success: boolean };
   vnp_OrderInfo?: string;
-}
-
-/** Payload tạo thanh toán mới */
-export interface CreatePaymentPayload {
-  amount: number;
-  description: string;
-  userId: string;
-}
-
-/** Response khi tạo thanh toán */
-export interface CreatePaymentResponse {
-  paymentUrl: string;
-  transactionCode: string;
-  amount: number;
-}
-
-/** Response khi xác nhận thanh toán */
-export interface ConfirmPaymentResponse {
-  success: boolean;
-  message: string;
-  transaction?: Transaction;
-}
-
-// ===== HELPER FUNCTIONS =====
-
-/**
- * Lấy headers authentication từ AsyncStorage
- */
-const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  const token = await AsyncStorage.getItem('accessToken');
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
 };
 
 /**
- * Chuyển đổi ngày từ VNPay (yyyyMMddHHmmss) sang ISO format
- * @param vnpPayDate - Ngày từ VNPay (VD: "20250802195453")
- * @returns ISO string hoặc null
+ * Dinh dang ngay thanh toan VNPay thanh ISO
  */
 function formatVnpPayDateToISO(vnpPayDate?: string | null): string | null {
-  // VNPay trả về dạng "yyyyMMddHHmmss" (VD: "20250802195453")
+  // VNPay tra ve dang "yyyyMMddHHmmss" (VD: "20250802195453")
   if (!vnpPayDate || vnpPayDate.length !== 14) return null;
-
   const year = vnpPayDate.substring(0, 4);
   const month = vnpPayDate.substring(4, 6);
   const day = vnpPayDate.substring(6, 8);
   const hour = vnpPayDate.substring(8, 10);
   const minute = vnpPayDate.substring(10, 12);
   const second = vnpPayDate.substring(12, 14);
-
-  // Tạo chuỗi ISO: "2025-08-02T19:54:53.000+07:00"
+  // Tao chuoi ISO: "2025-08-02T19:54:53.000+07:00"
   return `${year}-${month}-${day}T${hour}:${minute}:${second}.000+07:00`;
 }
 
 /**
- * Chuyển đổi dữ liệu thanh toán từ VNPay sang định dạng Transaction
- * @param payment - Dữ liệu thanh toán từ VNPay
- * @returns Transaction data
+ * Chuyen doi du lieu thanh toan thanh du lieu giao dich
  */
-export function mapPaymentDataToTransactionData(
-  payment: PaymentData
-): Omit<Transaction, 'id'> {
+export function mapPaymentDataToTransactionData(payment: PaymentData) {
   return {
     amount: payment.amount,
     transactionType: 1,
@@ -114,205 +149,31 @@ export function mapPaymentDataToTransactionData(
   };
 }
 
-// ===== API FUNCTIONS =====
-
 /**
- * Lấy danh sách giao dịch theo user ID (có phân trang)
- * @param page - Số trang (bắt đầu từ 0)
- * @param size - Số lượng bản ghi mỗi trang
- * @returns Danh sách giao dịch phân trang
+ * Tao thanh toan
  */
-export async function getTransactionsByUserIdPaginated(
-  page: number,
-  size: number
-): Promise<PaginatedTransactions> {
+export const createPayment = async (payload: {
+  amount: number;
+  description: string;
+  userId: string;
+}) => {
   try {
-    const headers = await getAuthHeaders();
-    console.log(`📋 Fetching transactions: page ${page}, size ${size}`);
-
-    const response = await fetch(
-      `${API_URL}/landlord/payment-history?page=${page}&size=${size}`,
-      {
-        method: 'GET',
-        headers,
-      }
-    );
-
-    if (!response.ok) {
-      console.error('❌ Network error:', response.status);
-      throw new Error('Network error');
-    }
-
-    const data = await response.json();
-    console.log(
-      `✅ Transactions fetched: ${data.transactions?.length || 0} items`
-    );
-    return data;
-  } catch (error) {
-    console.error('❌ Error fetching transactions:', error);
-    // Trả về dữ liệu rỗng khi lỗi
-    return {
-      transactions: [],
-      pageNumber: page,
-      pageSize: size,
-      totalRecords: 0,
-      totalPages: 0,
-      hasNext: false,
-      hasPrevious: false,
-    };
-  }
-}
-
-/**
- * Tạo giao dịch mới (sau khi thanh toán thành công)
- * @param transactionData - Dữ liệu giao dịch
- * @returns Thông tin giao dịch đã tạo
- */
-export async function createTransactionByUserId(
-  transactionData: Omit<Transaction, 'id'>
-): Promise<Transaction> {
-  try {
-    const headers = await getAuthHeaders();
-    console.log('➕ Creating transaction:', transactionData.transactionCode);
-
-    const response = await fetch(`${API_URL}/landlord/payment-result-client`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(transactionData),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Failed to create transaction:', errorText);
-      throw new Error('Failed to create transaction');
-    }
-
-    const data = await response.json();
-    console.log('✅ Transaction created:', data.id || data.transactionCode);
-    return data.transaction || data;
-  } catch (error) {
-    console.error('❌ Error creating transaction:', error);
-    throw error;
-  }
-}
-
-/**
- * Lấy danh sách giao dịch theo khoảng thời gian
- * @param startDate - Ngày bắt đầu (format: YYYY-MM-DD)
- * @param endDate - Ngày kết thúc (format: YYYY-MM-DD)
- * @param page - Số trang (mặc định 0)
- * @param size - Số lượng mỗi trang (mặc định 5)
- * @returns Danh sách giao dịch phân trang
- */
-export async function getTransactionsByUserIdAndDateRange(
-  startDate: string,
-  endDate: string,
-  page: number = 0,
-  size: number = 5
-): Promise<PaginatedTransactions> {
-  try {
-    const headers = await getAuthHeaders();
-    console.log(`📅 Fetching transactions: ${startDate} - ${endDate}`);
-
-    const params = new URLSearchParams({
-      startDate,
-      endDate,
-      page: page.toString(),
-      size: size.toString(),
-    }).toString();
-
-    const response = await fetch(
-      `${API_URL}/landlord/payment-history/filter-by-date?${params}`,
-      {
-        method: 'GET',
-        headers,
-      }
-    );
-
-    if (!response.ok) {
-      console.error('❌ Network error:', response.status);
-      throw new Error('Network error');
-    }
-
-    const data = await response.json();
-    console.log(
-      `✅ Filtered transactions: ${data.transactions?.length || 0} items`
-    );
-    return data;
-  } catch (error) {
-    console.error('❌ Error fetching transactions by date range:', error);
-    // Trả về dữ liệu rỗng khi lỗi
-    return {
-      transactions: [],
-      pageNumber: page,
-      pageSize: size,
-      totalRecords: 0,
-      totalPages: 0,
-      hasNext: false,
-      hasPrevious: false,
-    };
-  }
-}
-
-/**
- * Tạo yêu cầu thanh toán mới (trả về URL thanh toán VNPay)
- * @param payload - Thông tin thanh toán (số tiền, mô tả, userId)
- * @returns URL thanh toán và thông tin giao dịch
- */
-export const createPayment = async (
-  payload: CreatePaymentPayload
-): Promise<CreatePaymentResponse> => {
-  try {
-    const headers = await getAuthHeaders();
-    console.log('💳 Creating payment:', payload.amount, 'VND');
-
-    const res = await fetch(`${API_URL}/payments/create`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error('❌ Payment creation failed:', data.error);
-      throw new Error(data.error || 'Payment creation failed');
-    }
-
-    console.log('✅ Payment created, redirect to:', data.paymentUrl);
-    return data;
-  } catch (error) {
-    console.error('❌ createPayment error:', error);
-    throw error;
+    return await BaseApiClient.post('/payments/create', payload);
+  } catch (error: any) {
+    console.error('Loi tao thanh toan:', error);
+    throw new Error(error.message || 'Tao thanh toan that bai');
   }
 };
 
 /**
- * Xác nhận thanh toán (sau khi redirect từ VNPay về)
- * @param query - Query string từ VNPay callback
- * @returns Kết quả xác nhận thanh toán
+ * Xac nhan thanh toan
  */
-export const confirmPayment = async (
-  query: string
-): Promise<ConfirmPaymentResponse> => {
+export const confirmPayment = async (query: string) => {
   try {
-    console.log('🔍 Confirming payment with query:', query.substring(0, 50) + '...');
-
-    const res = await fetch(`${API_URL}/payments/confirm?${query}`, {
-      method: 'GET',
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error('❌ Payment confirmation failed:', data.message);
-      throw new Error(data.message || 'Failed to confirm payment');
-    }
-
-    console.log('✅ Payment confirmed:', data.success ? 'SUCCESS' : 'FAILED');
-    return data;
-  } catch (error) {
-    console.error('❌ Confirm payment service error:', error);
+    const params = Object.fromEntries(new URLSearchParams(query));
+    return await BaseApiClient.get('/payments/confirm', params);
+  } catch (error: any) {
+    console.error('Loi xac nhan thanh toan:', error);
     throw error;
   }
 };

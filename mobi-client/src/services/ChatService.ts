@@ -1,8 +1,11 @@
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
-import { API_URL } from './config/Constant';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFirestore, collection, query, where, orderBy, onSnapshot, addDoc, doc, setDoc, getDocs, deleteDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
+import { API_URL, URL_IMAGE } from './Constant';
+import { BaseApiClient } from './api/BaseApiClient';
 
+// Cache để tránh gọi API nhiều lần cho cùng userId
+const userInfoCache = new Map<string, { fullName: string; avatar: string; role: string; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
 
 export interface ChatUser {
   id: string;
@@ -11,6 +14,9 @@ export interface ChatUser {
   lastMessageTime?: Date;
   lastMessageText?: string;
   unreadCount?: number;
+  receivedMessageCount?: number; // Tổng số tin nhắn nhận được từ người khác
+  lastMessageSenderId?: string; // ID của người gửi tin nhắn cuối cùng (để phân biệt sent vs received)
+  role?: 'landlord' | 'tenant' | 'admin'; // Role của user
 }
 
 export interface Message {
@@ -26,33 +32,111 @@ export interface Message {
 
 /**
  * Get user full name and avatar
+ * Sử dụng profile endpoint (giống ProfileService và UserScreen)
+ * Có cache để tránh gọi API nhiều lần
  */
-const getFullName = async (userId: string): Promise<{ fullName: string; avatar: string }> => {
-  try {
-    const token = await AsyncStorage.getItem('accessToken');
-    const response = await fetch(`${API_URL}/users/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+const getFullName = async (userId: string): Promise<{ fullName: string; avatar: string; role: string }> => {
+  // Kiem tra cache truoc
+  const cached = userInfoCache.get(userId);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log('Using cached user info for:', userId);
+    return { fullName: cached.fullName, avatar: cached.avatar, role: cached.role };
+  }
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch user info');
+  try {
+    // Thử các endpoint theo thứ tự ưu tiên:
+    // 1. /profile/getname/${userId} - endpoint đơn giản chỉ lấy tên (giống ProfileService.ts line 60)
+    // 2. /profile/${userId} - endpoint đầy đủ
+    // 3. /users/${userId} - fallback
+
+    // Thử 1: /profile/getname/ endpoint (đơn giản, nhanh hơn)
+    try {
+      const nameData = await BaseApiClient.get(`/profile/getname/${userId}`) as any;
+      const fullName = nameData.fullName || nameData.name || userId;
+      let avatarUrl = nameData.avatar ? URL_IMAGE + nameData.avatar.substring(1) : '';
+        
+      // Lấy role từ profile endpoint đầy đủ nếu cần
+      try {
+        const profileData = await BaseApiClient.get(`/profile/${userId}`) as any;
+        const role = profileData?.role || 'tenant';
+        const result = { fullName, avatar: avatarUrl, role: role as 'landlord' | 'tenant' | 'admin' };
+        userInfoCache.set(userId, { ...result, timestamp: Date.now() });
+        //console.log(' User info fetched (getname + profile):', { userId, fullName, hasAvatar: !!avatarUrl });
+        
+        // Nếu không có avatar từ getname, thử users endpoint
+        if (!result.avatar) {
+          try {
+            const userData = await BaseApiClient.get(`/users/${userId}`) as any;
+            
+            // Sử dụng avatar từ API và construct URL
+            let userAvatarUrl = userData.avatar ? URL_IMAGE + userData.avatar.substring(1) : '';
+            
+            if (userAvatarUrl) {
+              result.avatar = userAvatarUrl;
+              userInfoCache.set(userId, { ...result, timestamp: Date.now() });
+              //console.log('Avatar updated from users endpoint:', userAvatarUrl);
+            }
+          } catch (userError: any) {
+            console.warn(`Users endpoint error for avatar userId ${userId}:`, userError?.message || userError);
+          }
+        }
+        
+        return result;
+      } catch (profileError) {
+        console.warn('Failed to fetch profile for role, user:', userId, 'error:', (profileError as Error).message);
+        // Nếu không lấy được role, dùng tenant
+        const result = { fullName, avatar: avatarUrl, role: 'tenant' as const };
+        userInfoCache.set(userId, { ...result, timestamp: Date.now() });
+        //console.log('User info fetched (getname only):', { userId, fullName, hasAvatar: !!avatarUrl });
+        return result;
+      }
+
+    } catch (getNameError: any) {
+      console.warn(`Getname endpoint error for userId ${userId}:`, getNameError?.message || getNameError);
     }
 
-    const data = await response.json();
-    return {
-      fullName: data.fullName || data.username || userId,
-      avatar: data.avatar || '',
-    };
-  } catch (error) {
-    console.error('Error fetching user name:', error);
-    return { fullName: userId, avatar: '' };
+    // Thu 3: /users/${userId} endpoint (fallback)
+    try {
+      const userData = await BaseApiClient.get(`/users/${userId}`) as any;
+
+      // Su dung avatar tu API va construct URL
+      let avatarUrl = userData.avatar ? URL_IMAGE + userData.avatar.substring(1) : '';
+
+      const result = {
+        fullName: userData.fullName || userData.username || userId,
+        avatar: avatarUrl,
+        role: userData.role || 'tenant', // Assume tenant if no role specified
+      };
+
+      // Luu vao cache
+      userInfoCache.set(userId, { ...result, timestamp: Date.now() });
+
+      console.log('User info fetched (users endpoint):', { userId, fullName: result.fullName, hasAvatar: !!avatarUrl });
+
+      return result;
+    } catch (userError: any) {
+      console.warn(`Users endpoint error for userId ${userId}:`, userError?.message || userError);
+    }
+
+    // Nếu cả 2 endpoint đều fail, return default và cache để không gọi lại ngay
+    console.warn(`Both endpoints failed for userId: ${userId}, using default`);
+    const defaultInfo = { fullName: userId, avatar: '', role: 'tenant' as const };
+    userInfoCache.set(userId, { ...defaultInfo, timestamp: Date.now() });
+    return defaultInfo;
+    
+  } catch (error: any) {
+    console.warn(`Error fetching user info for userId ${userId}:`, error?.message || error);
+    // Return với userId làm tên tạm thời và cache để không gọi lại ngay
+    const defaultInfo = { fullName: userId, avatar: '', role: 'tenant' as const };
+    userInfoCache.set(userId, { ...defaultInfo, timestamp: Date.now() });
+    return defaultInfo;
   }
 };
 
 /**
- * Listen for conversations of a user
+ * Listen for all messages and group by conversation
+ * Hiển thị tất cả tin nhắn của user (sent + received) được nhóm theo người khác
+ * Lắng nghe REAL-TIME cho cả sent và received messages
  */
 export const listenForConversations = (
   userId: string,
@@ -66,110 +150,201 @@ export const listenForConversations = (
     return () => {};
   }
 
-  console.log('👂 Listening for conversations for user:', userId);
+  //console.log('Listening for all messages for user:', userId);
 
-  const unsubscribe = firestore()
-    .collection('messages')
-    .where('senderId', '==', userId)
-    .orderBy('createdAt', 'desc')
-    .onSnapshot(
-      async (senderSnapshot) => {
-        // Also listen for received messages
-        const recipientSnapshot = await firestore()
-          .collection('messages')
-          .where('recipientId', '==', userId)
-          .orderBy('createdAt', 'desc')
-          .get();
+  let senderData: any[] = [];
+  let recipientData: any[] = [];
+  let hasSentLoaded = false;
+  let hasReceivedLoaded = false;
 
-        const conversations = new Map<string, ChatUser>();
-        const unreadCounts = new Map<string, number>();
-        const uniqueUserIds = new Set<string>();
+  const updateUserList = () => {
+    try {
+      const conversations = new Map<string, ChatUser>();
+      const unreadCounts = new Map<string, number>();
+      const receivedMessageCounts = new Map<string, number>(); // Đếm tổng tin nhắn nhận được
+      const uniqueUserIds = new Set<string>();
 
-        // Process sent messages
-        senderSnapshot.forEach((doc) => {
-          const data = doc.data();
-          const otherUserId = data.recipientId;
+      // Process all sent messages
+      senderData.forEach((data) => {
+        const otherUserId = data.recipientId;
 
-          if (!otherUserId || otherUserId === userId) return;
-          uniqueUserIds.add(otherUserId);
+        if (!otherUserId || otherUserId === userId) return;
+        uniqueUserIds.add(otherUserId);
 
-          if (!conversations.has(otherUserId)) {
-            const lastMessageTime = data.createdAt?.toDate() || new Date();
-            const lastMessageText =
-              data.messageType === 'image' ? '📷 Đã gửi một ảnh' : data.text || '';
-            conversations.set(otherUserId, {
-              id: otherUserId,
-              lastMessageTime,
-              lastMessageText,
-            });
-          }
-        });
-
-        // Process received messages
-        recipientSnapshot.forEach((doc) => {
-          const data = doc.data();
-          const otherUserId = data.senderId;
-
-          if (!otherUserId || otherUserId === userId) return;
-          uniqueUserIds.add(otherUserId);
-
-          if (!conversations.has(otherUserId)) {
-            const lastMessageTime = data.createdAt?.toDate() || new Date();
-            const lastMessageText =
-              data.messageType === 'image' ? '📷 Nhận được một ảnh' : data.text || '';
-            conversations.set(otherUserId, {
-              id: otherUserId,
-              lastMessageTime,
-              lastMessageText,
-            });
-          }
-
-          // Count unread messages
-          const lastReadTime = lastReadTimestamps.current.get(otherUserId);
+        if (!conversations.has(otherUserId)) {
+          const lastMessageTime = data.createdAt?.toDate() || new Date();
+          const lastMessageText =
+            data.messageType === 'image' ? '[Hình ảnh]' : (data.text || '').substring(0, 100);
+          conversations.set(otherUserId, {
+            id: otherUserId,
+            lastMessageTime,
+            lastMessageText,
+            lastMessageSenderId: userId, // Tôi gửi
+          });
+        } else {
+          const currentConv = conversations.get(otherUserId)!;
           const messageTime = data.createdAt?.toDate() || new Date();
-
-          if (!lastReadTime || lastReadTime < messageTime) {
-            const currentCount = unreadCounts.get(otherUserId) || 0;
-            unreadCounts.set(otherUserId, currentCount + 1);
+          if (messageTime > (currentConv.lastMessageTime || new Date(0))) {
+            const lastMessageText =
+              data.messageType === 'image' ? '[Hình ảnh]' : (data.text || '').substring(0, 100);
+            conversations.set(otherUserId, {
+              ...currentConv,
+              lastMessageTime: messageTime,
+              lastMessageText,
+              lastMessageSenderId: userId, // Tôi gửi
+            });
           }
-        });
+        }
+      });
 
-        // Fetch user details
-        const userIds = Array.from(uniqueUserIds);
-        const namePromises = userIds.map(async (id) => {
-          try {
-            const data = await getFullName(id);
-            return { id, name: data.fullName, avatar: data.avatar };
-          } catch (error) {
-            console.error(`Failed to get name for user ${id}:`, error);
-            return { id, name: id, avatar: '' };
+      // Process all received messages
+      recipientData.forEach((data) => {
+        const otherUserId = data.senderId;
+
+        if (!otherUserId || otherUserId === userId) return;
+        uniqueUserIds.add(otherUserId);
+
+        // Count all received messages
+        const currentReceivedCount = receivedMessageCounts.get(otherUserId) || 0;
+        receivedMessageCounts.set(otherUserId, currentReceivedCount + 1);
+
+        if (!conversations.has(otherUserId)) {
+          const lastMessageTime = data.createdAt?.toDate() || new Date();
+          const lastMessageText =
+            data.messageType === 'image' ? '[Hình ảnh]' : (data.text || '').substring(0, 100);
+          conversations.set(otherUserId, {
+            id: otherUserId,
+            lastMessageTime,
+            lastMessageText,
+            lastMessageSenderId: otherUserId, // Họ gửi
+          });
+        } else {
+          const currentConv = conversations.get(otherUserId)!;
+          const messageTime = data.createdAt?.toDate() || new Date();
+          if (messageTime > (currentConv.lastMessageTime || new Date(0))) {
+            const lastMessageText =
+              data.messageType === 'image' ? '[Hình ảnh]' : (data.text || '').substring(0, 100);
+            conversations.set(otherUserId, {
+              ...currentConv,
+              lastMessageTime: messageTime,
+              lastMessageText,
+              lastMessageSenderId: otherUserId, // Họ gửi
+            });
           }
-        });
+        }
 
-        const names = await Promise.all(namePromises);
-        const updatedUserList: ChatUser[] = names.map(({ id, name, avatar }) => {
-          const chatData = conversations.get(id);
-          const unreadCount = unreadCounts.get(id) || 0;
-          return {
-            ...chatData!,
-            name,
-            avatar,
-            unreadCount,
-          };
-        });
+        // Count unread messages
+        const lastReadTime = lastReadTimestamps.current.get(otherUserId);
+        const messageTime = data.createdAt?.toDate() || new Date();
 
-        console.log('✅ Conversations updated:', updatedUserList.length);
+        if (!lastReadTime || lastReadTime < messageTime) {
+          const currentCount = unreadCounts.get(otherUserId) || 0;
+          unreadCounts.set(otherUserId, currentCount + 1);
+        }
+      });
+
+      if (uniqueUserIds.size === 0) {
+        //console.log('No conversations found');
+        setUserList([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch user details for all unique users
+      const userIds = Array.from(uniqueUserIds);
+      const namePromises = userIds.map(async (id) => {
+        try {
+          const data = await getFullName(id);
+          return { id, name: data.fullName, avatar: data.avatar, role: data.role };
+        } catch (error) {
+          console.error(`Failed to get name for user ${id}:`, error);
+          return { id, name: id, avatar: '', role: 'tenant' as const };
+        }
+      });
+
+      Promise.all(namePromises).then((names) => {
+        const updatedUserList: ChatUser[] = names
+          .map(({ id, name, avatar, role }) => {
+            const chatData = conversations.get(id);
+            const unreadCount = unreadCounts.get(id) || 0;
+            const receivedMessageCount = receivedMessageCounts.get(id) || 0;
+            return {
+              ...chatData!,
+              name,
+              avatar,
+              role: role as 'landlord' | 'tenant' | 'admin',
+              unreadCount,
+              receivedMessageCount,
+            };
+          })
+          .sort((a, b) => {
+            const timeA = a.lastMessageTime || new Date(0);
+            const timeB = b.lastMessageTime || new Date(0);
+            return timeB.getTime() - timeA.getTime();
+          });
+
+        //console.log('All messages updated:', updatedUserList.length, 'conversations');
         setUserList(updatedUserList);
         setIsLoading(false);
-      },
-      (error) => {
-        console.error('❌ Firebase fetch error:', error);
-        setError('Không thể tải tin nhắn. Vui lòng thử lại.');
-        setIsLoading(false);
-      }
-    );
+      });
+    } catch (error) {
+      console.error('Error processing messages:', error);
+      setError('Không thể tải tin nhắn. Vui lòng thử lại.');
+      setIsLoading(false);
+    }
+  };
 
-  return unsubscribe;
+  // Listen for SENT messages (real-time)
+  const unsubscribeSent = onSnapshot(
+    query(
+      collection(getFirestore(), 'messages'),
+      where('senderId', '==', userId),
+      orderBy('createdAt', 'desc')
+    ),
+    (snapshot) => {
+      senderData = snapshot.docs.map((doc: any) => doc.data());
+      hasSentLoaded = true;
+      //console.log('Sent messages updated:', senderData.length);
+      
+      // Update list only if both queries are loaded
+      if (hasSentLoaded && hasReceivedLoaded) {
+        updateUserList();
+      }
+    },
+    (error) => {
+      console.error('Firebase sent messages error:', error);
+      setError('Không thể tải tin nhắn. Vui lòng thử lại.');
+    }
+  );
+
+  // Listen for RECEIVED messages (real-time)
+  const unsubscribeReceived = onSnapshot(
+    query(
+      collection(getFirestore(), 'messages'),
+      where('recipientId', '==', userId),
+      orderBy('createdAt', 'desc')
+    ),
+    (snapshot) => {
+      recipientData = snapshot.docs.map((doc: any) => doc.data());
+      hasReceivedLoaded = true;
+      //console.log('Received messages updated:', recipientData.length);
+      
+      // Update list only if both queries are loaded
+      if (hasSentLoaded && hasReceivedLoaded) {
+        updateUserList();
+      }
+    },
+    (error) => {
+      console.error('Firebase received messages error:', error);
+      setError('Không thể tải tin nhắn. Vui lòng thử lại.');
+    }
+  );
+
+  // Return unsubscribe function that unsubscribes from both listeners
+  return () => {
+    unsubscribeSent();
+    unsubscribeReceived();
+  };
 };
 
 /**
@@ -180,23 +355,21 @@ export const markConversationAsRead = async (
   otherUserId: string
 ): Promise<void> => {
   try {
-    console.log('✅ Marking conversation as read:', { userId, otherUserId });
+    //console.log('Marking conversation as read:', { userId, otherUserId });
 
-    await firestore()
-      .collection('readStatuses')
-      .doc(`${userId}-${otherUserId}`)
-      .set(
-        {
-          userId,
-          conversationId: otherUserId,
-          lastRead: firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+    await setDoc(
+      doc(getFirestore(), 'readStatuses', `${userId}-${otherUserId}`),
+      {
+        userId,
+        conversationId: otherUserId,
+        lastRead: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-    console.log('✅ Conversation marked as read');
+    //console.log('Conversation marked as read');
   } catch (error) {
-    console.error('❌ Error marking conversation as read:', error);
+    console.error('Error marking conversation as read:', error);
     throw error;
   }
 };
@@ -209,16 +382,16 @@ export const uploadImageToFirebase = async (
   fileName: string
 ): Promise<{ imageUrl: string; fileName: string }> => {
   try {
-    console.log('📤 Uploading image to Firebase:', fileName);
+    //console.log('Uploading image to Firebase:', fileName);
 
-    const reference = storage().ref(`chat-images/${Date.now()}_${fileName}`);
+    const reference = ref(getStorage(), `chat-images/${Date.now()}_${fileName}`);
     await reference.putFile(fileUri);
-    const url = await reference.getDownloadURL();
+    const url = await getDownloadURL(reference);
 
-    console.log('✅ Image uploaded:', url);
+    //console.log('Image uploaded:', url);
     return { imageUrl: url, fileName };
   } catch (error) {
-    console.error('❌ Upload image error:', error);
+    console.error('Upload image error:', error);
     throw new Error('Failed to upload image');
   }
 };
@@ -233,22 +406,22 @@ export const sendImageMessage = async (
   recipientId: string
 ): Promise<void> => {
   try {
-    console.log('📤 Sending image message');
+    //console.log('Sending image message');
 
     const { imageUrl } = await uploadImageToFirebase(fileUri, fileName);
 
-    await firestore().collection('messages').add({
+    await addDoc(collection(getFirestore(), 'messages'), {
       imageUrl,
       imageFileName: fileName,
       senderId,
       recipientId,
-      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
       messageType: 'image',
     });
 
-    console.log('✅ Image message sent');
+    //console.log('Image message sent');
   } catch (error) {
-    console.error('❌ Send image error:', error);
+    console.error('Send image error:', error);
     throw error;
   }
 };
@@ -262,19 +435,19 @@ export const sendTextMessage = async (
   recipientId: string
 ): Promise<void> => {
   try {
-    console.log('💬 Sending text message');
+    //console.log('Sending text message');
 
-    await firestore().collection('messages').add({
+    await addDoc(collection(getFirestore(), 'messages'), {
       text,
       senderId,
       recipientId,
-      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
       messageType: 'text',
     });
 
-    console.log('✅ Text message sent');
+    //console.log('Text message sent');
   } catch (error) {
-    console.error('❌ Send text error:', error);
+    console.error('Send text error:', error);
     throw error;
   }
 };
@@ -290,35 +463,39 @@ export const listenForUnreadCount = (
     return () => {};
   }
 
-  console.log('👂 Listening for unread count for user:', userId);
+  //console.log('Listening for unread count for user:', userId);
 
   let currentReadTimestamps = new Map<string, Date>();
 
   // Listen for read statuses
-  const unsubscribeReadStatus = firestore()
-    .collection('readStatuses')
-    .where('userId', '==', userId)
-    .onSnapshot((snapshot) => {
+  const unsubscribeReadStatus = onSnapshot(
+    query(
+      collection(getFirestore(), 'readStatuses'),
+      where('userId', '==', userId)
+    ),
+    (snapshot) => {
       const newTimestamps = new Map<string, Date>();
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         const data = doc.data();
         if (data.lastRead) {
           newTimestamps.set(data.conversationId, data.lastRead.toDate());
         }
       });
       currentReadTimestamps = newTimestamps;
-      console.log('📚 Read timestamps updated');
+      //console.log('Read timestamps updated');
     });
 
   // Listen for messages
-  const unsubscribeMessages = firestore()
-    .collection('messages')
-    .where('recipientId', '==', userId)
-    .orderBy('createdAt', 'desc')
-    .onSnapshot((snapshot) => {
+  const unsubscribeMessages = onSnapshot(
+    query(
+      collection(getFirestore(), 'messages'),
+      where('recipientId', '==', userId),
+      orderBy('createdAt', 'desc')
+    ),
+    (snapshot) => {
       const unreadCounts = new Map<string, number>();
 
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         const data = doc.data();
         const senderId = data.senderId;
 
@@ -337,7 +514,7 @@ export const listenForUnreadCount = (
         (sum, count) => sum + count,
         0
       );
-      console.log('🔔 Total unread messages:', totalUnread);
+      //console.log('Total unread messages:', totalUnread);
       setUnreadCount(totalUnread);
     });
 
@@ -355,18 +532,23 @@ export const deleteMessage = async (
   senderId: string
 ): Promise<void> => {
   try {
-    console.log('🗑️ Deleting message:', messageId);
+    //console.log('Deleting message:', messageId);
 
     // Check if user is sender
-    const messageDoc = await firestore().collection('messages').doc(messageId).get();
-    if (messageDoc.data()?.senderId !== senderId) {
+    const messageDoc = await getDocs(
+      query(
+        collection(getFirestore(), 'messages'),
+        where('__name__', '==', messageId)
+      )
+    );
+    if (messageDoc.docs[0]?.data()?.senderId !== senderId) {
       throw new Error('Unauthorized to delete this message');
     }
 
-    await firestore().collection('messages').doc(messageId).delete();
-    console.log('✅ Message deleted');
+    await deleteDoc(doc(getFirestore(), 'messages', messageId));
+    //console.log('Message deleted');
   } catch (error) {
-    console.error('❌ Delete message error:', error);
+    console.error('Delete message error:', error);
     throw new Error('Không thể xóa tin nhắn');
   }
 };
@@ -379,20 +561,22 @@ export const listenForMessages = (
   otherUserId: string,
   setMessages: (messages: Message[]) => void
 ): (() => void) => {
-  console.log('👂 Listening for messages:', { userId, otherUserId });
+  //console.log('Listening for messages:', { userId, otherUserId });
 
-  const unsubscribe = firestore()
-    .collection('messages')
-    .where('senderId', 'in', [userId, otherUserId])
-    .where('recipientId', 'in', [userId, otherUserId])
-    .orderBy('createdAt', 'asc')
-    .onSnapshot((snapshot) => {
+  const unsubscribe = onSnapshot(
+    query(
+      collection(getFirestore(), 'messages'),
+      where('senderId', 'in', [userId, otherUserId]),
+      where('recipientId', 'in', [userId, otherUserId]),
+      orderBy('createdAt', 'asc')
+    ),
+    (snapshot) => {
       const messages: Message[] = [];
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         const data = doc.data();
         messages.push({
           id: doc.id,
-          text: data.text,
+          text: data.text || '',
           imageUrl: data.imageUrl,
           imageFileName: data.imageFileName,
           senderId: data.senderId,
@@ -402,7 +586,7 @@ export const listenForMessages = (
         });
       });
 
-      console.log('✅ Messages updated:', messages.length);
+      //console.log('Messages updated:', messages.length);
       setMessages(messages);
     });
 

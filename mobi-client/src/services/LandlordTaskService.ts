@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from './config/Constant';
+import { API_URL } from './Constant';
+import { BaseApiClient } from './api/BaseApiClient';
 
 export interface LandlordTaskCreateDto {
   title: string;
@@ -36,178 +37,72 @@ export interface LandlordTaskResponseDto {
   updatedAt: string;
 }
 
-const BASE_URL = `${API_URL}/landlord-tasks`;
-
-/**
- * Get authentication headers with token
- */
-const getAuthHeaders = async () => {
-  const token = await AsyncStorage.getItem('accessToken');
-  if (!token) {
-    throw new Error('Authentication required. Please login again.');
-  }
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  };
-};
-
 export const LandlordTaskService = {
   /**
-   * Create a new landlord task
+   * Tao moi mot nhiem vu cho chu nha
    */
   async createTask(data: LandlordTaskCreateDto): Promise<LandlordTaskResponseDto> {
     try {
-      console.log('📝 Creating task:', data);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Create task error:', errorText);
-        throw new Error(`Failed to create task: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Task created:', result);
-      return result;
+      return await BaseApiClient.post<LandlordTaskResponseDto>('/landlord-tasks', data);
     } catch (error) {
-      console.error('💥 createTask error:', error);
+      console.error('Loi tao nhiem vu:', error);
       throw error;
     }
   },
 
   /**
-   * Update an existing landlord task
+   * Cap nhat nhiem vu ton tai
    */
   async updateTask(
     taskId: string,
     data: LandlordTaskUpdateDto
   ): Promise<LandlordTaskResponseDto> {
     try {
-      console.log('📝 Updating task:', taskId, data);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/${taskId}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(data),
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Update task error:', errorText);
-        throw new Error(`Failed to update task: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Task updated:', result);
-      return result;
+      return await BaseApiClient.put<LandlordTaskResponseDto>(`/landlord-tasks/${taskId}`, data);
     } catch (error) {
-      console.error('💥 updateTask error:', error);
+      console.error('Loi cap nhat nhiem vu:', error);
       throw error;
     }
   },
 
   /**
-   * Get tasks by landlord ID
+   * Lay danh sach nhiem vu theo ID chu nha
    */
   async getTasksByLandlord(landlordId: string): Promise<LandlordTaskResponseDto[]> {
     try {
-      console.log('🔍 Fetching tasks for landlord:', landlordId);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/landlord/${landlordId}`, {
-        method: 'GET',
-        headers,
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Fetch tasks error:', errorText);
-        throw new Error(`Failed to fetch tasks: ${response.status}`);
-      }
-
-      const tasks = await response.json();
-      console.log('✅ Tasks fetched:', tasks.length);
-      return tasks;
+      return await BaseApiClient.get<LandlordTaskResponseDto[]>(`/landlord-tasks/landlord/${landlordId}`);
     } catch (error) {
-      console.error('💥 getTasksByLandlord error:', error);
+      console.error('Loi lay danh sach nhiem vu:', error);
       throw error;
     }
   },
 
   /**
-   * Get task detail by task ID
+   * Lay chi tiet nhiem vu theo ID
    */
   async getTaskDetail(taskId: string): Promise<LandlordTaskResponseDto> {
     try {
-      console.log('🔍 Fetching task detail:', taskId);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/${taskId}`, {
-        method: 'GET',
-        headers,
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Fetch task detail error:', errorText);
-        throw new Error(`Failed to fetch task detail: ${response.status}`);
-      }
-
-      const task = await response.json();
-      console.log('✅ Task detail fetched:', task);
-      return task;
+      return await BaseApiClient.get<LandlordTaskResponseDto>(`/landlord-tasks/${taskId}`);
     } catch (error) {
-      console.error('💥 getTaskDetail error:', error);
+      console.error('Loi lay chi tiet nhiem vu:', error);
       throw error;
     }
   },
 
   /**
-   * Delete a landlord task
+   * Xoa nhiem vu cua chu nha
    */
   async deleteTask(taskId: string): Promise<void> {
     try {
-      console.log('🗑️ Deleting task:', taskId);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/${taskId}`, {
-        method: 'DELETE',
-        headers,
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Delete task error:', errorText);
-        throw new Error(`Failed to delete task: ${response.status}`);
-      }
-
-      console.log('✅ Task deleted');
+      await BaseApiClient.delete(`/landlord-tasks/${taskId}`);
     } catch (error) {
-      console.error('💥 deleteTask error:', error);
+      console.error('Loi xoa nhiem vu:', error);
       throw error;
     }
   },
 
   /**
-   * Get tasks by status
+   * Lay nhiem vu theo trang thai
    */
   async getTasksByStatus(
     landlordId: string,
@@ -218,7 +113,7 @@ export const LandlordTaskService = {
   },
 
   /**
-   * Get tasks by priority
+   * Lay nhiem vu theo muc do uu tien
    */
   async getTasksByPriority(
     landlordId: string,
@@ -229,7 +124,7 @@ export const LandlordTaskService = {
   },
 
   /**
-   * Get overdue tasks
+   * Lay nhiem vu qua han
    */
   async getOverdueTasks(landlordId: string): Promise<LandlordTaskResponseDto[]> {
     const tasks = await this.getTasksByLandlord(landlordId);
@@ -244,7 +139,7 @@ export const LandlordTaskService = {
   },
 
   /**
-   * Get tasks by contract
+   * Lay nhiem vu theo hop dong
    */
   async getTasksByContract(
     contractId: string,
@@ -255,7 +150,7 @@ export const LandlordTaskService = {
   },
 
   /**
-   * Get tasks by room
+   * Lay nhiem vu theo phong
    */
   async getTasksByRoom(
     roomId: string,

@@ -19,8 +19,8 @@ import Animated, { FadeInDown, SlideInRight, ZoomIn, FadeIn } from 'react-native
 import { Video, ResizeMode } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RoomDetail } from '../../../../types/types';
-import { getRoomById } from '../../../../services/rooms/RoomService';
-import { URL_IMAGE } from '../../../../services/config/Constant';
+import { getRoomById } from '../../../../services/RoomService';
+import { URL_IMAGE } from '../../../../services/Constant';
 import UserInfoCard from '../../../profile/UserInfoCard/UserInfoCard';
 import BookingModal from '../../BookingModal/BookingModal';
 import Colors, { withOpacity } from '../../../../styles/colors';
@@ -30,7 +30,7 @@ import {
   addFavorite as addFavoriteAPI, 
   removeFavorite as removeFavoriteAPI,
   getFavoriteCount
-} from '../../../../services/favorites/FavoriteService';
+} from '../../../../services/FavoriteService';
 import { useNavigation } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -210,7 +210,7 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
     try {
       const shareUrl = `https://yourapp.com/room/${roomId}`; // TODO: Replace with actual URL
       await Share.share({
-        message: `🏠 ${room?.title}\n\n💰 Giá: ${formatVNDPrice(room?.priceMonth || 0)} VNĐ/tháng\n📍 ${fullAddress}\n\n🔗 Xem chi tiết: ${shareUrl}`,
+        message: ` ${room?.title}\n\n Giá: ${formatVNDPrice(room?.priceMonth || 0)} VNĐ/tháng\n ${fullAddress}\n\n Xem chi tiết: ${shareUrl}`,
         title: room?.title,
       });
     } catch (error) {
@@ -254,7 +254,7 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
           removeFavorite(roomId);
           decrementFavoriteCount(roomId);
           setFavoriteCount(prev => Math.max(0, prev - 1));
-          console.log(`✅ Removed from favorites: ${roomId}`);
+          console.log(` Removed from favorites: ${roomId}`);
         } else {
           Alert.alert('Lỗi', 'Không thể xóa khỏi danh sách yêu thích');
         }
@@ -266,7 +266,7 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
           addFavorite(roomId);
           incrementFavoriteCount(roomId);
           setFavoriteCount(prev => prev + 1);
-          console.log(`✅ Added to favorites: ${roomId}`);
+          console.log(` Added to favorites: ${roomId}`);
         } else {
           Alert.alert('Lỗi', 'Không thể thêm vào danh sách yêu thích');
         }
@@ -289,12 +289,27 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
   };
 
   const handleBookingPress = () => {
+    // Kiểm tra đăng nhập trước khi mở modal booking
+    if (!isLoggedIn) {
+      Alert.alert(
+        'Yêu cầu đăng nhập',
+        'Bạn cần đăng nhập để đặt phòng',
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { 
+            text: 'Đăng nhập', 
+            onPress: () => navigation.navigate('Auth/Login')
+          }
+        ]
+      );
+      return;
+    }
     setBookingModalVisible(true);
   };
 
   const handleBookingSuccess = () => {
     Alert.alert(
-      'Thành công! 🎉',
+      'Thành công! ',
       'Bạn có thể xem lịch sử booking trong mục "Rental History"',
       [
         { text: 'OK' }
@@ -350,7 +365,7 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
               scrollEventThrottle={16}
             >
               {images.map((image, index) => {
-                const mediaUrl = URL_IMAGE + image.url;
+                const mediaUrl = `${URL_IMAGE}${image.url.startsWith('/') ? image.url.slice(1) : image.url}`;
                 const isVideo = isVideoUrl(image.url);
                 
                 return (
@@ -507,7 +522,7 @@ export default function RoomCartDetail({ roomId, onClose }: RoomCartDetailProps)
             contentOffset={{ x: fullscreenIndex * SCREEN_WIDTH, y: 0 }}
           >
             {images.map((image, index) => {
-              const mediaUrl = URL_IMAGE + image.url;
+              const mediaUrl = `${URL_IMAGE}${image.url.startsWith('/') ? image.url.slice(1) : image.url}`;
               const isVideo = isVideoUrl(image.url);
               
               return (

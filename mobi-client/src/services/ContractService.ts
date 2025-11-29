@@ -1,35 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from './config/Constant';
-
-export interface BillData {
-  id: string;
-  contractId: string;
-  month: string;
-  totalAmount: number;
-  status: 'PENDING' | 'CONFIRMING' | 'PAID' | 'OVERDUE';
-  dueDate: string;
-  paidDate?: string;
-  electricityUsage?: number;
-  waterUsage?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ContractData {
-  id: string;
-  roomId: string;
-  tenantId: string;
-  landlordId: string;
-  startDate: string;
-  endDate: string;
-  monthlyRent: number;
-  depositAmount: number;
-  status: number; // 0: active, 1: expired, 2: terminated
-  contractImageUrl?: string;
-  bills?: BillData[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { API_URL } from './Constant';
+import { ContractData, BillData } from '../types/types';
+import { getFullName } from './ProfileService';
+import { BaseApiClient } from './api/BaseApiClient';
 
 interface PaginatedContractResponse {
   content: ContractData[];
@@ -39,55 +12,59 @@ interface PaginatedContractResponse {
   number: number;
 }
 
-const BASE_URL = `${API_URL}/contracts`;
-
 /**
- * Get authentication headers with token
+ * Giải quyết tên cho hợp đồng bằng cách lấy từ profile service nếu cần
  */
-const getAuthHeaders = async () => {
-  const token = await AsyncStorage.getItem('accessToken');
-  if (!token) {
-    throw new Error('Authentication required. Please login again.');
+const resolveContractNames = async (contract: ContractData): Promise<ContractData> => {
+  const resolvedContract = { ...contract };
+
+  // Giải quyết tên người thuê nếu là ID hoặc bắt đầu bằng #
+  if (!resolvedContract.tenantName || resolvedContract.tenantName.startsWith('#')) {
+    try {
+      const tenantName = await getFullName(resolvedContract.tenantId);
+      resolvedContract.tenantName = tenantName || `Tenant ${resolvedContract.tenantId}`;
+    } catch (error) {
+      console.warn('Không thể lấy tên người thuê:', error);
+      resolvedContract.tenantName = `Tenant ${resolvedContract.tenantId}`;
+    }
   }
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  };
+
+  // Giải quyết tên chủ nhà nếu là ID hoặc bắt đầu bằng #
+  if (!resolvedContract.landlordName || resolvedContract.landlordName.startsWith('#')) {
+    try {
+      const landlordName = await getFullName(resolvedContract.landlordId);
+      resolvedContract.landlordName = landlordName || `Landlord ${resolvedContract.landlordId}`;
+    } catch (error) {
+      console.warn('Không thể lấy tên chủ nhà:', error);
+      resolvedContract.landlordName = `Landlord ${resolvedContract.landlordId}`;
+    }
+  }
+
+  return resolvedContract;
 };
 
 export const ContractService = {
   /**
-   * Get contracts by tenant ID
+   * Lấy hợp đồng theo ID người thuê
    */
   async getByTenant(tenantId: string): Promise<ContractData[]> {
     try {
-      console.log('🔍 Fetching contracts for tenant:', tenantId);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/tenant/${tenantId}`, {
-        method: 'GET',
-        headers,
-      });
+      console.log('Đang lấy hợp đồng cho người thuê:', tenantId);
 
-      console.log('📡 Response status:', response.status);
+      const contracts = await BaseApiClient.get<ContractData[]>(`/contracts/tenant/${tenantId}`);
+      console.log('Đã lấy hợp đồng:', contracts.length);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Fetch contracts error:', errorText);
-        throw new Error(`Failed to fetch contracts: ${response.status}`);
-      }
-
-      const contracts = await response.json();
-      console.log('✅ Contracts fetched:', contracts.length);
-      return contracts;
+      // Giải quyết tên cho mỗi hợp đồng
+      const resolvedContracts = await Promise.all(contracts.map(resolveContractNames));
+      return resolvedContracts;
     } catch (error) {
-      console.error('💥 getByTenant error:', error);
+      console.error('Lỗi getByTenant:', error);
       throw error;
     }
   },
 
   /**
-   * Get contracts by landlord ID with pagination
+   * Lấy hợp đồng theo ID chủ nhà với phân trang
    */
   async getByLandlord(
     landlordId: string,
@@ -95,191 +72,128 @@ export const ContractService = {
     size: number = 10
   ): Promise<PaginatedContractResponse> {
     try {
-      console.log('🔍 Fetching contracts for landlord:', landlordId, `page=${page}, size=${size}`);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(
-        `${BASE_URL}/landlord/${landlordId}?page=${page}&size=${size}`,
-        {
-          method: 'GET',
-          headers,
-        }
+      console.log('Đang lấy hợp đồng cho chủ nhà:', landlordId, `page=${page}, size=${size}`);
+
+      const contractsResponse = await BaseApiClient.get<PaginatedContractResponse>(
+        `/contracts/landlord/${landlordId}`,
+        { page, size }
       );
+      console.log('Đã lấy hợp đồng:', contractsResponse.content?.length || 0);
 
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Fetch contracts error:', errorText);
-        throw new Error(`Failed to fetch contracts: ${response.status}`);
+      // Giải quyết tên cho mỗi hợp đồng
+      if (contractsResponse.content && Array.isArray(contractsResponse.content)) {
+        contractsResponse.content = await Promise.all(
+          contractsResponse.content.map(resolveContractNames)
+        );
       }
 
-      const contracts = await response.json();
-      console.log('✅ Contracts fetched:', contracts.content?.length || 0);
-      return contracts;
+      return contractsResponse;
     } catch (error) {
-      console.error('💥 getByLandlord error:', error);
+      console.error('Lỗi getByLandlord:', error);
       throw error;
     }
   },
 
   /**
-   * Get contracts by room ID
+   * Lấy hợp đồng theo ID phòng
    */
   async getByRoom(roomId: string): Promise<ContractData[]> {
     try {
-      console.log('🔍 Fetching contracts for room:', roomId);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/room/${roomId}`, {
-        method: 'GET',
-        headers,
-      });
+      console.log('Đang lấy hợp đồng cho phòng:', roomId);
 
-      console.log('📡 Response status:', response.status);
+      const contracts = await BaseApiClient.get<ContractData[]>(`/contracts/room/${roomId}`);
+      console.log('Đã lấy hợp đồng:', contracts.length);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Fetch contracts error:', errorText);
-        throw new Error(`Failed to fetch contracts: ${response.status}`);
-      }
-
-      const contracts = await response.json();
-      console.log('✅ Contracts fetched:', contracts.length);
-      return contracts;
+      // Giải quyết tên cho mỗi hợp đồng
+      const resolvedContracts = await Promise.all(contracts.map(resolveContractNames));
+      return resolvedContracts;
     } catch (error) {
-      console.error('💥 getByRoom error:', error);
+      console.error('Lỗi getByRoom:', error);
       throw error;
     }
   },
 
   /**
-   * Get contract by ID
+   * Lấy hợp đồng theo ID
    */
   async getById(contractId: string): Promise<ContractData> {
     try {
-      console.log('🔍 Fetching contract:', contractId);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/${contractId}`, {
-        method: 'GET',
-        headers,
-      });
+      console.log('Đang lấy hợp đồng:', contractId);
 
-      console.log('📡 Response status:', response.status);
+      const contract = await BaseApiClient.get<ContractData>(`/contracts/${contractId}`);
+      console.log('Đã lấy hợp đồng:', contract);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Fetch contract error:', errorText);
-        throw new Error(`Failed to fetch contract: ${response.status}`);
-      }
-
-      const contract = await response.json();
-      console.log('✅ Contract fetched:', contract);
-      return contract;
+      // Giải quyết tên nếu cần
+      const resolvedContract = await resolveContractNames(contract);
+      return resolvedContract;
     } catch (error) {
-      console.error('💥 getById error:', error);
+      console.error('Lỗi getById:', error);
       throw error;
     }
   },
 
   /**
-   * Get contracts by status
+   * Lấy hợp đồng theo trạng thái
    */
   async getByStatus(status: number): Promise<ContractData[]> {
     try {
-      console.log('🔍 Fetching contracts with status:', status);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/status/${status}`, {
-        method: 'GET',
-        headers,
-      });
+      console.log('Đang lấy hợp đồng với trạng thái:', status);
 
-      console.log('📡 Response status:', response.status);
+      const contracts = await BaseApiClient.get<ContractData[]>(`/contracts/status/${status}`);
+      console.log('Đã lấy hợp đồng:', contracts.length);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Fetch contracts error:', errorText);
-        throw new Error(`Failed to fetch contracts: ${response.status}`);
-      }
-
-      const contracts = await response.json();
-      console.log('✅ Contracts fetched:', contracts.length);
-      return contracts;
+      // Giải quyết tên cho mỗi hợp đồng
+      const resolvedContracts = await Promise.all(contracts.map(resolveContractNames));
+      return resolvedContracts;
     } catch (error) {
-      console.error('💥 getByStatus error:', error);
+      console.error('Lỗi getByStatus:', error);
       throw error;
     }
   },
 
   /**
-   * Create a new contract
+   * Tạo hợp đồng mới
    */
   async createContract(data: Partial<ContractData>): Promise<ContractData> {
     try {
-      console.log('📝 Creating contract:', data);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-      });
+      console.log('Đang tạo hợp đồng:', data);
 
-      console.log('📡 Response status:', response.status);
+      const contract = await BaseApiClient.post<ContractData>('/contracts', data);
+      console.log('Đã tạo hợp đồng:', contract);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Create contract error:', errorText);
-        throw new Error(`Failed to create contract: ${response.status}`);
-      }
-
-      const contract = await response.json();
-      console.log('✅ Contract created:', contract);
-      return contract;
+      // Giải quyết tên cho hợp đồng mới
+      const resolvedContract = await resolveContractNames(contract);
+      return resolvedContract;
     } catch (error) {
-      console.error('💥 createContract error:', error);
+      console.error('Lỗi createContract:', error);
       throw error;
     }
   },
 
   /**
-   * Update a contract
+   * Cập nhật hợp đồng
    */
   async updateContract(
     contractId: string,
     data: Partial<ContractData>
   ): Promise<ContractData> {
     try {
-      console.log('📝 Updating contract:', contractId, data);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/${contractId}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(data),
-      });
+      console.log('Đang cập nhật hợp đồng:', contractId, data);
 
-      console.log('📡 Response status:', response.status);
+      const contract = await BaseApiClient.put<ContractData>(`/contracts/${contractId}`, data);
+      console.log('Đã cập nhật hợp đồng:', contract);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Update contract error:', errorText);
-        throw new Error(`Failed to update contract: ${response.status}`);
-      }
-
-      const contract = await response.json();
-      console.log('✅ Contract updated:', contract);
-      return contract;
+      // Giải quyết tên cho hợp đồng đã cập nhật
+      const resolvedContract = await resolveContractNames(contract);
+      return resolvedContract;
     } catch (error) {
-      console.error('💥 updateContract error:', error);
+      console.error('Lỗi updateContract:', error);
       throw error;
     }
   },
 
   /**
-   * Export bills to PDF/Excel
+   * Xuất hóa đơn ra PDF/Excel
    */
   async exportBills(
     contractId: string,
@@ -287,11 +201,11 @@ export const ContractService = {
     toMonth: string
   ): Promise<Blob> {
     try {
-      console.log('📥 Exporting bills:', { contractId, fromMonth, toMonth });
-      
+      console.log('Đang xuất hóa đơn:', { contractId, fromMonth, toMonth });
+
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
-        throw new Error('Authentication required');
+        throw new Error('Cần xác thực');
       }
 
       const response = await fetch(
@@ -304,51 +218,38 @@ export const ContractService = {
         }
       );
 
-      console.log('📡 Response status:', response.status);
+      console.log('Trạng thái phản hồi:', response.status);
 
       if (!response.ok) {
-        throw new Error(`Failed to export bills: ${response.status}`);
+        throw new Error(`Không thể xuất hóa đơn: ${response.status}`);
       }
 
       const blob = await response.blob();
-      console.log('✅ Bills exported');
+      console.log('Đã xuất hóa đơn');
       return blob;
     } catch (error) {
-      console.error('💥 exportBills error:', error);
+      console.error('Lỗi exportBills:', error);
       throw error;
     }
   },
 
   /**
-   * Delete a contract
+   * Xóa hợp đồng
    */
   async deleteContract(contractId: string): Promise<void> {
     try {
-      console.log('🗑️ Deleting contract:', contractId);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${BASE_URL}/${contractId}`, {
-        method: 'DELETE',
-        headers,
-      });
+      console.log('Đang xóa hợp đồng:', contractId);
 
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Delete contract error:', errorText);
-        throw new Error(errorText || `Failed to delete contract: ${response.status}`);
-      }
-
-      console.log('✅ Contract deleted');
+      await BaseApiClient.delete<void>(`/contracts/${contractId}`);
+      console.log('Đã xóa hợp đồng');
     } catch (error) {
-      console.error('💥 deleteContract error:', error);
+      console.error('Lỗi deleteContract:', error);
       throw error;
     }
   },
 
   /**
-   * Upload contract image (React Native with expo-image-picker)
+   * Upload ảnh hợp đồng (React Native với expo-image-picker)
    */
   async uploadContractImage(
     contractId: string,
@@ -357,12 +258,7 @@ export const ContractService = {
     fileType: string = 'image/jpeg'
   ): Promise<ContractData> {
     try {
-      console.log('📤 Uploading contract image:', { contractId, fileName });
-      
-      const token = await AsyncStorage.getItem('accessToken');
-      if (!token) {
-        throw new Error('Authentication required');
-      }
+      console.log('Đang upload ảnh hợp đồng:', { contractId, fileName });
 
       const formData = new FormData();
       formData.append('file', {
@@ -371,27 +267,14 @@ export const ContractService = {
         name: fileName,
       } as any);
 
-      const response = await fetch(`${API_URL}/contracts/${contractId}/image`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const contract = await BaseApiClient.uploadFile<ContractData>(`/contracts/${contractId}/image`, formData);
+      console.log('Đã upload ảnh hợp đồng:', contract);
 
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Upload image error:', errorText);
-        throw new Error(`Failed to upload image: ${response.status}`);
-      }
-
-      const contract = await response.json();
-      console.log('✅ Contract image uploaded:', contract);
-      return contract;
+      // Giải quyết tên cho hợp đồng đã cập nhật
+      const resolvedContract = await resolveContractNames(contract);
+      return resolvedContract;
     } catch (error) {
-      console.error('💥 uploadContractImage error:', error);
+      console.error('Lỗi uploadContractImage:', error);
       throw error;
     }
   },

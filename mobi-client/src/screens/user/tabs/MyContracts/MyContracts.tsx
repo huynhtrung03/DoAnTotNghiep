@@ -15,8 +15,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { ContractService, ContractData } from '../../../../services/ContractService';
+import { ContractService } from '../../../../services/ContractService';
 import { ContractDisplayData, statusMap, ContractStatus } from './types';
+import { ContractData } from '../../../../types/types';
 import { styles } from './styles';
 import ContractCard from './components/ContractCard';
 import Colors from '../../../../styles/colors';
@@ -33,18 +34,46 @@ const MyContracts = () => {
   // Search & Filter
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<ContractStatus | null>(null);
+  const [sortField, setSortField] = useState<'startDate' | 'endDate' | 'monthlyRent' | 'status' | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Pagination (chủ yếu cho landlord)
+  const [pageSize] = useState(50); // Tăng pageSize để load nhiều hơn
+
+  // User role state
+  const [userRole, setUserRole] = useState<'Landlords' | 'Users' | null>(null);
 
   // ===== HELPERS =====
   const transformContractData = (contract: ContractData): ContractDisplayData => {
-    // TODO: Fetch room/landlord details from API
-    // Hiện tại chỉ hiển thị ID, sau này có thể populate data
+    // Ensure status is valid ContractStatus, default to 0 if invalid
+    const validStatus: ContractStatus = ([0, 1, 2, 3] as ContractStatus[]).includes(contract.status as ContractStatus) 
+      ? contract.status as ContractStatus 
+      : 0;
+    
+    // Use actual names from API if available, otherwise fallback to ID-based display
+    const roomTitle = contract.roomTitle && !contract.roomTitle.startsWith('#') 
+      ? contract.roomTitle 
+      : `Room #${contract.roomId.substring(0, 8)}`;
+    
+    const landlordName = contract.landlordName && !contract.landlordName.startsWith('#') && !contract.landlordName.includes('Landlord #')
+      ? contract.landlordName 
+      : `Landlord #${contract.landlordId.substring(0, 8)}`;
+    
+    const tenantName = contract.tenantName && !contract.tenantName.startsWith('#') && !contract.tenantName.includes('Tenant #')
+      ? contract.tenantName 
+      : `Tenant #${contract.tenantId.substring(0, 8)}`;
+    
+    const contractName = contract.contractName && !contract.contractName.startsWith('#') && !contract.contractName.includes('Contract #')
+      ? contract.contractName 
+      : `Contract #${contract.id.substring(0, 8)}`;
+    
     return {
       ...contract,
-      status: contract.status as ContractStatus, // Cast to specific type
-      roomTitle: `Room #${contract.roomId.substring(0, 8)}`,
-      landlordName: `Landlord #${contract.landlordId.substring(0, 8)}`,
-      contractName: `Contract #${contract.id.substring(0, 8)}`,
-      tenantName: `Tenant #${contract.tenantId.substring(0, 8)}`,
+      status: validStatus,
+      roomTitle,
+      landlordName,
+      contractName,
+      tenantName,
     };
   };
 
@@ -54,9 +83,9 @@ const MyContracts = () => {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      console.log('📋 Đang lấy danh sách hợp đồng...');
+      console.log(' Đang lấy danh sách hợp đồng...');
 
-      // Lấy userId từ AsyncStorage
+      // Lấy userData từ AsyncStorage
       const userDataStr = await AsyncStorage.getItem('userData');
       if (!userDataStr) {
         throw new Error('Vui lòng đăng nhập để xem hợp đồng');
@@ -64,18 +93,38 @@ const MyContracts = () => {
 
       const userData = JSON.parse(userDataStr);
       const userId = userData.id;
+      const userRoles = userData.roles || [];
 
-      // Gọi API
-      const data = await ContractService.getByTenant(userId);
-      
+      // Xác định role chính
+      const isLandlord = userRoles.includes('Landlords');
+      const isUser = userRoles.includes('Users');
+      const primaryRole = isLandlord ? 'Landlords' : 'Users';
+      setUserRole(primaryRole);
+
+      console.log(' User ID:', userId, 'Roles:', userRoles, 'Primary Role:', primaryRole);
+
+      let data: ContractData[] = [];
+
+      // Kiểm tra role để gọi API phù hợp
+      if (userRoles.includes('Landlords')) {
+        // Landlord: lấy hợp đồng với pageSize lớn
+        console.log(' Landlord mode - fetching contracts by landlord');
+        const response = await ContractService.getByLandlord(userId, 0, pageSize);
+        data = response.content || [];
+      } else {
+        // Tenant/User: lấy hợp đồng của tenant
+        console.log('‍ Tenant mode - fetching contracts by tenant');
+        data = await ContractService.getByTenant(userId);
+      }
+
       // Transform data để hiển thị
       const displayData = data.map(transformContractData);
       
-      console.log(`✅ Đã lấy ${displayData.length} hợp đồng`);
+      console.log(` Đã lấy ${displayData.length} hợp đồng`);
       setContracts(displayData);
       setError(null);
     } catch (err: any) {
-      console.error('❌ Lỗi khi lấy hợp đồng:', err.message);
+      console.error(' Lỗi khi lấy hợp đồng:', err.message);
       setError(err.message || 'Không thể tải danh sách hợp đồng');
       setContracts([]);
     } finally {
@@ -95,47 +144,74 @@ const MyContracts = () => {
   }, [fetchContracts]);
 
   // ===== FILTER CONTRACTS =====
-  const filteredContracts = contracts.filter((contract) => {
-    // Search filter
-    const matchesSearch =
-      (contract.roomTitle?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
-      (contract.landlordName?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
-      (contract.contractName?.toLowerCase() || '').includes(searchText.toLowerCase());
+  const filteredContracts = contracts
+    .filter((contract) => {
+      // Search filter
+      const matchesSearch =
+        (contract.roomTitle?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+        (contract.landlordName?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+        (contract.contractName?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
+        (contract.tenantName?.toLowerCase() || '').includes(searchText.toLowerCase());
 
-    // Status filter
-    const matchesStatus =
-      statusFilter === null || contract.status === statusFilter;
+      // Status filter
+      const matchesStatus =
+        statusFilter === null || contract.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (!sortField) return 0;
+
+      let aValue: any, bValue: any;
+
+      switch (sortField) {
+        case 'startDate':
+        case 'endDate':
+          aValue = new Date(a[sortField]).getTime();
+          bValue = new Date(b[sortField]).getTime();
+          break;
+        case 'monthlyRent':
+          aValue = a.monthlyRent;
+          bValue = b.monthlyRent;
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
 
   // ===== CALCULATE STATS =====
   const stats = {
     total: contracts.length,
-    active: contracts.filter((c) => c.status === 0).length,
-    terminated: contracts.filter((c) => c.status === 1).length,
-    expired: contracts.filter((c) => c.status === 2).length,
-    pending: contracts.filter((c) => c.status === 3).length,
+    active: contracts.filter((c) => c.status === 0 as ContractStatus).length,
+    terminated: contracts.filter((c) => c.status === 1 as ContractStatus).length,
+    expired: contracts.filter((c) => c.status === 2 as ContractStatus).length,
+    pending: contracts.filter((c) => c.status === 3 as ContractStatus).length,
   };
 
   // ===== HANDLERS =====
   const handleViewDetail = (contract: ContractDisplayData) => {
-    console.log('👁️ Xem chi tiết hợp đồng:', contract.id);
-    // TODO: Navigate to detail screen
-    Alert.alert(
-      'Chi tiết hợp đồng',
-      `Hợp đồng: ${contract.contractName}\nPhòng: ${contract.roomTitle}\nTrạng thái: ${statusMap[contract.status].text}\nChức năng đang phát triển...`
-    );
+    console.log('️ Navigate to contract detail:', contract.id);
+    (navigation as any).navigate('Users/ContractDetail', { contract });
   };
 
   const handleFilterByStatus = (status: ContractStatus | null) => {
     setStatusFilter(status);
-    console.log('🔍 Lọc theo trạng thái:', status !== null ? statusMap[status].text : 'All');
+    console.log(' Lọc theo trạng thái:', status !== null ? statusMap[status].text : 'All');
   };
 
   // ===== RENDER ITEM =====
   const renderItem = ({ item }: { item: ContractDisplayData }) => (
-    <ContractCard contract={item} onPress={handleViewDetail} />
+    <ContractCard contract={item} onPress={handleViewDetail} userRole={userRole} />
   );
 
   // ===== RENDER EMPTY =====
@@ -188,7 +264,9 @@ const MyContracts = () => {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" translucent={false} />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Hợp Đồng Của Tôi</Text>
+        <Text style={styles.headerTitle}>
+          {userRole === 'Landlords' ? 'Hợp Đồng Quản Lý' : 'Hợp Đồng Của Tôi'}
+        </Text>
       </View>
 
       {/* Stats Bar */}
@@ -250,14 +328,14 @@ const MyContracts = () => {
           <TouchableOpacity
             style={[
               styles.filterButton,
-              statusFilter === 0 && styles.filterButtonActive,
+              statusFilter === (0 as ContractStatus) && styles.filterButtonActive,
             ]}
-            onPress={() => handleFilterByStatus(0)}
+            onPress={() => handleFilterByStatus(0 as ContractStatus)}
           >
             <Text
               style={[
                 styles.filterButtonText,
-                statusFilter === 0 && styles.filterButtonTextActive,
+                statusFilter === (0 as ContractStatus) && styles.filterButtonTextActive,
               ]}
             >
               Đang thuê ({stats.active})
@@ -268,14 +346,14 @@ const MyContracts = () => {
           <TouchableOpacity
             style={[
               styles.filterButton,
-              statusFilter === 3 && styles.filterButtonActive,
+              statusFilter === (3 as ContractStatus) && styles.filterButtonActive,
             ]}
-            onPress={() => handleFilterByStatus(3)}
+            onPress={() => handleFilterByStatus(3 as ContractStatus)}
           >
             <Text
               style={[
                 styles.filterButtonText,
-                statusFilter === 3 && styles.filterButtonTextActive,
+                statusFilter === (3 as ContractStatus) && styles.filterButtonTextActive,
               ]}
             >
               Chờ xử lý ({stats.pending})
@@ -286,14 +364,14 @@ const MyContracts = () => {
           <TouchableOpacity
             style={[
               styles.filterButton,
-              statusFilter === 2 && styles.filterButtonActive,
+              statusFilter === (2 as ContractStatus) && styles.filterButtonActive,
             ]}
-            onPress={() => handleFilterByStatus(2)}
+            onPress={() => handleFilterByStatus(2 as ContractStatus)}
           >
             <Text
               style={[
                 styles.filterButtonText,
-                statusFilter === 2 && styles.filterButtonTextActive,
+                statusFilter === (2 as ContractStatus) && styles.filterButtonTextActive,
               ]}
             >
               Hết hạn ({stats.expired})
@@ -304,14 +382,14 @@ const MyContracts = () => {
           <TouchableOpacity
             style={[
               styles.filterButton,
-              statusFilter === 1 && styles.filterButtonActive,
+              statusFilter === (1 as ContractStatus) && styles.filterButtonActive,
             ]}
-            onPress={() => handleFilterByStatus(1)}
+            onPress={() => handleFilterByStatus(1 as ContractStatus)}
           >
             <Text
               style={[
                 styles.filterButtonText,
-                statusFilter === 1 && styles.filterButtonTextActive,
+                statusFilter === (1 as ContractStatus) && styles.filterButtonTextActive,
               ]}
             >
               Đã kết thúc ({stats.terminated})

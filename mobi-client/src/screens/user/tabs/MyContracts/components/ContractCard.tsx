@@ -8,9 +8,10 @@ import Colors from '../../../../../styles/colors';
 interface ContractCardProps {
   contract: ContractDisplayData;
   onPress: (contract: ContractDisplayData) => void;
+  userRole?: 'Landlords' | 'Users' | null;
 }
 
-const ContractCard: React.FC<ContractCardProps> = ({ contract, onPress }) => {
+const ContractCard: React.FC<ContractCardProps> = ({ contract, onPress, userRole }) => {
   // ===== FORMAT DATE =====
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -43,11 +44,15 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, onPress }) => {
 
       {/* Info rows */}
       <View>
-        {/* Landlord */}
+        {/* Landlord/Tenant */}
         <View style={styles.infoRow}>
           <Ionicons name="person-outline" size={16} color={Colors.textSecondary} style={{ marginRight: 6 }} />
-          <Text style={styles.infoLabel}>Chủ trọ:</Text>
-          <Text style={styles.infoValue}>{contract.landlordName || 'N/A'}</Text>
+          <Text style={styles.infoLabel}>
+            {userRole === 'Landlords' ? 'Người thuê:' : 'Chủ trọ:'}
+          </Text>
+          <Text style={styles.infoValue}>
+            {userRole === 'Landlords' ? (contract.tenantName || 'N/A') : (contract.landlordName || 'N/A')}
+          </Text>
         </View>
 
         {/* Start Date */}

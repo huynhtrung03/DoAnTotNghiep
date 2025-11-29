@@ -12,8 +12,11 @@ import ProfileDetailScreen from '../screens/profile/ProfileScreen/ProfileDetailS
 import LanguageSelectionScreen from '../screens/profile/LanguageSelectionScreen/LanguageSelectionScreen';
 import RequestManagementScreen from '../screens/user/tabs/RequestManagement/RequestManagementScreen';
 import MyContracts from '../screens/user/tabs/MyContracts/MyContracts';
+import ContractDetailScreen from '../screens/user/tabs/MyContracts/ContractDetailScreen';
 import ChangePasswordScreen from '../screens/auth/ChangePassword/ChangePassword';
 import HistoryScreen from '../screens/history/RentalHistoryScreen/HistoryScreen';
+import BankScreen from '../screens/user/tabs/bank/BankScreen';
+import PaymentResultScreen from '../screens/user/tabs/PaymentResult/PaymentResultScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -45,6 +48,7 @@ export default function UserStackNavigator() {
         options={{
           title: 'Thông tin cá nhân',
           headerBackTitle: 'Quay lại',
+          headerShown: false, 
         }}
       />
       <Stack.Screen 
@@ -73,6 +77,15 @@ export default function UserStackNavigator() {
         }}
       />
       <Stack.Screen 
+        name="Users/ContractDetail" 
+        component={ContractDetailScreen}
+        options={{
+          title: 'Contract Detail',
+          headerBackTitle: 'Back',
+          headerShown: false, // Custom header trong component
+        }}
+      />
+      <Stack.Screen 
         name="Users/ChangePassword" 
         component={ChangePasswordScreen}
         options={{
@@ -87,6 +100,24 @@ export default function UserStackNavigator() {
           title: 'Lịch sử thuê phòng',
           headerBackTitle: 'Quay lại',
           headerShown: false, // Màn hình có header riêng
+        }}
+      />
+      <Stack.Screen 
+        name="Users/Bank" 
+        component={BankScreen}
+        options={{
+          title: 'Thẻ ngân hàng',
+          headerBackTitle: 'Quay lại',
+          headerShown: false, // Custom header trong component
+        }}
+      />
+      <Stack.Screen 
+        name="Users/PaymentResult" 
+        component={PaymentResultScreen}
+        options={{
+          title: 'Kết quả thanh toán',
+          headerBackTitle: 'Quay lại',
+          headerShown: false, // Custom header trong component
         }}
       />
     </Stack.Navigator>

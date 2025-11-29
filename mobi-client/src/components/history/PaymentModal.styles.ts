@@ -210,4 +210,274 @@ export default StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
   },
+
+  amount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1976D2',
+  },
+
+  damageFee: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF5722',
+  },
+
+  accountNumberContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    gap: 4,
+  },
+
+  copyButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1976D2',
+  },
+
+  qrDescription: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#757575',
+    marginTop: 8,
+  },
+
+  contactCard: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+  },
+
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    gap: 12,
+  },
+
+  contactText: {
+    fontSize: 14,
+    color: '#212121',
+    flex: 1,
+  },
+
+  requiredNote: {
+    fontSize: 14,
+    color: '#F44336',
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+
+  requiredFieldNote: {
+    fontSize: 12,
+    color: '#F44336',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+
+  confirmationSection: {
+    backgroundColor: '#FFFDE7',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FFEB3B',
+  },
+
+  confirmationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+
+  confirmationTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F57F17',
+  },
+
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+
+  checkbox: {
+    marginTop: 2,
+  },
+
+  checkboxLabel: {
+    fontSize: 14,
+    color: '#424242',
+    flex: 1,
+    lineHeight: 20,
+  },
+
+  checkboxLabelBold: {
+    fontWeight: '700',
+    color: '#212121',
+  },
+
+  // Confirmation Dialog
+  confirmDialogOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  confirmDialog: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 20,
+    width: '80%',
+    maxWidth: 400,
+  },
+
+  confirmDialogTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#212121',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+
+  confirmDialogMessage: {
+    fontSize: 14,
+    color: '#757575',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+
+  confirmDialogButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
+  confirmDialogButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+
+  confirmDialogButtonPrimary: {
+    backgroundColor: '#1976D2',
+  },
+
+  cancelDialogButton: {
+    backgroundColor: '#F5F5F5',
+  },
+
+  cancelDialogButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#757575',
+  },
+
+  confirmDialogButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+
+  // Enhanced Transfer Details Styles
+  transferDetailsCard: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+
+  transferDetailsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+
+  transferDetailsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1976D2',
+  },
+
+  transferDetailsContent: {
+    gap: 12,
+  },
+
+  transferDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  transferDetailLabel: {
+    fontSize: 14,
+    color: '#424242',
+    flex: 1,
+  },
+
+  transferDetailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#212121',
+    flex: 1,
+    textAlign: 'right',
+  },
+
+  accountNumberText: {
+    fontFamily: 'monospace',
+    fontSize: 15,
+    color: '#1976D2',
+    fontWeight: '600',
+  },
+
+  // Enhanced QR Code Styles
+  qrCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+
+  // Enhanced Upload Section
+  uploadSectionCard: {
+    backgroundColor: '#FFEBEE',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
+
+  uploadSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#C62828',
+    marginBottom: 8,
+  },
+
+  uploadSectionNote: {
+    fontSize: 14,
+    color: '#D32F2F',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
 });

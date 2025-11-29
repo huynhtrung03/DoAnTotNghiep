@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RoomInUser } from '../types';
 import { styles } from '../styles';
 import Colors from '../../../../styles/colors';
-import { URL_IMAGE } from '../../../../services/config/Constant';
+import { URL_IMAGE } from '../../../../services/Constant';
 
 interface RoomCardProps {
   room: RoomInUser;
@@ -31,14 +31,14 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onPress, onFavoriteToggle }) 
         return { uri: imageUrl };
       }
       // Nếu chưa có, thêm Cloudinary base URL
-      return { uri: `${URL_IMAGE}${imageUrl}` };
+      return { uri: `${URL_IMAGE}${imageUrl.startsWith('/') ? imageUrl.slice(1) : imageUrl}` };
     }
     if (room.mainImage) {
       const mainImageUrl = room.mainImage;
       if (mainImageUrl.startsWith('http')) {
         return { uri: mainImageUrl };
       }
-      return { uri: `${URL_IMAGE}${mainImageUrl}` };
+      return { uri: `${URL_IMAGE}${mainImageUrl.startsWith('/') ? mainImageUrl.slice(1) : mainImageUrl}` };
     }
     // Fallback to default image
     return require('../../../../../assets/images/default/room.png');

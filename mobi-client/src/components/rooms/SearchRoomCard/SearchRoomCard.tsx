@@ -18,7 +18,7 @@ interface SearchRoomCardProps {
 export default function SearchRoomCard({ room }: SearchRoomCardProps) {
   const navigation = useNavigation<any>();
 
-  console.log('🔍 SearchRoomCard data:', room);
+  console.log(' SearchRoomCard data:', room);
 
   // Flexible data extraction with URL_IMAGE support
   let mainMediaUri = room.imageUrl || room.image || room.images?.[0]?.url || '';

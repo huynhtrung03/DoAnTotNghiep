@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Dimensions }
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RoomInUser } from '../../../types/types';
-import { URL_IMAGE } from '../../../services/config/Constant';
+import { URL_IMAGE } from '../../../services/Constant';
 import RoomCardActions from '../RoomCardActions';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -25,7 +25,7 @@ export default function RoomCard({ room }: { room: RoomInUser }) {
   const navigation = useNavigation<any>();
   
   const mainMediaUri = room.images?.[0]?.url 
-    ? URL_IMAGE + room.images[0].url 
+    ? `${URL_IMAGE}${room.images[0].url.startsWith('/') ? room.images[0].url.slice(1) : room.images[0].url}` 
     : 'https://via.placeholder.com/400x300.png?text=No+Image';
 
   const handleCardPress = () => {
@@ -76,7 +76,7 @@ export default function RoomCard({ room }: { room: RoomInUser }) {
               <View style={styles.locationBadge}>
                 <Ionicons name="location" size={14} color="white" />
                 <Text style={styles.locationText} numberOfLines={1}>
-                  {room.address.ward.district.province.name}
+                  {room.address?.ward?.district?.province?.name || 'N/A'}
                 </Text>
               </View>
             </View>
@@ -95,7 +95,7 @@ export default function RoomCard({ room }: { room: RoomInUser }) {
         <View style={styles.addressRow}>
           <MaterialCommunityIcons name="map-marker-outline" size={16} color="#9CA3AF" />
           <Text style={styles.address} numberOfLines={1}>
-            {room.address.ward.district.name}
+            {room.address?.ward?.district?.name || 'N/A'}
           </Text>
         </View>
 

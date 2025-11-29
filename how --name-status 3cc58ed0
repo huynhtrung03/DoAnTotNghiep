@@ -1,0 +1,89 @@
+[33mcommit 3cc58ed0363ea1f3dd1dc223ea38bccf8294fc7d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtinh[m[33m, [m[1;31morigin/tinh[m[33m)[m
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Fri Nov 21 11:16:37 2025 +0700
+
+    Xóa các service và style không sử dụng: NotificationService, ProfileService, RegisterService, RoomService, SearchScreen.styles và HomeScreen.styles
+
+[33mcommit f583e234140d59bbb005615c97a3a93a8c99a36d[m
+Merge: 3758382 ff9a96a
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Fri Nov 21 11:03:06 2025 +0700
+
+    Thêm màn hình Chi tiết Messenger và thành phần Chatbot AI
+    
+    Triển khai MessengerDetailScreen để nhắn tin theo thời gian thực, hiển thị thông tin người dùng và ô nhập tin nhắn.
+    
+    Thêm AIChatbot để người dùng tương tác với Trợ lý AI, bao gồm quản lý lịch sử trò chuyện.
+    
+    Tạo MessCard để hiển thị từng cuộc trò chuyện với avatar người dùng và xem trước tin nhắn.
+    
+    Thêm các kiểu modal để nâng cao trải nghiệm người dùng trên HomeScreen.
+    
+    Cải thiện loading indicator và định dạng tin nhắn để nâng cao tính tiện dụng.
+
+[33mcommit 37583827a9a42c0362f13bd75b73aedbfbce479f[m
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Tue Nov 18 15:06:53 2025 +0700
+
+    first commit
+
+[33mcommit ad75bd457728425bce18f3b3f0973ad75cc45030[m
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Tue Nov 18 15:03:32 2025 +0700
+
+    18/11 chia giao dienj landlord
+
+[33mcommit ff9a96a8d3e26874a2649d9e3b4091324d6838d2[m
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Fri Nov 14 09:58:19 2025 +0700
+
+    Cập Nhập
+
+[33mcommit ce23b64e0b773c377a1dbcecfa89d47763a795bf[m
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Fri Nov 14 09:58:19 2025 +0700
+
+    Cập Nhập
+
+[33mcommit 56a167c7ec06a38930abc5c4538f301de3c2cf73[m
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Mon Oct 20 18:05:48 2025 +0700
+
+    update
+
+[33mcommit 7d38bfbea72e6d3841eb993b131fb70f3b55d567[m
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Mon Oct 20 18:05:48 2025 +0700
+
+    update
+
+[33mcommit c79b833288df4b3ddc7acfb8c5ed02f44c5329b5[m
+Merge: d280e69 ffe1c59
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Sat Oct 4 12:57:13 2025 +0700
+
+    Merge branch 'devtrung' of https://github.com/huynhtrung03/DoAnTotNghiep into tinh
+
+[33mcommit d280e6987770c3887d0797dcdca3f7ef654d4078[m
+Author: Phạm Công Tính <congtinh06032003@gmail.com>
+Date:   Sat Oct 4 12:56:23 2025 +0700
+
+    add initial VSCode configuration files for Java project
+
+[33mcommit ffe1c59fdfe2788368ab6022199e9655a14dfcfa[m
+Author: Trungg03 <vohuynhtrung1703@gmail.com>
+Date:   Sat Oct 4 12:55:12 2025 +0700
+
+    add .gitignore file to exclude unnecessary files and directories
+
+[33mcommit 7e0effb18610fc067fa8cc1a8d1c4fa0aedfbac2[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: Trungg03 <vohuynhtrung1703@gmail.com>
+Date:   Fri Oct 3 21:58:29 2025 +0700
+
+    remove detailed project plan from README.md
+
+[33mcommit 3e31b47f489783a66cca5dd881a187bf411bb77f[m
+Author: Trungg03 <vohuynhtrung1703@gmail.com>
+Date:   Fri Oct 3 21:56:50 2025 +0700
+
+    first commit

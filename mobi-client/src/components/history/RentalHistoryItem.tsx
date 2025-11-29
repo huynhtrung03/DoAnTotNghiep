@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { RentalHistoryItemProps, BookingStatus } from '../../types/rental';
-import { URL_IMAGE } from '../../services/config/Constant';
+import { RentalHistoryItemProps, BookingStatus, PaymentMethod } from '../../types/rental';
+import { URL_IMAGE } from '../../services/Constant';
+import PaymentList from '../payment/PaymentList';
 import styles from './RentalHistoryItem.styles';
 
 const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
   item,
   onPressRequest,
   onPressPayment,
+  onSelectPaymentMethod,
   onPressImage,
+  onPressRoomDetail,
 }) => {
+  const [showPaymentList, setShowPaymentList] = useState(false);
   const getStatusInfo = () => {
     const today = new Date();
     const rentalDate = new Date(item.rentalDate);
@@ -19,28 +23,28 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
     switch (item.status) {
       case BookingStatus.PENDING:
         return {
-          text: 'Pending',
+          text: 'Chờ xác nhận',
           color: '#FFA500',
           icon: 'time-outline' as const,
           bgColor: '#FFF3E0',
         };
       case BookingStatus.CONFIRMED:
         return {
-          text: 'Confirmed',
+          text: 'Đã xác nhận',
           color: '#2196F3',
           icon: 'checkmark-circle-outline' as const,
           bgColor: '#E3F2FD',
         };
       case BookingStatus.CANCELLED:
         return {
-          text: 'Cancelled',
+          text: 'Đã hủy',
           color: '#F44336',
           icon: 'close-circle-outline' as const,
           bgColor: '#FFEBEE',
         };
       case BookingStatus.REJECTED:
         return {
-          text: 'Rejected',
+          text: 'Đã từ chối',
           color: '#9E9E9E',
           icon: 'ban-outline' as const,
           bgColor: '#F5F5F5',
@@ -48,21 +52,21 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
       case BookingStatus.RENTING:
         if (today < rentalDate) {
           return {
-            text: 'Upcoming',
+            text: 'Sắp tới',
             color: '#00BCD4',
             icon: 'calendar-outline' as const,
             bgColor: '#E0F7FA',
           };
         } else if (today >= rentalDate && today <= expiresDate) {
           return {
-            text: 'Renting',
+            text: 'Đang thuê',
             color: '#4CAF50',
             icon: 'home-outline' as const,
             bgColor: '#E8F5E9',
           };
         } else {
           return {
-            text: 'Expired',
+            text: 'Đã hết hạn',
             color: '#757575',
             icon: 'alert-circle-outline' as const,
             bgColor: '#EEEEEE',
@@ -70,7 +74,7 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
         }
       default:
         return {
-          text: 'Unknown',
+          text: 'Không xác định',
           color: '#9E9E9E',
           icon: 'help-circle-outline' as const,
           bgColor: '#F5F5F5',
@@ -114,17 +118,17 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
       <View style={styles.infoSection}>
         <View style={styles.infoRow}>
           <Ionicons name="person-outline" size={16} color="#757575" />
-          <Text style={styles.infoLabel}>Landlord:</Text>
+          <Text style={styles.infoLabel}>Chủ nhà:</Text>
           <Text style={styles.infoValue}>{item.name_landlord}</Text>
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="call-outline" size={16} color="#757575" />
-          <Text style={styles.infoLabel}>Phone:</Text>
+          <Text style={styles.infoLabel}>Điện thoại:</Text>
           <Text style={styles.infoValue}>{item.phone_landlord}</Text>
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="location-outline" size={16} color="#757575" />
-          <Text style={styles.infoLabel}>Address:</Text>
+          <Text style={styles.infoLabel}>Địa chỉ:</Text>
           <Text style={styles.infoValue} numberOfLines={2}>
             {item.address}
           </Text>
@@ -136,13 +140,13 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
         <View style={styles.detailRow}>
           <View style={styles.detailItem}>
             <Ionicons name="calendar-outline" size={16} color="#1976D2" />
-            <Text style={styles.detailLabel}>Start Date</Text>
+            <Text style={styles.detailLabel}>Ngày bắt đầu</Text>
             <Text style={styles.detailValue}>{item.rentalDate}</Text>
           </View>
           <View style={styles.detailDivider} />
           <View style={styles.detailItem}>
             <Ionicons name="calendar-outline" size={16} color="#F44336" />
-            <Text style={styles.detailLabel}>End Date</Text>
+            <Text style={styles.detailLabel}>Ngày kết thúc</Text>
             <Text style={styles.detailValue}>{item.expires}</Text>
           </View>
         </View>
@@ -150,13 +154,13 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
         <View style={styles.detailRow}>
           <View style={styles.detailItem}>
             <Ionicons name="people-outline" size={16} color="#4CAF50" />
-            <Text style={styles.detailLabel}>Tenants</Text>
-            <Text style={styles.detailValue}>{item.tenants} person(s)</Text>
+            <Text style={styles.detailLabel}>Số người thuê</Text>
+            <Text style={styles.detailValue}>{item.tenants} người</Text>
           </View>
           <View style={styles.detailDivider} />
           <View style={styles.detailItem}>
             <Ionicons name="cash-outline" size={16} color="#FF9800" />
-            <Text style={styles.detailLabel}>Monthly Price</Text>
+            <Text style={styles.detailLabel}>Giá thuê tháng</Text>
             <Text style={styles.detailValue}>{item.price}</Text>
           </View>
         </View>
@@ -165,13 +169,13 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
       {/* Image Proof */}
       {item.imageProof && (
         <View style={styles.imageSection}>
-          <Text style={styles.imageSectionTitle}>Payment Proof:</Text>
+          <Text style={styles.imageSectionTitle}>Ảnh chứng minh thanh toán:</Text>
           <TouchableOpacity
-            onPress={() => onPressImage(`${URL_IMAGE}${item.imageProof}`)}
+            onPress={() => onPressImage(`${URL_IMAGE}${item.imageProof!.startsWith('/') ? item.imageProof!.slice(1) : item.imageProof!}`)}
             style={styles.imageContainer}
           >
             <Image
-              source={{ uri: `${URL_IMAGE}${item.imageProof}` }}
+              source={{ uri: `${URL_IMAGE}${item.imageProof!.startsWith('/') ? item.imageProof!.slice(1) : item.imageProof!}` }}
               style={styles.image}
               resizeMode="cover"
             />
@@ -188,7 +192,7 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
           onPress={() => onPressPayment(item.key)}
         >
           <Ionicons name="cloud-upload-outline" size={20} color="#1976D2" />
-          <Text style={styles.uploadButtonText}>Upload Payment Proof</Text>
+          <Text style={styles.uploadButtonText}>Tải lên ảnh thanh toán</Text>
         </TouchableOpacity>
       )}
 
@@ -196,32 +200,56 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
       {item.isRemoved === 1 && (
         <View style={styles.removedBadge}>
           <Ionicons name="warning-outline" size={16} color="#F44336" />
-          <Text style={styles.removedText}>Removed by owner</Text>
+          <Text style={styles.removedText}>Đã bị xóa bởi chủ nhà</Text>
         </View>
       )}
 
       {/* Action Buttons */}
       <View style={styles.actionSection}>
+        {/* View Room Details Button - Always visible */}
+        <TouchableOpacity
+          style={[styles.actionButton, styles.detailButton]}
+          onPress={() => onPressRoomDetail(item.idRoom)}
+        >
+          <Ionicons name="eye-outline" size={20} color="#FFF" />
+          <Text style={styles.actionButtonText}>Xem chi tiết phòng</Text>
+        </TouchableOpacity>
+
         {canSendRequest && (
           <TouchableOpacity
             style={[styles.actionButton, styles.requestButton]}
             onPress={() => onPressRequest(item.idRoom)}
           >
             <Ionicons name="add-circle-outline" size={20} color="#FFF" />
-            <Text style={styles.actionButtonText}>Send Request</Text>
+            <Text style={styles.actionButtonText}>Gửi yêu cầu</Text>
           </TouchableOpacity>
         )}
 
         {item.status === BookingStatus.PENDING && (
           <TouchableOpacity
             style={[styles.actionButton, styles.paymentButton]}
-            onPress={() => onPressPayment(item.key)}
+            onPress={() => setShowPaymentList(true)}
           >
             <Ionicons name="card-outline" size={20} color="#FFF" />
-            <Text style={styles.actionButtonText}>Make Payment</Text>
+            <Text style={styles.actionButtonText}>Thanh toán</Text>
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Payment List Popup */}
+      <PaymentList
+        visible={showPaymentList}
+        onClose={() => setShowPaymentList(false)}
+        onSelectMethod={(method) => {
+          if (onSelectPaymentMethod) {
+            onSelectPaymentMethod(item.key, method);
+          } else {
+            // Fallback to old behavior
+            onPressPayment(item.key);
+          }
+          setShowPaymentList(false);
+        }}
+      />
     </View>
   );
 };
