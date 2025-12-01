@@ -1,10 +1,10 @@
 // export const API_URL = "http://localhost:3333/api";
 
-export const API_URL = "https://big-whole-camel.ngrok-free.app/api";
-// export const API_URL = "http://192.168.1.5:3333/api";
+// export const API_URL = "https://big-whole-camel.ngrok-free.app/api";
 
 //trung
 // export const API_URL = "https://rustproof-unpertinently-judy.ngrok-free.dev/api";
+export const API_URL = "http://192.168.1.10:3333/api";
 
 
 
