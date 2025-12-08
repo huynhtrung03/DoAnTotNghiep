@@ -404,7 +404,7 @@ class NotificationServiceMobi {
   /**
    * Thông báo thanh toán thành công
    */
-  async notifyPaymentSuccess(amount: number, transactionId?: string): Promise<void> {
+  async notifyPaymentSuccess(amount: number, transactionId?: string | null): Promise<void> {
     try {
       console.log('💰 [NotificationServiceMobi] Sending payment success notification');
 
@@ -412,7 +412,7 @@ class NotificationServiceMobi {
         content: {
           title: 'Thanh toán thành công',
           body: `Đã thanh toán ${amount.toLocaleString('vi-VN')} VND thành công${transactionId ? ` (Mã: ${transactionId})` : ''}`,
-          data: { type: 'payment_success', amount, transactionId },
+          data: { type: 'payment_success', amount, transactionId: transactionId || undefined },
           sound: 'default',
           priority: Notifications.AndroidNotificationPriority.HIGH,
         },
@@ -470,6 +470,30 @@ class NotificationServiceMobi {
       console.log('✅ [NotificationServiceMobi] Payment canceled notification sent');
     } catch (error) {
       console.error('❌ [NotificationServiceMobi] Error sending payment canceled notification:', error);
+    }
+  }
+
+  /**
+   * Thông báo chưa cài đặt ZaloPay
+   */
+  async notifyZaloPayNotInstalled(): Promise<void> {
+    try {
+      console.log('📱 [NotificationServiceMobi] Sending ZaloPay not installed notification');
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Chưa cài đặt ZaloPay',
+          body: 'Bạn cần cài đặt ứng dụng ZaloPay để thanh toán. Nhấn vào đây để cài đặt.',
+          data: { type: 'zalopay_not_installed' },
+          sound: 'default',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        },
+        trigger: null,
+      });
+
+      console.log('✅ [NotificationServiceMobi] ZaloPay not installed notification sent');
+    } catch (error) {
+      console.error('❌ [NotificationServiceMobi] Error sending ZaloPay not installed notification:', error);
     }
   }
 

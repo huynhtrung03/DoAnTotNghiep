@@ -147,7 +147,7 @@ export default function PaymentScreen() {
       }
 
       const userData = JSON.parse(userDataString);
-      const userId = userData.id;
+      const userId = userData?.id as string | undefined;
       console.log(`[${new Date().toISOString()}] 👤 [PaymentScreen] Parsed userId:`, userId);
 
       if (!userId) {
@@ -160,7 +160,7 @@ export default function PaymentScreen() {
       console.log(`[${new Date().toISOString()}] 🚀 [PaymentScreen] Starting payment with userId:`, userId, 'amount:', amount);
       await startPayment({
         amount,
-        userId,
+        userId: userId,
         description: `Nạp ${amount.toLocaleString('vi-VN')} VND vào ví`,
       });
 

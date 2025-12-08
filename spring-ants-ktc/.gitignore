@@ -42,3 +42,5 @@ out/
 
 
 src/main/resources/firebase-service-account.json
+.Constants.ts
+.mobi-client/src/services/Constant.ts

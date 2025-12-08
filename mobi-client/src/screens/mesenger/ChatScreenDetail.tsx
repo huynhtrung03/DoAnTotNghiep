@@ -39,9 +39,11 @@ import {
   sendTextMessage,
   sendImageMessage,
   markConversationAsRead,
+  getUserStatus,
 } from '../../services/ChatService';
 import Colors from '../../styles/colors';
-import { StyleSheet } from 'react-native';
+import styles from './ChatScreenDetail.style';
+import MessengerNotification from '../../services/notification/MesengerNotification';
 
 interface ChatScreenParams {
   recipientId: string;
@@ -59,16 +61,20 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
+  const [currentUserName, setCurrentUserName] = useState('');
   const [currentUserAvatar, setCurrentUserAvatar] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showReactions, setShowReactions] = useState<string | null>(null);
+  const [recipientIsOnline, setRecipientIsOnline] = useState(false);
+  const [recipientLastSeen, setRecipientLastSeen] = useState<string>('');
   
   const flatListRef = useRef<FlatList<Message> | null>(null);
   const inputRef = useRef<TextInput>(null);
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+  const statusCheckInterval = useRef<NodeJS.Timeout | null>(null);
 
   // Animations
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -96,6 +102,52 @@ export default function ChatScreen() {
     };
   }, [currentUserId, recipientId]);
 
+  /**
+   * Fetch recipient online status periodically
+   */
+  useEffect(() => {
+    if (!recipientId) return;
+
+    const fetchRecipientStatus = async () => {
+      try {
+        const status = await getUserStatus(recipientId);
+        console.log('👤 [ChatScreen] Recipient status:', status);
+        setRecipientIsOnline(status.isOnline ?? false);
+        
+        if (!status.isOnline && status.lastSeen) {
+          const lastSeenDate = new Date(status.lastSeen);
+          const now = new Date();
+          const diffMs = now.getTime() - lastSeenDate.getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+          let lastSeenText = '';
+          if (diffMins < 1) lastSeenText = 'Vừa xong';
+          else if (diffMins < 60) lastSeenText = `${diffMins} phút trước`;
+          else if (diffHours < 24) lastSeenText = `${diffHours} giờ trước`;
+          else if (diffDays < 7) lastSeenText = `${diffDays} ngày trước`;
+          else lastSeenText = lastSeenDate.toLocaleDateString('vi-VN');
+
+          setRecipientLastSeen(lastSeenText);
+        }
+      } catch (error) {
+        console.warn('⚠️ [ChatScreen] Error fetching recipient status:', error);
+      }
+    };
+
+    fetchRecipientStatus();
+
+    // Refetch status every 30 seconds
+    statusCheckInterval.current = setInterval(fetchRecipientStatus, 30000);
+
+    return () => {
+      if (statusCheckInterval.current) {
+        clearInterval(statusCheckInterval.current);
+      }
+    };
+  }, [recipientId]);
+
   useEffect(() => {
     if (messages.length > 0 && flatListRef.current) {
       setTimeout(() => {
@@ -112,6 +164,8 @@ export default function ChatScreen() {
       if (userDataStr) {
         const userData = JSON.parse(userDataStr);
         setCurrentUserId(userData.id);
+        // Lấy tên người dùng từ userData hoặc userProfile
+        setCurrentUserName(userData.name || userData.fullName || 'User');
       }
       
       if (userProfileStr) {
@@ -122,6 +176,11 @@ export default function ChatScreen() {
             avatarUrl = `https://res.cloudinary.com${avatarUrl}`;
           }
           setCurrentUserAvatar(avatarUrl);
+          
+          // Cập nhật tên nếu chưa có từ userData
+          if (!currentUserName && userProfile.name) {
+            setCurrentUserName(userProfile.name);
+          }
         } catch (e) {
           console.warn('Error parsing user profile:', e);
         }
@@ -199,9 +258,31 @@ export default function ChatScreen() {
       if (imageUri) {
         const fileName = `image_${Date.now()}.jpg`;
         await sendImageMessage(imageUri, fileName, currentUserId, recipientId);
+        
+        // Gửi thông báo Firebase cho tin nhắn hình ảnh
+        console.log('📸 [ChatScreen] Sending image message notification');
+        await MessengerNotification.notifyImageMessage(
+          currentUserId,
+          currentUserName || recipientName || 'User',
+          recipientId,
+          imageUri,
+          currentUserAvatar
+        );
       } else {
         await sendTextMessage(text, currentUserId, recipientId);
+        
+        // Gửi thông báo Firebase cho tin nhắn văn bản
+        console.log('💬 [ChatScreen] Sending text message notification');
+        await MessengerNotification.notifyTextMessage(
+          currentUserId,
+          currentUserName || recipientName || 'User',
+          recipientId,
+          text,
+          currentUserAvatar
+        );
       }
+      
+      console.log('✅ [ChatScreen] Message and notification sent successfully');
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert('Lỗi', 'Không thể gửi tin nhắn. Vui lòng thử lại.');
@@ -442,33 +523,47 @@ export default function ChatScreen() {
             <Ionicons name="chevron-back" size={28} color={Colors.textPrimary} />
           </TouchableOpacity>
 
-          <View style={styles.headerContent}>
-            <View style={styles.avatarContainer}>
-              {recipientAvatar ? (
-                <Image 
-                  source={{ uri: recipientAvatar }} 
-                  style={styles.headerAvatar}
-                  resizeMode="cover"
+            <View style={styles.headerContent}>
+              <View style={styles.avatarContainer}>
+                {recipientAvatar ? (
+                  <Image 
+                    source={{ uri: recipientAvatar }} 
+                    style={styles.headerAvatar}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.headerAvatarPlaceholder}>
+                    <Ionicons name="person" size={22} color={Colors.textSecondary} />
+                  </View>
+                )}
+                <View 
+                  style={[
+                    styles.onlineIndicator,
+                    {
+                      backgroundColor: recipientIsOnline ? '#31A24C' : '#9CA3AF',
+                      borderWidth: 3,
+                      borderColor: 'white',
+                      opacity: recipientIsOnline ? 1 : 0.6,
+                    },
+                  ]} 
                 />
-              ) : (
-                <View style={styles.headerAvatarPlaceholder}>
-                  <Ionicons name="person" size={22} color={Colors.textSecondary} />
-                </View>
-              )}
-              <View style={styles.onlineIndicator} />
-            </View>
-            
-            <View style={styles.headerInfo}>
-              <Text style={styles.headerName} numberOfLines={1}>
-                {recipientName || 'Unknown User'}
-              </Text>
-              <Text style={styles.headerStatus}>
-                {isTyping ? 'đang nhập...' : 'Đang hoạt động'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.headerActions}>
+              </View>
+              
+              <View style={styles.headerInfo}>
+                <Text style={styles.headerName} numberOfLines={1}>
+                  {recipientName || 'Unknown User'}
+                </Text>
+                <Text style={styles.headerStatus} numberOfLines={1}>
+                  {isTyping 
+                    ? 'đang nhập...' 
+                    : recipientIsOnline 
+                      ? 'Đang hoạt động' 
+                      : recipientLastSeen
+                        ? `Ngoại tuyến (${recipientLastSeen})`
+                        : 'Ngoại tuyến'}
+                </Text>
+              </View>
+            </View>          <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerButton}>
               <Ionicons name="call-outline" size={22} color={Colors.primary} />
             </TouchableOpacity>
@@ -482,7 +577,7 @@ export default function ChatScreen() {
       {/* Messages List */}
       <KeyboardAvoidingView
         style={styles.flex1}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
@@ -567,385 +662,3 @@ export default function ChatScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F7',
-  },
-  flex1: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Header
-  header: {
-    zIndex: 10,
-  },
-  headerGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-  },
-  headerContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  headerAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  headerAvatarPlaceholder: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#E5E5EA',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#34C759',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  headerName: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  headerStatus: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 1,
-    fontWeight: '500',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,122,255,0.08)',
-  },
-
-  // Messages
-  messagesContainer: {
-    padding: 16,
-    paddingBottom: 20,
-  },
-  messageContainer: {
-    // marginBottom set inline
-  },
-  timeContainer: {
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  timeBadge: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  timeText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  messageWrapper: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-  },
-  ownMessageWrapper: {
-    alignItems: 'flex-end',
-  },
-  otherMessageWrapper: {
-    alignItems: 'flex-start',
-  },
-  messageContent: {
-    maxWidth: '75%',
-  },
-  avatarTop: {
-    marginBottom: 6,
-  },
-  avatarTopOwn: {
-    alignSelf: 'flex-end',
-  },
-  avatarTopOther: {
-    alignSelf: 'flex-start',
-  },
-  avatarColumn: {
-    width: 28,
-    alignItems: 'center',
-  },
-  avatarSmall: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E5E5EA',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'white',
-  },
-  avatarSmallImage: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  avatarSpacer: {
-    height: 6,
-  },
-  messageBubble: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  gradientBubble: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  ownMessageBubble: {
-    borderBottomRightRadius: 6,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#007AFF',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  otherMessageBubble: {
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomLeftRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  ownMessageText: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: 'white',
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  otherMessageText: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: Colors.textPrimary,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  messageImage: {
-    width: 220,
-    height: 220,
-    borderRadius: 16,
-  },
-  messageInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    gap: 4,
-  },
-  messageInfoOwn: {
-    justifyContent: 'flex-end',
-  },
-  messageInfoOther: {
-    justifyContent: 'flex-start',
-  },
-  messageTime: {
-    fontSize: 11,
-    color: Colors.textTertiary,
-    fontWeight: '600',
-  },
-  readIcon: {
-    marginLeft: 2,
-  },
-
-  // Reactions
-  reactionsBar: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 6,
-    marginTop: 8,
-    gap: 4,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  reactionsBarOwn: {
-    alignSelf: 'flex-end',
-  },
-  reactionsBarOther: {
-    alignSelf: 'flex-start',
-  },
-  reactionButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 18,
-  },
-  reactionEmoji: {
-    fontSize: 20,
-  },
-
-  // Input
-  inputContainer: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  imagePreviewContainer: {
-    marginBottom: 10,
-    position: 'relative',
-  },
-  imagePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    backgroundColor: '#E5E5EA',
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: 'white',
-    borderRadius: 12,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  attachButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,122,255,0.08)',
-    borderRadius: 20,
-  },
-  inputBox: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    minHeight: 44,
-    maxHeight: 120,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
-  },
-  input: {
-    fontSize: 16,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-    paddingTop: 0,
-    paddingBottom: 0,
-    fontWeight: '500',
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  sendButtonGradient: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
-  },
-});

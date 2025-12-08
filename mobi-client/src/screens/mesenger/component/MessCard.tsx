@@ -182,9 +182,32 @@ export default function MessCard({ user, onPress, index = 0 }: MessCardProps) {
               />
             </View>
           )}
-          {/* Online indicator for regular users */}
+          {/* Online indicator - xanh nếu online, xám nếu offline */}
           {user.id !== 'ai-assistant' && (
-            <View style={styles.onlineIndicator} />
+            <View 
+              style={[
+                styles.onlineIndicator,
+                {
+                  backgroundColor: user.isOnline ? '#31A24C' : '#9CA3AF',
+                  borderWidth: 3,
+                  borderColor: 'white',
+                  opacity: user.isOnline ? 1 : 0.6,
+                },
+              ]} 
+            />
+          )}
+          {/* AI Always online */}
+          {user.id === 'ai-assistant' && (
+            <View 
+              style={[
+                styles.onlineIndicator,
+                {
+                  backgroundColor: '#31A24C',
+                  borderWidth: 3,
+                  borderColor: 'white',
+                },
+              ]}
+            />
           )}
         </View>
 

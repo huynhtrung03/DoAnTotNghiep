@@ -216,7 +216,7 @@ export const sendImageMessage = async (
   file: File,
   senderId: string,
   recipientId: string
-): Promise<void> => {
+): Promise<string> => {
   const { imageUrl, fileName } = await uploadImageToBackend(file);
 
   await addDoc(collection(db, "messages"), {
@@ -227,6 +227,8 @@ export const sendImageMessage = async (
     createdAt: serverTimestamp(),
     messageType: 'image',
   });
+
+  return imageUrl; // Return the image URL
 };
 
 /**

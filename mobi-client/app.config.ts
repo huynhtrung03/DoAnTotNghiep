@@ -13,7 +13,7 @@ export default (): ExpoConfig => ({
   newArchEnabled: true,
 
   splash: {
-    image: './assets/splash-icon.png',
+    image: './assets/favicon.png',
     resizeMode: 'contain',
     backgroundColor: '#ffffff',
   },

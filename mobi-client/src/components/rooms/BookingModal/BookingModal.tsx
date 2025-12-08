@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBooking } from '../../../services/BookingService';
-import { createBookingNotification } from '../../../services/NotificationService';
+import BookingNotification from '../../../services/notification/BookingNotification';
 import styles from './BookingModal.styles';
 
 interface BookingModalProps {
@@ -111,7 +111,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
       //  STEP 3: Send notification in background (không block UI)
       // Nếu notification lỗi, KHÔNG làm fail toàn bộ booking
       console.log(" Sending notification to landlord...");
-      createBookingNotification(
+      BookingNotification.sendLandlordNotification(
         roomId,
         userId,
         `You have a new booking from a tenant for room: "${roomTitle}". Tenant count: ${tenantCount}, Duration: ${rentalMonths} months.`
@@ -119,6 +119,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
         console.warn("️ Notification failed (non-critical):", notificationError);
         // Không throw error - booking đã thành công, chỉ notification lỗi
       });
+
+      //  STEP 4: Show Local Notification (Firebase/Expo style)
+      // Sử dụng BookingNotification service mới
+      console.log(" Showing local notification...");
+      BookingNotification.notifyBookingSuccess(roomTitle);
 
       // Đóng modal booking trước
       handleClose();

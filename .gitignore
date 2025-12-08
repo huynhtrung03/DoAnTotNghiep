@@ -21,3 +21,9 @@ ios/build/
 .env
 .env.localmobi-client/*.apk
 mobi-client/**/*.apk
+Constants.ts
+mobi-client/src/services/Constant.ts
+mobi-client/.expo/devices.json
+mobi-client/package.json
+mobi-client/package-lock.json
+spring-ants-ktc/src/main/resources/application.properties

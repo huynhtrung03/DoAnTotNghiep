@@ -7,6 +7,10 @@ import { BaseApiClient } from './api/BaseApiClient';
 const userInfoCache = new Map<string, { fullName: string; avatar: string; role: string; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
 
+// Cache for user online status
+const userStatusCache = new Map<string, { isOnline: boolean; timestamp: number }>();
+const STATUS_CACHE_DURATION = 30 * 1000; // 30 giây
+
 export interface ChatUser {
   id: string;
   name?: string;
@@ -17,6 +21,7 @@ export interface ChatUser {
   receivedMessageCount?: number; // Tổng số tin nhắn nhận được từ người khác
   lastMessageSenderId?: string; // ID của người gửi tin nhắn cuối cùng (để phân biệt sent vs received)
   role?: 'landlord' | 'tenant' | 'admin'; // Role của user
+  isOnline?: boolean; // Trạng thái online/offline
 }
 
 export interface Message {
@@ -29,6 +34,107 @@ export interface Message {
   createdAt: Date | null;
   messageType: 'text' | 'image';
 }
+
+/**
+ * Lấy trạng thái online/offline của user
+ */
+export const getUserStatus = async (userId: string): Promise<{ isOnline: boolean; status?: string; lastSeen?: Date | null }> => {
+  try {
+    // Kiểm tra cache trước
+    const cached = userStatusCache.get(userId);
+    if (cached && Date.now() - cached.timestamp < STATUS_CACHE_DURATION) {
+      return {
+        isOnline: cached.isOnline,
+        status: cached.isOnline ? 'ONLINE' : 'OFFLINE',
+        lastSeen: (cached as any).lastSeen || null,
+      };
+    }
+
+    // Gửi API để lấy trạng thái
+    const response = await BaseApiClient.get<{ isOnline: boolean; status?: string; lastSeen?: any }>(
+      `/messages/user-status/${userId}`
+    );
+
+    const isOnline = response.isOnline || false;
+    const status = response.status || (isOnline ? 'ONLINE' : 'OFFLINE');
+    const lastSeen = response.lastSeen ? new Date(response.lastSeen) : null;
+
+    userStatusCache.set(userId, { 
+      isOnline, 
+      timestamp: Date.now(),
+      status,
+      lastSeen,
+    } as any);
+
+    console.log('👤 [ChatService] User status fetched:', { userId, isOnline, status, lastSeen });
+    return { isOnline, status, lastSeen };
+  } catch (error) {
+    console.warn('⚠️ [ChatService] Error getting user status:', error);
+    return { isOnline: false, status: 'OFFLINE', lastSeen: null };
+  }
+};
+
+/**
+ * Lấy trạng thái online/offline của nhiều user
+ */
+export const getUsersStatus = async (userIds: string[]): Promise<{ [key: string]: boolean }> => {
+  try {
+    if (userIds.length === 0) return {};
+
+    const response = await BaseApiClient.post<{ [key: string]: boolean }>(
+      `/messages/users-status`,
+      userIds
+    );
+
+    // Cache kết quả
+    Object.entries(response).forEach(([userId, isOnline]) => {
+      userStatusCache.set(userId, { isOnline: isOnline as boolean, timestamp: Date.now() });
+    });
+
+    console.log('📋 [ChatService] Multiple users status fetched:', Object.keys(response).length);
+    return response;
+  } catch (error) {
+    console.warn('⚠️ [ChatService] Error getting users status:', error);
+    return {};
+  }
+};
+
+/**
+ * Set user chat active (khi mở App)
+ */
+export const setChatActive = async (userId: string): Promise<void> => {
+  try {
+    console.log('🟢 [ChatService] Setting user chat active:', userId);
+    await BaseApiClient.post(`/messages/chat-active?userId=${userId}`, null);
+    // Clear cache to force refresh
+    userStatusCache.delete(userId);
+  } catch (error) {
+    console.warn('⚠️ [ChatService] Error setting chat active:', error);
+  }
+};
+
+/**
+ * Set user chat inactive (khi tắt App / Background)
+ */
+export const setChatInactive = async (userId: string): Promise<void> => {
+  try {
+    console.log('🔴 [ChatService] Setting user chat inactive:', userId);
+    await BaseApiClient.post(`/messages/chat-inactive?userId=${userId}`, null);
+    // Clear cache to force refresh
+    userStatusCache.delete(userId);
+  } catch (error) {
+    console.warn('⚠️ [ChatService] Error setting chat inactive:', error);
+  }
+};/**
+ * Send heartbeat (gửi định kỳ mỗi 30s)
+ */
+export const sendHeartbeat = async (userId: string): Promise<void> => {
+  try {
+    await BaseApiClient.post(`/messages/heartbeat?userId=${userId}`, null);
+  } catch (error) {
+    console.warn('⚠️ [ChatService] Error sending heartbeat:', error);
+  }
+};
 
 /**
  * Get user full name and avatar
@@ -44,82 +150,30 @@ const getFullName = async (userId: string): Promise<{ fullName: string; avatar: 
   }
 
   try {
-    // Thử các endpoint theo thứ tự ưu tiên:
-    // 1. /profile/getname/${userId} - endpoint đơn giản chỉ lấy tên (giống ProfileService.ts line 60)
-    // 2. /profile/${userId} - endpoint đầy đủ
-    // 3. /users/${userId} - fallback
-
-    // Thử 1: /profile/getname/ endpoint (đơn giản, nhanh hơn)
+    // Sử dụng /profile/getname endpoint trực tiếp (endpoint chính)
+    // /users endpoint thường bị lỗi 500, bỏ qua
+    
     try {
       const nameData = await BaseApiClient.get(`/profile/getname/${userId}`) as any;
       const fullName = nameData.fullName || nameData.name || userId;
       let avatarUrl = nameData.avatar ? URL_IMAGE + nameData.avatar.substring(1) : '';
-        
-      // Lấy role từ profile endpoint đầy đủ nếu cần
-      try {
-        const profileData = await BaseApiClient.get(`/profile/${userId}`) as any;
-        const role = profileData?.role || 'tenant';
-        const result = { fullName, avatar: avatarUrl, role: role as 'landlord' | 'tenant' | 'admin' };
-        userInfoCache.set(userId, { ...result, timestamp: Date.now() });
-        //console.log(' User info fetched (getname + profile):', { userId, fullName, hasAvatar: !!avatarUrl });
-        
-        // Nếu không có avatar từ getname, thử users endpoint
-        if (!result.avatar) {
-          try {
-            const userData = await BaseApiClient.get(`/users/${userId}`) as any;
-            
-            // Sử dụng avatar từ API và construct URL
-            let userAvatarUrl = userData.avatar ? URL_IMAGE + userData.avatar.substring(1) : '';
-            
-            if (userAvatarUrl) {
-              result.avatar = userAvatarUrl;
-              userInfoCache.set(userId, { ...result, timestamp: Date.now() });
-              //console.log('Avatar updated from users endpoint:', userAvatarUrl);
-            }
-          } catch (userError: any) {
-            console.warn(`Users endpoint error for avatar userId ${userId}:`, userError?.message || userError);
-          }
-        }
-        
-        return result;
-      } catch (profileError) {
-        console.warn('Failed to fetch profile for role, user:', userId, 'error:', (profileError as Error).message);
-        // Nếu không lấy được role, dùng tenant
-        const result = { fullName, avatar: avatarUrl, role: 'tenant' as const };
-        userInfoCache.set(userId, { ...result, timestamp: Date.now() });
-        //console.log('User info fetched (getname only):', { userId, fullName, hasAvatar: !!avatarUrl });
-        return result;
-      }
+      
+      // Lấy role từ response của getname endpoint (nếu có) hoặc dùng default
+      const role = nameData?.role || 'tenant';
+      
+      const result = { fullName, avatar: avatarUrl, role: role as 'landlord' | 'tenant' | 'admin' };
+      userInfoCache.set(userId, { ...result, timestamp: Date.now() });
+      
+      console.log('✅ User info fetched successfully:', { userId, fullName, hasAvatar: !!avatarUrl, role });
+      
+      return result;
 
     } catch (getNameError: any) {
-      console.warn(`Getname endpoint error for userId ${userId}:`, getNameError?.message || getNameError);
+      console.warn(`⚠️ Getname endpoint error for userId ${userId}:`, getNameError?.message || getNameError);
     }
 
-    // Thu 3: /users/${userId} endpoint (fallback)
-    try {
-      const userData = await BaseApiClient.get(`/users/${userId}`) as any;
-
-      // Su dung avatar tu API va construct URL
-      let avatarUrl = userData.avatar ? URL_IMAGE + userData.avatar.substring(1) : '';
-
-      const result = {
-        fullName: userData.fullName || userData.username || userId,
-        avatar: avatarUrl,
-        role: userData.role || 'tenant', // Assume tenant if no role specified
-      };
-
-      // Luu vao cache
-      userInfoCache.set(userId, { ...result, timestamp: Date.now() });
-
-      console.log('User info fetched (users endpoint):', { userId, fullName: result.fullName, hasAvatar: !!avatarUrl });
-
-      return result;
-    } catch (userError: any) {
-      console.warn(`Users endpoint error for userId ${userId}:`, userError?.message || userError);
-    }
-
-    // Nếu cả 2 endpoint đều fail, return default và cache để không gọi lại ngay
-    console.warn(`Both endpoints failed for userId: ${userId}, using default`);
+    // Nếu endpoint chính fail, return default và cache để không gọi lại ngay
+    console.warn(`⚠️ Failed to fetch user info for userId: ${userId}, using default`);
     const defaultInfo = { fullName: userId, avatar: '', role: 'tenant' as const };
     userInfoCache.set(userId, { ...defaultInfo, timestamp: Date.now() });
     return defaultInfo;

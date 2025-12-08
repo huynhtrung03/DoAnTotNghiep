@@ -13,6 +13,7 @@ import {
   deleteMessage,
   Message,
 } from "@/services/ChatService";
+import MessengerNotification from "@/services/notification/MesengerNotification";
 import ImageModal from "./ImageModal";
 import ContextMenu from "./ContextMenu";
 
@@ -46,12 +47,34 @@ export default function ChatClient({
     messageId: string;
   } | null>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState<boolean>(true);
+  const [senderName, setSenderName] = useState<string>("");
+  const [senderAvatar, setSenderAvatarUrl] = useState<string>("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollPositionRef = useRef<number>(0);
   const prevMessagesLength = useRef<number>(0);
+
+  // Get sender name and avatar from session
+  useEffect(() => {
+    if (session?.user) {
+      const fullName = session.user.userProfile?.fullName || "User";
+      setSenderName(fullName);
+      setSenderAvatarUrl(session.user.userProfile?.avatar || "");
+    }
+  }, [session]);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    MessengerNotification.requestNotificationPermission()
+      .then((granted) => {
+        console.log("📢 Notification permission:", granted ? "Granted ✅" : "Denied ❌");
+      })
+      .catch((error) => {
+        console.error("❌ Error requesting notification permission:", error);
+      });
+  }, []);
 
   // Lắng nghe tin nhắn
   useEffect(() => {
@@ -140,7 +163,39 @@ export default function ChatClient({
     setSending(true);
 
     try {
+      console.log("📤 [ChatClient] Sending text message:", { senderId, recipientId, text });
       await sendTextMessage(text, senderId, recipientId);
+      console.log("✅ [ChatClient] Text message sent to Firestore");
+      
+      // Gửi notification sau khi tin nhắn được gửi thành công
+      if (senderName) {
+        console.log("📢 [ChatClient] Attempting to send notification:", {
+          senderId,
+          senderName,
+          recipientId,
+          text,
+          senderAvatar,
+          sessionUserId: session?.user?.id
+        });
+        
+        try {
+          const notificationResult = await MessengerNotification.notifyTextMessage(
+            senderId,
+            senderName,
+            recipientId,
+            text,
+            senderAvatar,
+            session?.user?.id
+          );
+          console.log("✅ [ChatClient] Notification result:", notificationResult);
+        } catch (notificationError) {
+          console.error("❌ [ChatClient] Notification error:", notificationError);
+          // Không throw error - tin nhắn đã được gửi, chỉ notification thất bại
+        }
+      } else {
+        console.warn("⚠️ [ChatClient] senderName is empty, skipping notification");
+      }
+      
       // Focus lại input sau khi gửi thành công
       setTimeout(() => {
         if (inputRef.current) {
@@ -148,7 +203,7 @@ export default function ChatClient({
         }
       }, 100);
     } catch (err) {
-      console.error("Send message error:", err);
+      console.error("❌ [ChatClient] Send message error:", err);
       // Nếu gửi lỗi, giữ lại nội dung để người dùng có thể gửi lại
       setMsg(text);
     } finally {
@@ -177,7 +232,39 @@ export default function ChatClient({
     setUploadingImage(true);
 
     try {
-      await sendImageMessage(file, senderId, recipientId);
+      console.log("📤 [ChatClient] Uploading image:", { fileName: file.name, fileSize: file.size, senderId, recipientId });
+      const imageUrl = await sendImageMessage(file, senderId, recipientId);
+      console.log("✅ [ChatClient] Image uploaded to Firestore, URL:", imageUrl);
+      
+      // Gửi notification sau khi ảnh được gửi thành công
+      if (senderName && imageUrl) {
+        console.log("📢 [ChatClient] Attempting to send image notification:", {
+          senderId,
+          senderName,
+          recipientId,
+          imageUrl,
+          senderAvatar,
+          sessionUserId: session?.user?.id
+        });
+        
+        try {
+          const notificationResult = await MessengerNotification.notifyImageMessage(
+            senderId,
+            senderName,
+            recipientId,
+            imageUrl,
+            senderAvatar,
+            session?.user?.id
+          );
+          console.log("✅ [ChatClient] Image notification result:", notificationResult);
+        } catch (notificationError) {
+          console.error("❌ [ChatClient] Image notification error:", notificationError);
+          // Không throw error - ảnh đã được gửi, chỉ notification thất bại
+        }
+      } else {
+        console.warn("⚠️ [ChatClient] Missing senderName or imageUrl, skipping notification:", { senderName, imageUrl });
+      }
+      
       // Focus lại input sau khi gửi ảnh thành công
       setTimeout(() => {
         if (inputRef.current) {
@@ -185,7 +272,7 @@ export default function ChatClient({
         }
       }, 100);
     } catch (err) {
-      console.error("Upload image error:", err);
+      console.error("❌ [ChatClient] Upload image error:", err);
       alert("Gửi ảnh thất bại. Vui lòng thử lại.");
     } finally {
       setUploadingImage(false);
