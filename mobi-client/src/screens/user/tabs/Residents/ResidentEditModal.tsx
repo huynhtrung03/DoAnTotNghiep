@@ -9,6 +9,9 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  PanResponder,
+  GestureResponderEvent,
+  PanResponderGestureState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -513,6 +516,21 @@ export const ResidentEditModal: React.FC<ResidentEditModalProps> = ({
   const [showRelationshipSelector, setShowRelationshipSelector] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  // Pan responder for drag to dismiss
+  const panResponder = useMemo(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (evt, { dy }) => Math.abs(dy) > 10,
+      onPanResponderMove: () => {},
+      onPanResponderRelease: (evt, { dy }) => {
+        if (dy > 100) {
+          onClose();
+        }
+      },
+    }),
+    [onClose]
+  );
+
   // Initialize form when modal opens or resident changes
   useEffect(() => {
     if (!visible) return;
@@ -722,16 +740,15 @@ export const ResidentEditModal: React.FC<ResidentEditModalProps> = ({
         <View
           style={[
             residentEditModalStyles.container,
-,
-            { flex: 1 },
+            { flex: 1, flexDirection: 'column' },
           ]}
         >
           {/* Handle Bar */}
           <View
             style={[
               residentEditModalStyles.handleBar,
-,
             ]}
+            {...panResponder.panHandlers}
           />
 
           {/* Header */}
@@ -766,13 +783,14 @@ export const ResidentEditModal: React.FC<ResidentEditModalProps> = ({
           {/* Scroll Content */}
           <ScrollView
             contentContainerStyle={residentEditModalStyles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={!isLoading}
+            showsVerticalScrollIndicator={true}
+            scrollEnabled={true}
+            nestedScrollEnabled={true}
           >
             {/* Contract Selection */}
             <View style={residentEditModalStyles.section}>
               <FormField
-                label="Há»£p Ä‘á»“ng"
+                label="Hợp đồng"
                 required
                 error={errors.contractId}
 
@@ -901,7 +919,7 @@ export const ResidentEditModal: React.FC<ResidentEditModalProps> = ({
               <View style={residentEditModalStyles.dateRow}>
                 <View style={residentEditModalStyles.dateField}>
                   <FormField
-                    label="NgÃ y báº¯t Ä‘áº§u"
+                    label="Ngày bắt đầu"
                     required
                     error={errors.startDate}
 
@@ -928,7 +946,7 @@ export const ResidentEditModal: React.FC<ResidentEditModalProps> = ({
 
                 <View style={residentEditModalStyles.dateField}>
                   <FormField
-                    label="NgÃ y káº¿t thÃºc"
+                    label="Ngày kêt thúc"
                     required
                     error={errors.endDate}
 

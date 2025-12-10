@@ -594,6 +594,15 @@ export const residentCardStyles = StyleSheet.create({
     color: Colors.primary[700],
   },
 
+  cardDeleteButton: {
+    marginLeft: Spacing.sm,
+    padding: Spacing.xs,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.error[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   // Info Row
   infoRow: {
     flexDirection: 'row',
@@ -963,6 +972,7 @@ export const residentEditModalStyles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.lg,
+    flexGrow: 1,
   },
 
   section: {
@@ -1095,12 +1105,14 @@ export const residentEditModalStyles = StyleSheet.create({
   // Image Upload
   imageContainer: {
     marginBottom: Spacing.lg,
+    flex: 1,
   },
 
   imageLabel: {
     ...Typography.labelLarge,
     color: Colors.neutral[700],
     marginBottom: Spacing.sm,
+    fontWeight: '600',
   },
 
   imageUploadButton: {
@@ -1119,6 +1131,7 @@ export const residentEditModalStyles = StyleSheet.create({
     ...Typography.bodyMedium,
     color: Colors.neutral[600],
     marginTop: Spacing.sm,
+    textAlign: 'center',
   },
 
   imageUploadHint: {
@@ -1151,11 +1164,13 @@ export const residentEditModalStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.md,
+    zIndex: 10,
   },
 
   imageRow: {
     flexDirection: 'row',
     gap: Spacing.md,
+    justifyContent: 'space-between',
   },
 
   imageColumn: {

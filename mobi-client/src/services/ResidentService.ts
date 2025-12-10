@@ -18,6 +18,23 @@ export interface ResidentData {
   updatedAt?: string;
 }
 
+// Backend API response interface
+interface ResidentApiResponse {
+  id: string;
+  contractId: string;
+  fullName: string;
+  idNumber: string;
+  relationship: string;
+  startDate: string;
+  endDate: string;
+  note: string;
+  status: 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED';
+  idCardFrontUrl?: string;
+  idCardBackUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Backend endpoints for residents
 const BASE_URL = '/contracts';
 const TEMP_RESIDENTS_URL = '/temporary-residences';
@@ -27,6 +44,27 @@ const TEMP_RESIDENTS_URL = '/temporary-residences';
  * Sử dụng BaseApiClient để xử lý HTTP requests
  */
 export const ResidentService = {
+  /**
+   * Map API response to ResidentData format
+   * Converts idCardFrontUrl/idCardBackUrl to frontImageUrl/backImageUrl
+   */
+  mapApiResponse(apiResponse: ResidentApiResponse): ResidentData {
+    return {
+      id: apiResponse.id,
+      contractId: apiResponse.contractId,
+      fullName: apiResponse.fullName,
+      idNumber: apiResponse.idNumber,
+      relationship: apiResponse.relationship,
+      startDate: apiResponse.startDate,
+      endDate: apiResponse.endDate,
+      note: apiResponse.note,
+      status: apiResponse.status,
+      frontImageUrl: apiResponse.idCardFrontUrl,
+      backImageUrl: apiResponse.idCardBackUrl,
+      createdAt: apiResponse.createdAt,
+      updatedAt: apiResponse.updatedAt,
+    };
+  },
   /**
    * Lấy danh sách cư dân theo hợp đồng (sử dụng landlordId)
    * GET /api/temporary-residences/landlord/{landlordId}
@@ -74,9 +112,13 @@ export const ResidentService = {
     try {
       console.log(`📍 ResidentService.getByTenant - tenantId: ${tenantId}`);
       const endpoint = `${TEMP_RESIDENTS_URL}/tenant/${tenantId}`;
-      const residents = await BaseApiClient.get<ResidentData[]>(endpoint);
-      console.log(`✅ Lấy danh sách cư dân theo người thuê thành công - Số lượng: ${residents.length}`);
-      return residents;
+      const residents = await BaseApiClient.get<ResidentApiResponse[]>(endpoint);
+      
+      // Map API response to ResidentData format
+      const mappedResidents = residents.map(resident => this.mapApiResponse(resident));
+      
+      console.log(`✅ Lấy danh sách cư dân theo người thuê thành công - Số lượng: ${mappedResidents.length}`);
+      return mappedResidents;
     } catch (error: any) {
       console.error('❌ Lỗi lấy danh sách cư dân theo người thuê:', error.message);
       throw error;

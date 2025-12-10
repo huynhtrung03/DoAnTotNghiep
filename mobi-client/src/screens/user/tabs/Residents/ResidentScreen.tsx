@@ -144,8 +144,8 @@ export default function ResidentScreen() {
       if (storedUserId) {
         console.log(`✅ Đã lấy được userId: ${storedUserId}`);
         setUserId(storedUserId);
-        await loadResidents(storedUserId);
         await loadContracts(storedUserId);
+        await loadResidents(storedUserId);
       } else {
         console.error('❌ Không tìm thấy userId trong AsyncStorage');
         console.log('💾 Các key hiện có trong AsyncStorage:');
@@ -185,8 +185,18 @@ export default function ResidentScreen() {
     try {
       console.log(`🔍 ResidentScreen.loadResidents - tenantId: ${tenantId}`);
       const data = await ResidentService.getByTenant(tenantId);
-      console.log(`✅ Tải danh sách cư dân thành công - Số lượng: ${data.length}`);
-      setResidents(data);
+      
+      // Enrich residents with contract details
+      const enrichedResidents = data.map(resident => ({
+        ...resident,
+        roomTitle: contractMap[resident.contractId]?.roomTitle || 'Phòng không xác định',
+        contractName: contractMap[resident.contractId]?.contractName,
+        landlordName: contractMap[resident.contractId]?.landlordName,
+        monthlyRent: contractMap[resident.contractId]?.monthlyRent,
+      }));
+      
+      console.log(`✅ Tải danh sách cư dân thành công - Số lượng: ${enrichedResidents.length}`);
+      setResidents(enrichedResidents);
       setHasMore(false); // For now, load all at once. Pagination can be added later
     } catch (error) {
       console.error('❌ Lỗi tải danh sách cư dân:', error);
@@ -302,7 +312,7 @@ export default function ResidentScreen() {
   const handleDeleteResident = (resident: ExtendedResidentData) => {
     Alert.alert(
       'Xác nhận xóa',
-      `Bạn có chắc chắn muốn xóa cư dân "${resident.fullName}" không?`,
+      `Bạn có chắc chắn muốn xóa cư dân "${resident.fullName}" không?\n\nHành động này không thể hoàn tác.`,
       [
         {
           text: 'Hủy',
@@ -320,9 +330,10 @@ export default function ResidentScreen() {
               await ResidentService.deleteResident(resident.contractId, resident.id);
               Alert.alert('Thành công', 'Xóa cư dân thành công');
               await loadResidents(userId);
-            } catch (error) {
+            } catch (error: any) {
               console.error('❌ Lỗi xóa cư dân:', error);
-              Alert.alert('Lỗi', 'Không thể xóa cư dân');
+              const errorMessage = error?.message || 'Không thể xóa cư dân';
+              Alert.alert('Lỗi', errorMessage);
             }
           },
         },
@@ -382,85 +393,72 @@ export default function ResidentScreen() {
   // ============================================================================
 
   const renderHeader = () => (
-    <View
-      style={residentScreenStyles.header}
-    >
+    <View style={residentScreenStyles.header}>
       <View style={residentScreenStyles.headerContent}>
-        <View>
-          <Text
-            style={residentScreenStyles.headerTitle}
-          >
+        <View style={residentScreenStyles.headerLeft}>
+          <Text style={residentScreenStyles.headerTitle}>
             Cư dân
           </Text>
-          <Text
-            style={residentScreenStyles.headerSubtitle}
-          >
+          <Text style={residentScreenStyles.headerSubtitle}>
             {filteredResidents().length} cư dân
           </Text>
         </View>
+        {/* Add Button in Header */}
+        <Pressable
+          style={residentScreenStyles.headerAddButton}
+          onPress={() => {
+            setEditingResident(null);
+            setEditVisible(true);
+          }}
+        >
+          <Ionicons name="add" size={24} color="#FFFFFF" />
+        </Pressable>
       </View>
-      {/* Add Button in Header */}
-      <Pressable
-        style={residentScreenStyles.headerAddButton}
-        onPress={() => {
-          setEditingResident(null);
-          setEditVisible(true);
-        }}
-      >
-        <Ionicons name="add" size={24} color="#FFFFFF" />
-      </Pressable>
     </View>
   );
 
   const renderSearchBar = () => (
-    <View
-      style={[
-        residentScreenStyles.searchBar,
-      ]}
-    >
-      <View
-        style={residentScreenStyles.searchInputContainer}
-      >
-        <Ionicons
-          name="search"
-          size={18}
-          style={residentScreenStyles.searchIcon}
-        />
-        <TextInput
-          style={residentScreenStyles.searchInput}
-          placeholder="Tìm kiếm..."
-          placeholderTextColor="#9CA3AF"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery && (
-          <Pressable onPress={() => setSearchQuery('')}>
-            <Ionicons
-              name="close-circle"
-              size={18}
-              color="#9CA3AF"
-            />
-          </Pressable>
-        )}
-      </View>
+    <View style={residentScreenStyles.searchBar}>
+      <View style={residentScreenStyles.searchContainer}>
+        <View style={residentScreenStyles.searchInputContainer}>
+          <Ionicons
+            name="search"
+            size={18}
+            style={residentScreenStyles.searchIcon}
+          />
+          <TextInput
+            style={residentScreenStyles.searchInput}
+            placeholder="Tìm kiếm..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery && (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <Ionicons
+                name="close-circle"
+                size={18}
+                color="#9CA3AF"
+              />
+            </Pressable>
+          )}
+        </View>
 
-      <Pressable
-        style={[
-          residentScreenStyles.filterButton,
-        ]}
-        onPress={() => setFilterVisible(true)}
-      >
-        <Ionicons
-          name="funnel"
-          size={20}
+        <Pressable
           style={[
-            residentScreenStyles.filterIcon,
-            (filters.relationships.length > 0 || filters.statuses.length > 0) && {
-              color: '#3B82F6',
-            },
+            residentScreenStyles.filterButton,
+            (filters.relationships.length > 0 || filters.statuses.length > 0) &&
+              residentScreenStyles.filterButtonActive,
           ]}
-        />
-      </Pressable>
+          onPress={() => setFilterVisible(true)}
+        >
+          <Ionicons
+            name="funnel"
+            size={20}
+            color={filters.relationships.length > 0 || filters.statuses.length > 0 ? '#FFFFFF' : '#4B5563'}
+          />
+        </Pressable>
+      </View>
     </View>
   );
 

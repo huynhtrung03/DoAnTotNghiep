@@ -229,6 +229,15 @@ export const ResidentCard: React.FC<ResidentCardProps> = ({
                   {resident.relationship}
                 </Text>
               </View>
+              <Pressable
+                style={residentCardStyles.cardDeleteButton}
+                onPress={() => {
+                  handleReset();
+                  onDelete?.();
+                }}
+              >
+                <Ionicons name="trash" size={16} color="#EF4444" />
+              </Pressable>
             </View>
 
             {/* Info Row: Room + Status */}
