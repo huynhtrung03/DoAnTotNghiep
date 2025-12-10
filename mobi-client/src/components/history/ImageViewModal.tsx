@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ImageViewModalProps } from '../../types/rental';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -111,42 +111,44 @@ const ImageViewModal: React.FC<ImageViewModalProps> = ({
       onRequestClose={handleClose}
       statusBarTranslucent
     >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <View style={styles.container}>
-        {/* Close Button */}
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={handleClose}
-          activeOpacity={0.7}
-        >
-          <View style={styles.closeButtonInner}>
-            <Ionicons name="close" size={28} color="#FFF" />
-          </View>
-        </TouchableOpacity>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <View style={styles.container}>
+          {/* Close Button */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleClose}
+            activeOpacity={0.7}
+          >
+            <View style={styles.closeButtonInner}>
+              <Ionicons name="close" size={28} color="#FFF" />
+            </View>
+          </TouchableOpacity>
 
-        {/* Zoom Instructions */}
-        <View style={styles.instructionsContainer}>
-          <View style={styles.instructionBadge}>
-            <Ionicons name="expand-outline" size={16} color="#FFF" />
-            <View style={styles.instructionText}>
-              <Animated.Text style={styles.instructionTextContent}>
-                Pinch to zoom • Double tap to reset
-              </Animated.Text>
+          {/* Zoom Instructions */}
+          <View style={styles.instructionsContainer}>
+            <View style={styles.instructionBadge}>
+              <Ionicons name="expand-outline" size={16} color="#FFF" />
+              <View style={styles.instructionText}>
+                <Animated.Text style={styles.instructionTextContent}>
+                  Pinch to zoom • Double tap to reset
+                </Animated.Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Image with Gestures */}
-        <GestureDetector gesture={composedGesture}>
-          <Animated.View style={[styles.imageContainer, animatedStyle]}>
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.image}
-              resizeMode="contain"
-            />
-          </Animated.View>
-        </GestureDetector>
-      </View>
+          {/* Image with Gestures */}
+          <GestureDetector gesture={composedGesture}>
+            <Animated.View style={[styles.imageContainer, animatedStyle]}>
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            </Animated.View>
+          </GestureDetector>
+        </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 };

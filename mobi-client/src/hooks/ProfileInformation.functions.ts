@@ -6,12 +6,7 @@
  * 
  * Các functions bao gồm:
  * - loadProfile() - Load thông tin profile từ API
- * - loadBanks() - Load danh sách ngân hàng từ VietQR
- * - checkBankAccount() - Kiểm tra xác thực ngân hàng
- * - loadEmailNotifications() - Load cài đặt thông báo email
  * - handlePickImage() - Chọn ảnh mới cho avatar
- * - handleSelectBank() - Chọn ngân hàng từ picker
- * - handleToggleNotifications() - Bật/tắt thông báo email
  * - handleEdit() - Bắt đầu chế độ chỉnh sửa
  * - handleCancel() - Hủy chỉnh sửa
  * - handleSave() - Lưu thông tin đã chỉnh sửa
@@ -22,12 +17,8 @@ import * as ImagePicker from 'expo-image-picker';
 import {
   getProfileById,
   updateProfileWithAvatar,
-  getBanks,
-  isHaveBankAccount,
-  getEmailNotifications,
-  setEmailNotifications,
 } from '../services/ProfileService';
-import { UserProfile, Bank } from '../components/profile/types';
+import { UserProfile } from '../components/profile/types';
 
 /**
  * Interface cho parameters của các functions
@@ -46,15 +37,6 @@ export interface FunctionParams {
   setPhoneNumber: (phone: string) => void;
   setAvatarUri: (uri: string | null) => void;
   setNewAvatarFile: (file: any) => void;
-  setBankName: (name: string) => void;
-  setBinCode: (code: string) => void;
-  setBankNumber: (number: string) => void;
-  setAccountHolderName: (name: string) => void;
-  setBanks: (banks: Bank[]) => void;
-  setHasBankAccount: (has: boolean) => void;
-  setShowBankPicker: (show: boolean) => void;
-  setEmailNotificationsEnabled: (enabled: boolean) => void;
-  setLoadingNotifications: (loading: boolean) => void;
   // Current values
   profile: UserProfile | null;
   fullName: string;
@@ -62,10 +44,6 @@ export interface FunctionParams {
   phoneNumber: string;
   avatarUri: string | null;
   newAvatarFile: any;
-  bankName: string;
-  binCode: string;
-  bankNumber: string;
-  accountHolderName: string;
 }
 
 /**
@@ -76,7 +54,6 @@ export interface FunctionParams {
 export const createLoadProfile = (params: FunctionParams) => async () => {
   const { profileId, accessToken, setProfile, setLoading } = params;
   const { setFullName, setEmail, setPhoneNumber, setAvatarUri } = params;
-  const { setBankName, setBinCode, setBankNumber, setAccountHolderName } = params;
 
   try {
     setLoading(true);
@@ -99,12 +76,6 @@ export const createLoadProfile = (params: FunctionParams) => async () => {
         avatarUrl = `https://res.cloudinary.com${avatarUrl}`;
       }
       setAvatarUri(avatarUrl);
-      
-      // Populate bank info
-      setBankName(data.bankName || '');
-      setBinCode(data.binCode || '');
-      setBankNumber(data.bankNumber || '');
-      setAccountHolderName(data.accoutHolderName || ''); // Note: typo from backend
     }
   } catch (error: any) {
     console.error('Error loading profile:', error);
@@ -156,27 +127,7 @@ export const createCheckBankAccount = (params: FunctionParams) => async () => {
 };
 
 /**
- * FUNCTION 4: Load Email Notifications Settings
- * 
- * Load cài đặt thông báo email của user
- */
-export const createLoadEmailNotifications = (params: FunctionParams) => async () => {
-  const { userId, accessToken, setEmailNotificationsEnabled } = params;
-
-  try {
-    // Gọi API để lấy cài đặt thông báo
-    // API trả về object { emailNotifications: boolean }
-    const result = await getEmailNotifications(userId, accessToken);
-    setEmailNotificationsEnabled(result.emailNotifications);
-  } catch (error: any) {
-    // Không log error vì user có thể chưa có profile hoặc settings
-    // Chỉ set false (default value) và continue
-    setEmailNotificationsEnabled(false);
-  }
-};
-
-/**
- * FUNCTION 5: Handle Pick Image
+ * FUNCTION 4: Handle Pick Image
  * 
  * Mở image picker để chọn ảnh mới cho avatar
  */
@@ -236,42 +187,7 @@ export const createHandleSelectBank = (params: FunctionParams) => (bank: Bank) =
 };
 
 /**
- * FUNCTION 7: Handle Toggle Notifications
- * 
- * Bật/tắt thông báo email
- */
-export const createHandleToggleNotifications = (params: FunctionParams) => async (value: boolean) => {
-  const { accessToken, setEmailNotificationsEnabled, setLoadingNotifications } = params;
-
-  try {
-    setLoadingNotifications(true);
-    
-    // Gọi API để cập nhật settings
-    const success = await setEmailNotifications(value, accessToken);
-    
-    if (success) {
-      // Cập nhật state nếu thành công
-      setEmailNotificationsEnabled(value);
-      
-      Alert.alert(
-        'Thành công',
-        value 
-          ? 'Đã bật thông báo qua email' 
-          : 'Đã tắt thông báo qua email'
-      );
-    } else {
-      Alert.alert('Lỗi', 'Không thể cập nhật cài đặt thông báo');
-    }
-  } catch (error: any) {
-    console.error('Error toggling notifications:', error);
-    Alert.alert('Lỗi', 'Không thể cập nhật cài đặt thông báo: ' + error.message);
-  } finally {
-    setLoadingNotifications(false);
-  }
-};
-
-/**
- * FUNCTION 8: Handle Edit
+ * FUNCTION 7: Handle Edit
  * 
  * Bắt đầu chế độ chỉnh sửa
  */

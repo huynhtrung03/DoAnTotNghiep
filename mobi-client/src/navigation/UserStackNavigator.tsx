@@ -17,6 +17,7 @@ import ChangePasswordScreen from '../screens/auth/ChangePassword/ChangePassword'
 import HistoryScreen from '../screens/history/RentalHistoryScreen/HistoryScreen';
 import BankScreen from '../screens/user/tabs/bank/BankScreen';
 import PaymentResultScreen from '../screens/user/tabs/PaymentResult/PaymentResultScreen';
+import ResidentScreen from '../screens/user/tabs/Residents/ResidentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -102,7 +103,7 @@ export default function UserStackNavigator() {
           headerShown: false, // Màn hình có header riêng
         }}
       />
-      <Stack.Screen 
+      {/* <Stack.Screen 
         name="Users/Bank" 
         component={BankScreen}
         options={{
@@ -110,12 +111,21 @@ export default function UserStackNavigator() {
           headerBackTitle: 'Quay lại',
           headerShown: false, // Custom header trong component
         }}
-      />
+      /> */}
       <Stack.Screen 
         name="Users/PaymentResult" 
         component={PaymentResultScreen}
         options={{
           title: 'Kết quả thanh toán',
+          headerBackTitle: 'Quay lại',
+          headerShown: false, // Custom header trong component
+        }}
+      />
+      <Stack.Screen 
+        name="Users/Residents" 
+        component={ResidentScreen}
+        options={{
+          title: 'Cư dân của tôi',
           headerBackTitle: 'Quay lại',
           headerShown: false, // Custom header trong component
         }}

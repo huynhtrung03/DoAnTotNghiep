@@ -14,10 +14,6 @@ import * as ImagePicker from 'expo-image-picker';
 import {
   getProfileById,
   updateProfileWithAvatar,
-  getBanks,
-  isHaveBankAccount,
-  getEmailNotifications,
-  setEmailNotifications,
 } from '../../../../services/ProfileService';
 
 // Import Types
@@ -27,9 +23,6 @@ import { ProfileInformationProps, UserProfile, Bank } from '../../types';
 import AvatarSection from '../../components/AvatarSection';
 import PersonalInfoSection from '../../components/PersonalInfoSection';
 import AddressSection from '../../components/AddressSection';
-import BankSection from '../../components/BankSection';
-import NotificationsSection from '../../components/NotificationsSection';
-import BankPickerModal from '../../components/BankPickerModal';
 
 // Import Styles
 import { styles } from '../../../../styles/screens/user/ProfileInformation.styles';
@@ -38,12 +31,7 @@ import { styles } from '../../../../styles/screens/user/ProfileInformation.style
 import {
   FunctionParams,
   createLoadProfile,
-  createLoadBanks,
-  createCheckBankAccount,
-  createLoadEmailNotifications,
   createHandlePickImage,
-  createHandleSelectBank,
-  createHandleToggleNotifications,
   createHandleEdit,
   createHandleCancel,
   createHandleSave,
@@ -70,22 +58,6 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [newAvatarFile, setNewAvatarFile] = useState<any>(null);
-  
-  // Bank info
-  const [bankName, setBankName] = useState('');
-  const [binCode, setBinCode] = useState('');
-  const [bankNumber, setBankNumber] = useState('');
-  const [accountHolderName, setAccountHolderName] = useState('');
-  const [banks, setBanks] = useState<Bank[]>([]);
-  const [hasBankAccount, setHasBankAccount] = useState(false);
-  
-  // Bank picker modal
-  const [showBankPicker, setShowBankPicker] = useState(false);
-  const [searchBank, setSearchBank] = useState('');
-  
-  // Notifications
-  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
-  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   // ==================== CREATE FUNCTION PARAMETERS ====================
   
@@ -108,15 +80,6 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
     setPhoneNumber,
     setAvatarUri,
     setNewAvatarFile,
-    setBankName,
-    setBinCode,
-    setBankNumber,
-    setAccountHolderName,
-    setBanks,
-    setHasBankAccount,
-    setShowBankPicker,
-    setEmailNotificationsEnabled,
-    setLoadingNotifications,
     // Current values
     profile,
     fullName,
@@ -124,10 +87,6 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
     phoneNumber,
     avatarUri,
     newAvatarFile,
-    bankName,
-    binCode,
-    bankNumber,
-    accountHolderName,
   };
 
   // ==================== CREATE FUNCTIONS ====================
@@ -137,12 +96,7 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
    * Mỗi function được inject với functionParams
    */
   const loadProfile = createLoadProfile(functionParams);
-  const loadBanks = createLoadBanks(functionParams);
-  const checkBankAccount = createCheckBankAccount(functionParams);
-  const loadEmailNotifications = createLoadEmailNotifications(functionParams);
   const handlePickImage = createHandlePickImage(functionParams);
-  const handleSelectBank = createHandleSelectBank(functionParams);
-  const handleToggleNotifications = createHandleToggleNotifications(functionParams);
   const handleEdit = createHandleEdit(functionParams);
   const handleCancel = createHandleCancel(functionParams);
   const handleSave = createHandleSave(functionParams);
@@ -160,9 +114,6 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
    */
   useEffect(() => {
     loadProfile();
-    loadBanks();
-    checkBankAccount();
-    loadEmailNotifications();
   }, [profileId]); // Chỉ chạy lại khi profileId thay đổi
 
   // ==================== RENDER ====================
@@ -234,43 +185,7 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
 
         {/* ADDRESS - Chỉ hiển thị nếu user có địa chỉ */}
         {profile?.address && <AddressSection address={profile.address} />}
-
-        {/* BANK INFO */}
-        <BankSection
-          hasBankAccount={hasBankAccount}
-          bankName={bankName}
-          binCode={binCode}
-          bankNumber={bankNumber}
-          accountHolderName={accountHolderName}
-          isEditing={editing}
-          onChangeBankName={setBankName}
-          onChangeBinCode={setBinCode}
-          onChangeBankNumber={setBankNumber}
-          onChangeAccountHolder={setAccountHolderName}
-          onOpenBankPicker={() => setShowBankPicker(true)}
-        />
-
-        {/* NOTIFICATIONS */}
-        <NotificationsSection
-          emailNotificationsEnabled={emailNotificationsEnabled}
-          loadingNotifications={loadingNotifications}
-          onToggleNotifications={handleToggleNotifications}
-        />
       </ScrollView>
-
-      {/* BANK PICKER MODAL - Modal slide up để chọn ngân hàng */}
-      <BankPickerModal
-        visible={showBankPicker}
-        banks={banks}
-        selectedBankBin={binCode}
-        searchQuery={searchBank}
-        onSearch={setSearchBank}
-        onSelectBank={handleSelectBank}
-        onClose={() => {
-          setShowBankPicker(false);
-          setSearchBank(''); // Reset search khi đóng modal
-        }}
-      />
     </View>
   );
 };

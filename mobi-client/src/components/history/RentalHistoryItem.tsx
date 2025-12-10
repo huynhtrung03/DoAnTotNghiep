@@ -89,6 +89,23 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Room Image */}
+      {item.roomImage && (
+        <TouchableOpacity
+          onPress={() => onPressRoomDetail(item.idRoom)}
+          style={styles.roomImageContainer}
+        >
+          <Image
+            source={{ uri: `${URL_IMAGE}${item.roomImage.startsWith('/') ? item.roomImage.slice(1) : item.roomImage}` }}
+            style={styles.roomImage}
+            resizeMode="cover"
+          />
+          <View style={styles.roomImageOverlay}>
+            <Ionicons name="expand-outline" size={20} color="#FFF" />
+          </View>
+        </TouchableOpacity>
+      )}
+
       {/* Header: Room Name & Status */}
       <View style={styles.header}>
         <View style={styles.roomInfo}>

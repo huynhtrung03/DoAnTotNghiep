@@ -11,7 +11,7 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ContractData } from '../../../../../types/types';
@@ -19,6 +19,7 @@ import { ContractService } from '../../../../../services/ContractService';
 import { URL_IMAGE } from '../../../../../services/Constant';
 import Colors from '../../../../../styles/colors';
 import styles from './ContractCardDetail.styles';
+import TenantBillsTab from './TenantBillsTab';
 
 interface ContractCardDetailProps {
   contract: ContractData;
@@ -49,6 +50,7 @@ export default function ContractCardDetail({
   onContractUpdate,
   messageApi,
 }: ContractCardDetailProps) {
+  const [activeTab, setActiveTab] = useState<'contract' | 'bills'>('contract');
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -241,35 +243,77 @@ export default function ContractCardDetail({
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {fetchLoading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 50 }}>
-          <ActivityIndicator size="large" color="#1976D2" />
-          <Text style={{ marginTop: 10, color: '#757575' }}>Đang tải thông tin hợp đồng...</Text>
-        </View>
-      ) : (
-        <>
-          {/* Header with Upload Button */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Thông tin hợp đồng</Text>
-            <TouchableOpacity
-              style={[styles.uploadButton, uploadLoading && styles.uploadButtonDisabled]}
-              onPress={handleImageUpload}
-              disabled={uploadLoading}
-            >
-              <Ionicons name="cloud-upload-outline" size={20} color="#FFF" />
-              <Text style={styles.uploadButtonText}>
-                {uploadLoading ? 'Đang tải...' : 'Tải ảnh hợp đồng'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+    <View style={{ flex: 1, backgroundColor: '#FFF' }}>
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'contract' && styles.tabButtonActive,
+          ]}
+          onPress={() => setActiveTab('contract')}
+        >
+          <Ionicons 
+            name="document-text-outline" 
+            size={18} 
+            color={activeTab === 'contract' ? Colors.primary : '#9E9E9E'} 
+          />
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'contract' && styles.tabButtonTextActive,
+            ]}
+          >
+            Hợp Đồng
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'bills' && styles.tabButtonActive,
+          ]}
+          onPress={() => setActiveTab('bills')}
+        >
+          <MaterialCommunityIcons 
+            name="receipt" 
+            size={18} 
+            color={activeTab === 'bills' ? Colors.primary : '#9E9E9E'} 
+          />
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'bills' && styles.tabButtonTextActive,
+            ]}
+          >
+            Hóa Đơn
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Indicator */}
+      <View style={styles.tabIndicator}>
+        <View
+          style={[
+            styles.tabIndicatorBar,
+            activeTab === 'bills' && styles.tabIndicatorBarRight,
+          ]}
+        />
+      </View>
+
+      {/* Tab Content */}
+      {activeTab === 'contract' ? (
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+          {fetchLoading ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 50 }}>
+              <ActivityIndicator size="large" color="#1976D2" />
+              <Text style={{ marginTop: 10, color: '#757575' }}>Đang tải thông tin hợp đồng...</Text>
+            </View>
+          ) : (
+            <>
 
       {/* Contract Information Cards */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          <Ionicons name="document-text-outline" size={18} color="#1976D2" />{' '}
-          Chi tiết hợp đồng
-        </Text>
 
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
@@ -416,6 +460,15 @@ export default function ContractCardDetail({
           <Text style={styles.editButtonText}>Chỉnh sửa hợp đồng</Text>
         </TouchableOpacity>
       </View>
+            </>
+          )}
+        </ScrollView>
+      ) : (
+        <TenantBillsTab
+          contract={displayContract}
+          onContractUpdate={onContractUpdate}
+        />
+      )}
 
       {/* Edit Modal */}
       <Modal
@@ -559,8 +612,6 @@ export default function ContractCardDetail({
           />
         )}
       </Modal>
-        </>
-      )}
-    </ScrollView>
+    </View>
   );
 }

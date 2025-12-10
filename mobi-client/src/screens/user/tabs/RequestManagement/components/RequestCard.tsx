@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RequirementDetail } from '../../../../../services/Requirements';
-import { styles } from '../styles';
-import Colors from '../../../../../styles/colors';
+import { styles, RequestColors } from '../styles';
 
 interface RequestCardProps {
   request: RequirementDetail;
@@ -20,13 +19,37 @@ const RequestCard: React.FC<RequestCardProps> = ({
   const getStatusInfo = (status: number) => {
     switch (status) {
       case 0:
-        return { text: 'Not Processed', color: '#fa8c16' }; // Orange
+        return { 
+          text: 'Chờ xử lý', 
+          bg: RequestColors.pending.bg,
+          textColor: RequestColors.pending.text,
+          border: RequestColors.pending.border,
+          icon: 'time-outline' as const,
+        };
       case 1:
-        return { text: 'Completed', color: '#52c41a' }; // Green
+        return { 
+          text: 'Đã hoàn thành', 
+          bg: RequestColors.completed.bg,
+          textColor: RequestColors.completed.text,
+          border: RequestColors.completed.border,
+          icon: 'checkmark-circle' as const,
+        };
       case 2:
-        return { text: 'Rejected', color: '#f5222d' }; // Red
+        return { 
+          text: 'Bị từ chối', 
+          bg: RequestColors.rejected.bg,
+          textColor: RequestColors.rejected.text,
+          border: RequestColors.rejected.border,
+          icon: 'close-circle' as const,
+        };
       default:
-        return { text: 'Unknown', color: '#d9d9d9' }; // Gray
+        return { 
+          text: 'Không xác định', 
+          bg: '#F5F5F5',
+          textColor: '#9CA3AF',
+          border: '#E5E7EB',
+          icon: 'help-circle' as const,
+        };
     }
   };
 
@@ -54,86 +77,105 @@ const RequestCard: React.FC<RequestCardProps> = ({
   const imageUrl = getImageUrl(request.imageUrl);
 
   return (
-    <View style={styles.requestItem}>
-      {/* Header: Room name + Status */}
-      <View style={styles.requestHeader}>
-        <Text style={styles.roomName} numberOfLines={2}>
-          {request.roomName || 'Phòng không xác định'}
-        </Text>
-        <View style={[styles.statusBadge, { backgroundColor: statusInfo.color }]}>
-          <Text style={styles.statusText}>{statusInfo.text}</Text>
-        </View>
-      </View>
-
-      {/* Image */}
-      {imageUrl ? (
-        <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.requestImage}
-            resizeMode="cover"
-          />
-        </View>
-      ) : (
-        <View style={styles.noImage}>
-          <Text style={styles.noImageText}>No Image</Text>
-        </View>
-      )}
-
-      {/* Description */}
-      <View style={styles.requestBody}>
-        <Text style={styles.label}>Request Description:</Text>
-        <Text style={styles.description} numberOfLines={3}>
-          {request.description}
-        </Text>
-      </View>
-
-      {/* Footer: Date + Actions */}
-      <View style={styles.footer}>
-        <Text style={styles.date}>
-          {formatDate(request.createdAt)}
-        </Text>
-
-        <View style={styles.actions}>
-          {/* Edit Button */}
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              canEdit ? styles.editButton : styles.disabledButton,
-            ]}
-            onPress={() => onEdit(request)}
-            disabled={!canEdit}
-          >
-            <Ionicons 
-              name="create-outline" 
-              size={18} 
-              color={canEdit ? Colors.textWhite : Colors.textSecondary} 
-            />
-            <Text
-              style={[
-                styles.actionButtonText,
-                canEdit ? styles.editButtonText : styles.disabledButtonText,
-              ]}
-            >
-              Edit
+    <Pressable 
+      style={({ pressed }) => [
+        styles.requestCard,
+        pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+      ]}
+      onPress={() => canViewCompletion && onViewCompletion(request)}
+      disabled={!canViewCompletion}
+    >
+      {/* Card Header */}
+      <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderLeft}>
+          <Text style={styles.cardRoomName} numberOfLines={2}>
+            {request.roomTitle || 'Phòng không xác định'}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="calendar-outline" size={12} color="#9CA3AF" />
+            <Text style={[styles.cardDate, { marginLeft: 4 }]}>
+              {formatDate(request.createdDate)}
             </Text>
-          </TouchableOpacity>
+          </View>
+        </View>
+        
+        {/* Status Badge */}
+        <View style={[
+          styles.statusBadge, 
+          { 
+            backgroundColor: statusInfo.bg,
+            borderColor: statusInfo.border,
+          }
+        ]}>
+          <Ionicons name={statusInfo.icon} size={14} color={statusInfo.textColor} />
+          <Text style={[styles.statusBadgeText, { color: statusInfo.textColor }]}>
+            {statusInfo.text}
+          </Text>
+        </View>
+      </View>
 
-          {/* View Completion Button */}
-          {canViewCompletion && (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.viewButton]}
-              onPress={() => onViewCompletion(request)}
-            >
-              <Ionicons name="eye-outline" size={18} color={Colors.textWhite} />
-              <Text style={[styles.actionButtonText, styles.viewButtonText]}>
-                View
-              </Text>
-            </TouchableOpacity>
+      {/* Card Content */}
+      <View style={styles.cardContent}>
+        {/* Thumbnail */}
+        <View style={styles.cardThumbnail}>
+          {imageUrl ? (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.cardThumbnailImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.cardThumbnailPlaceholder}>
+              <Ionicons name="image-outline" size={32} color="#D1D5DB" />
+            </View>
           )}
         </View>
+
+        {/* Info */}
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardDescription} numberOfLines={3}>
+            {request.description}
+          </Text>
+        </View>
       </View>
-    </View>
+
+      {/* Card Footer - Actions */}
+      <View style={styles.cardFooter}>
+        {/* Edit Button */}
+        <TouchableOpacity
+          style={[
+            styles.cardActionButton,
+            canEdit ? styles.editButton : styles.disabledButton,
+          ]}
+          onPress={() => onEdit(request)}
+          disabled={!canEdit}
+        >
+          <Ionicons 
+            name="create-outline" 
+            size={16} 
+            color={canEdit ? '#1976D2' : '#BDBDBD'} 
+          />
+          <Text
+            style={canEdit ? styles.editButtonText : styles.disabledButtonText}
+          >
+            Chỉnh sửa
+          </Text>
+        </TouchableOpacity>
+
+        {/* View Completion Button */}
+        {canViewCompletion && (
+          <TouchableOpacity
+            style={[styles.cardActionButton, styles.viewButton]}
+            onPress={() => onViewCompletion(request)}
+          >
+            <Ionicons name="eye-outline" size={16} color="#7B1FA2" />
+            <Text style={styles.viewButtonText}>
+              Xem chi tiết
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </Pressable>
   );
 };
 

@@ -28,7 +28,7 @@ import { useFavoriteStore } from '../../../stores/FavoriteStore';
 import {
   addFavorite as addFavoriteAPI,
   removeFavorite as removeFavoriteAPI,
-  getFavoriteCount
+  getAllFavoriteIds
 } from '../../../services/FavoriteService';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -120,7 +120,8 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
     getFavoriteCount: getLocalFavoriteCount,
     setFavoriteCount: setStoreFavoriteCount,
     incrementFavoriteCount,
-    decrementFavoriteCount
+    decrementFavoriteCount,
+    setFavoriteRoomIds
   } = useFavoriteStore();
 
   const [room, setRoom] = useState<RoomDetail | null>(null);
@@ -130,7 +131,6 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
   const [fullscreenVisible, setFullscreenVisible] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [favoriteCount, setFavoriteCount] = useState(0);
   const [isProcessingFavorite, setIsProcessingFavorite] = useState(false);
 
   const isFavorite = favoriteRoomIds.has(roomId);
@@ -144,16 +144,20 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
   useEffect(() => {
     loadRoomDetails();
     checkLoginStatus();
-    loadFavoriteCount();
+    reloadFavorites();
   }, [roomId]);
 
-  // Update favorite count from store
-  useEffect(() => {
-    const count = getLocalFavoriteCount(roomId);
-    if (count > 0) {
-      setFavoriteCount(count);
+  const reloadFavorites = async () => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (token) {
+        const favoriteIds = await getAllFavoriteIds();
+        setFavoriteRoomIds(favoriteIds);
+      }
+    } catch (error) {
+      console.error('Error reloading favorites:', error);
     }
-  }, [roomId, getLocalFavoriteCount]);
+  };
 
   const checkLoginStatus = async () => {
     try {
@@ -165,25 +169,28 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
     }
   };
 
-  const loadFavoriteCount = async () => {
-    try {
-      const count = await getFavoriteCount(roomId);
-      setFavoriteCount(count);
-      setStoreFavoriteCount(roomId, count);
-    } catch (error) {
-      console.error('Error loading favorite count:', error);
-    }
-  };
+
 
   const loadRoomDetails = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getRoomById(roomId);
-      if (data) {
-        setRoom(data);
+      
+      const roomFromParams = route.params?.room;
+      if (roomFromParams) {
+        setRoom(roomFromParams);
       } else {
-        setError('Không tìm thấy thông tin phòng');
+        try {
+          const data = await getRoomById(roomId);
+          if (data) {
+            setRoom(data);
+          } else {
+            setError('Không tìm thấy thông tin phòng');
+          }
+        } catch (apiError: any) {
+          console.warn('getRoomById API failed, using params data');
+          setError('Không thể tải thông tin phòng từ API');
+        }
       }
     } catch (err) {
       console.error('Error loading room details:', err);
@@ -241,7 +248,6 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
     }
 
     if (isProcessingFavorite) return;
-
     setIsProcessingFavorite(true);
     const wasAlreadyFavorite = isFavorite;
 
@@ -253,8 +259,7 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
         if (success) {
           removeFavorite(roomId);
           decrementFavoriteCount(roomId);
-          setFavoriteCount(prev => Math.max(0, prev - 1));
-          console.log(` Removed from favorites: ${roomId}`);
+          console.log('✓ Removed from favorites:', roomId);
         } else {
           Alert.alert('Lỗi', 'Không thể xóa khỏi danh sách yêu thích');
         }
@@ -265,8 +270,7 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
         if (success) {
           addFavorite(roomId);
           incrementFavoriteCount(roomId);
-          setFavoriteCount(prev => prev + 1);
-          console.log(` Added to favorites: ${roomId}`);
+          console.log('✓ Added to favorites:', roomId);
         } else {
           Alert.alert('Lỗi', 'Không thể thêm vào danh sách yêu thích');
         }
@@ -389,15 +393,15 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
                 onPress={handleFavorite}
                 disabled={isProcessingFavorite}
               >
-                <Ionicons
+              <Ionicons
                   name={isFavorite ? "heart" : "heart-outline"}
                   size={24}
                   color={isFavorite ? "#EF4444" : "#FFFFFF"}
                 />
-                {favoriteCount > 0 && (
+                {getLocalFavoriteCount(roomId) > 0 && (
                   <View style={styles.favoriteCountBadge}>
                     <Text style={styles.favoriteCountText}>
-                      {favoriteCount > 99 ? '99+' : favoriteCount}
+                      {getLocalFavoriteCount(roomId) > 99 ? '99+' : getLocalFavoriteCount(roomId)}
                     </Text>
                   </View>
                 )}

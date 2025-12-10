@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RequirementDetail } from '../../../../../services/Requirements';
-import { styles } from '../styles';
+import { styles, RequestColors } from '../styles';
 
 interface CompletionViewModalProps {
   visible: boolean;
@@ -42,7 +43,6 @@ const CompletionViewModal: React.FC<CompletionViewModalProps> = ({
     return `https://res.cloudinary.com${imageUrl}`;
   };
 
-  // ===== RENDER =====
   if (!request || request.status !== 1) return null;
 
   const imageUrl = getImageUrl(request.imageUrl);
@@ -51,40 +51,59 @@ const CompletionViewModal: React.FC<CompletionViewModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable 
+          style={styles.modalContainer}
+          onPress={(e) => e.stopPropagation()}
+        >
+          {/* Handle Bar */}
+          <View style={styles.modalHandle} />
+
           {/* Header */}
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Completion Details</Text>
+            <Text style={styles.modalTitle}>Chi tiết hoàn thành</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Ionicons name="close" size={20} color="#6B7280" />
             </TouchableOpacity>
           </View>
 
           {/* Body */}
-          <ScrollView style={styles.modalBody}>
-            <View style={{ padding: 16 }}>
+          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalContent}>
+              {/* Success Badge */}
+              <View style={styles.successBadge}>
+                <Ionicons 
+                  name="checkmark-circle" 
+                  size={48} 
+                  color={RequestColors.completed.text} 
+                  style={styles.successIcon}
+                />
+                <Text style={styles.successText}>
+                  Yêu cầu đã được xử lý thành công
+                </Text>
+              </View>
+
               {/* Room Info */}
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Room:</Text>
-                <Text style={styles.value}>
-                  {request.roomName || 'Phòng không xác định'}
+              <View style={styles.completionSection}>
+                <Text style={styles.completionLabel}>Phòng:</Text>
+                <Text style={styles.completionValue}>
+                  {request.roomTitle || 'Phòng không xác định'}
                 </Text>
               </View>
 
               {/* Original Request */}
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Original Request:</Text>
+              <View style={styles.completionSection}>
+                <Text style={styles.completionLabel}>Yêu cầu ban đầu:</Text>
                 <Text style={styles.description}>{request.description}</Text>
               </View>
 
               {/* Original Image */}
               {imageUrl && (
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Request Image:</Text>
+                <View style={styles.completionSection}>
+                  <Text style={styles.completionLabel}>Ảnh yêu cầu:</Text>
                   <Image
                     source={{ uri: imageUrl }}
                     style={styles.requestImage}
@@ -94,68 +113,47 @@ const CompletionViewModal: React.FC<CompletionViewModalProps> = ({
               )}
 
               {/* Divider */}
-              <View
-                style={{
-                  height: 1,
-                  backgroundColor: '#e0e0e0',
-                  marginVertical: 20,
-                }}
-              />
+              <View style={styles.completionDivider} />
 
               {/* Completion Note */}
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Completion Note:</Text>
-                <View
-                  style={{
-                    backgroundColor: '#f6ffed',
-                    padding: 12,
-                    borderRadius: 6,
-                    borderLeftWidth: 3,
-                    borderLeftColor: '#52c41a',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, color: '#389e0d', lineHeight: 20 }}>
-                    {request.completionNote || 'No completion note'}
+              <View style={styles.completionSection}>
+                <Text style={styles.completionLabel}>Ghi chú hoàn thành:</Text>
+                <View style={styles.completionNoteBox}>
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={20} 
+                    color={RequestColors.completed.text}
+                    style={{ marginBottom: 8 }} 
+                  />
+                  <Text style={styles.completionNoteText}>
+                    {request.completionNote || 'Không có ghi chú'}
                   </Text>
                 </View>
               </View>
 
               {/* Completion Date */}
               {request.updatedAt && (
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Completed At:</Text>
-                  <Text style={styles.value}>
-                     {formatDate(request.updatedAt)}
-                  </Text>
+                <View style={styles.completionSection}>
+                  <Text style={styles.completionLabel}>Thời gian hoàn thành:</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                    <Ionicons name="time-outline" size={16} color="#9CA3AF" />
+                    <Text style={[styles.completionValue, { marginLeft: 6 }]}>
+                      {formatDate(request.updatedAt)}
+                    </Text>
+                  </View>
                 </View>
               )}
-
-              {/* Success Badge */}
-              <View
-                style={{
-                  backgroundColor: '#52c41a',
-                  padding: 16,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                  marginTop: 16,
-                }}
-              >
-                <Ionicons name="checkmark-circle" size={40} color="#fff" style={{ marginBottom: 8 }} />
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
-                  Request has been processed
-                </Text>
-              </View>
             </View>
           </ScrollView>
 
           {/* Footer */}
           <View style={styles.modalFooter}>
             <TouchableOpacity style={styles.primaryButton} onPress={onClose}>
-              <Text style={styles.primaryButtonText}>Close</Text>
+              <Text style={styles.primaryButtonText}>Đóng</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };

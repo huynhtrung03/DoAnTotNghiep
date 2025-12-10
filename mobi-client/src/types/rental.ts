@@ -24,6 +24,7 @@ export interface RentalData {
   isRemoved?: number;
   userId?: string | number;
   imageProof?: string;
+  roomImage?: string;
 }
 
 export enum BookingStatus {
@@ -48,6 +49,7 @@ export interface BookingResponse {
     ownerName: string;
     ownerPhone: string;
     priceMonth: number;
+    thumbnail?: string;
     address: {
       street: string;
       ward: {

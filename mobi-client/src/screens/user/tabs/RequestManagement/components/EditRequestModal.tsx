@@ -9,16 +9,16 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Colors from '../../../../../styles/colors';
 import * as ImagePicker from 'expo-image-picker';
 import {
   RequirementsService,
   RequirementDetail,
   updateRequirementWithImage,
 } from '../../../../../services/Requirements';
-import { styles } from '../styles';
+import { styles, RequestColors } from '../styles';
 
 interface EditRequestModalProps {
   visible: boolean;
@@ -42,16 +42,13 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
   useEffect(() => {
     if (request) {
       setDescription(request.description || '');
-      setNewImageFile(null); // Reset khi mở modal mới
+      setNewImageFile(null);
     }
   }, [request]);
 
   // ===== PICK IMAGE =====
   const handlePickImage = async () => {
     try {
-      console.log('️ Mở thư viện ảnh...');
-      
-      // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
@@ -61,7 +58,6 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
         return;
       }
 
-      // Pick image
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -78,11 +74,8 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
           type: 'image/jpeg',
           name: fileName,
         });
-        
-        console.log(' Đã chọn ảnh:', fileName);
       }
     } catch (error: any) {
-      console.error(' Lỗi khi chọn ảnh:', error.message);
       Alert.alert('Lỗi', 'Không thể chọn ảnh');
     }
   };
@@ -90,12 +83,10 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
   // ===== REMOVE IMAGE =====
   const handleRemoveImage = () => {
     setNewImageFile(null);
-    console.log('️ Đã xóa ảnh mới');
   };
 
   // ===== SUBMIT =====
   const handleSubmit = async () => {
-    // Validation
     if (!description.trim()) {
       Alert.alert('Thiếu thông tin', 'Vui lòng nhập mô tả yêu cầu');
       return;
@@ -117,14 +108,9 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
     }
 
     try {
-      console.log(` Đang cập nhật yêu cầu ${request.id}...`);
       setUploading(true);
 
-      // Case 1: Có ảnh mới → Upload ảnh
       if (newImageFile) {
-        console.log(' Đang upload ảnh mới...');
-        
-        // Chuyển đổi sang File object (cần cho updateRequirementWithImage)
         const imageFile = {
           uri: newImageFile.uri,
           type: newImageFile.type,
@@ -136,22 +122,15 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
           description.trim(),
           imageFile
         );
-        
-        console.log(' Đã cập nhật yêu cầu với ảnh mới');
-      } 
-      // Case 2: Chỉ cập nhật mô tả
-      else {
-        console.log(' Đang cập nhật mô tả...');
+      } else {
         await RequirementsService.updateRequirement(request.id, description.trim());
-        console.log(' Đã cập nhật mô tả');
       }
 
-      Alert.alert('Thành công', 'Request updated successfully!', [
+      Alert.alert('Thành công', 'Cập nhật yêu cầu thành công!', [
         { text: 'OK', onPress: onSuccess },
       ]);
     } catch (error: any) {
-      console.error(' Lỗi khi cập nhật yêu cầu:', error.message);
-      Alert.alert('Lỗi', error.message || 'Failed to update request.');
+      Alert.alert('Lỗi', error.message || 'Không thể cập nhật yêu cầu');
     } finally {
       setUploading(false);
     }
@@ -164,7 +143,6 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
     return `https://res.cloudinary.com${imageUrl}`;
   };
 
-  // ===== RENDER =====
   if (!request) return null;
 
   const currentImageUrl = getImageUrl(request.imageUrl);
@@ -173,57 +151,66 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable 
+          style={styles.modalContainer}
+          onPress={(e) => e.stopPropagation()}
+        >
+          {/* Handle Bar */}
+          <View style={styles.modalHandle} />
+
           {/* Header */}
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Edit Request</Text>
+            <Text style={styles.modalTitle}>Chỉnh sửa yêu cầu</Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={onClose}
               disabled={uploading}
             >
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Ionicons name="close" size={20} color="#6B7280" />
             </TouchableOpacity>
           </View>
 
           {/* Body */}
-          <ScrollView style={styles.modalBody}>
-            <View style={{ padding: 16 }}>
+          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalContent}>
               {/* Room Name (Read-only) */}
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Room Name</Text>
+                <Text style={styles.formLabel}>Phòng</Text>
                 <TextInput
                   style={[styles.input, styles.disabledInput]}
-                  value={request.roomName || 'Phòng không xác định'}
+                  value={request.roomTitle || 'Phòng không xác định'}
                   editable={false}
                 />
               </View>
 
               {/* Description */}
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Request Description *</Text>
+                <Text style={styles.formLabel}>
+                  Mô tả yêu cầu <Text style={styles.required}>*</Text>
+                </Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="Enter request description"
+                  placeholder="Nhập mô tả chi tiết yêu cầu của bạn"
+                  placeholderTextColor="#9CA3AF"
                   multiline
                   maxLength={500}
                   editable={!uploading}
                 />
                 <Text style={styles.characterCount}>
-                  {description.length}/500 characters
+                  {description.length}/500 ký tự
                 </Text>
               </View>
 
               {/* Current Image */}
               {currentImageUrl && !newImageFile && (
                 <View style={styles.formGroup}>
-                  <Text style={styles.currentImageLabel}>Current image:</Text>
+                  <Text style={styles.currentImageLabel}>Ảnh hiện tại:</Text>
                   <Image
                     source={{ uri: currentImageUrl }}
                     style={styles.currentImage}
@@ -234,25 +221,25 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
 
               {/* Image Picker */}
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Update Image (Optional)</Text>
+                <Text style={styles.formLabel}>Cập nhật ảnh (Tùy chọn)</Text>
                 
                 <TouchableOpacity
                   style={styles.imagePickerButton}
                   onPress={handlePickImage}
                   disabled={uploading}
                 >
-                  <Ionicons name="camera" size={16} color={Colors.primary} />
+                  <Ionicons name="camera" size={20} color={RequestColors.primary} />
                   <Text style={styles.imagePickerText}>
-                    {newImageFile ? 'Select New Image' : 'Select New Image'}
+                    {newImageFile ? 'Chọn ảnh khác' : 'Chọn ảnh mới'}
                   </Text>
                 </TouchableOpacity>
 
                 {/* Preview New Image */}
                 {newImageFile && (
-                  <>
+                  <View style={{ marginTop: 12 }}>
                     <View style={styles.newImageInfo}>
                       <Text style={styles.newImageText}>
-                        New image selected: {newImageFile.name}
+                        ✓ Đã chọn: {newImageFile.name}
                       </Text>
                     </View>
                     
@@ -263,15 +250,15 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
                     />
                     
                     <TouchableOpacity
-                      style={{ marginTop: 8, padding: 8 }}
+                      style={styles.removeImageButton}
                       onPress={handleRemoveImage}
                       disabled={uploading}
                     >
-                      <Text style={{ fontSize: 13, color: '#ff4d4f', textAlign: 'center' }}>
-                        [Xoa anh moi]
+                      <Text style={styles.removeImageText}>
+                        Xóa ảnh đã chọn
                       </Text>
                     </TouchableOpacity>
-                  </>
+                  </View>
                 )}
               </View>
             </View>
@@ -284,7 +271,7 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
               onPress={onClose}
               disabled={uploading}
             >
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
+              <Text style={styles.secondaryButtonText}>Hủy</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -295,12 +282,12 @@ const EditRequestModal: React.FC<EditRequestModalProps> = ({
               {uploading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.primaryButtonText}>Update Request</Text>
+                <Text style={styles.primaryButtonText}>Cập nhật</Text>
               )}
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };

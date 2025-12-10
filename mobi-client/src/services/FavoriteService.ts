@@ -23,6 +23,7 @@ export type PaginatedResponse<T> = {
 
 /**
  * Lấy danh sách room IDs đã favorite (có phân trang)
+ * Backend endpoint: /favorites (authenticated)
  */
 export async function getFavoriteRoomIds(
   page = 0,
@@ -58,6 +59,7 @@ export async function getFavoriteRoomIds(
 
 /**
  * Lấy TẤT CẢ room IDs đã favorite (không giới hạn)
+ * Backend endpoint: /favorites (authenticated)
  */
 export async function getAllFavoriteIds(): Promise<string[]> {
   try {
@@ -114,6 +116,7 @@ export async function getAllFavoriteIds(): Promise<string[]> {
 
 /**
  * Lấy danh sách phòng đã favorite (với full details)
+ * Backend endpoint: /favorites (authenticated)
  */
 export async function getFavoriteRooms(
   page = 0,
@@ -162,17 +165,38 @@ export async function addFavorite(roomId: string): Promise<boolean> {
  */
 export async function removeFavorite(roomId: string): Promise<boolean> {
   try {
-    await BaseApiClient.delete<void>(`/favorites/rooms/${roomId}`);
+    // Backend có thể trả về empty body, nên ta bắt và xử lý lỗi JSON parse
+    try {
+      await BaseApiClient.delete<void>(`/favorites/rooms/${roomId}`);
+    } catch (error: any) {
+      // Nếu là lỗi JSON parse từ response rỗng, coi là thành công
+      if (error.message?.includes('JSON Parse error') || error.message?.includes('Unexpected end of input')) {
+        console.warn('⚠️ Backend returned empty body for DELETE, treating as success');
+        return true;
+      }
+      throw error;
+    }
     return true;
 
-  } catch (error) {
-    console.error('Lỗi khi xóa favorite:', error);
+  } catch (error: any) {
+    console.error('❌ Lỗi khi xóa favorite:', error?.message || error);
     return false;
   }
 }
 
 /**
- * Lấy số lượt yêu thích của 1 phòng (public API)
+ * DEPRECATED: Kiểm tra xem phòng đã được favorite chưa
+ * Backend endpoint /check trả về HTTP 500
+ * Thay vào đó sử dụng Zustand store với favoriteRoomIds.has(roomId)
+ */
+export async function isFavorited(roomId: string): Promise<boolean> {
+  console.warn('⚠️ isFavorited() is deprecated. Use Zustand store favoriteRoomIds instead.');
+  return false;
+}
+
+/**
+ * Lấy số lượt yêu thích của 1 phòng (public API - không cần authentication)
+ * Endpoint này hoạt động để hiển thị số lượt yêu thích cho mọi người xem
  */
 export async function getFavoriteCount(roomId: string): Promise<number> {
   try {
@@ -201,33 +225,10 @@ export async function getFavoriteCount(roomId: string): Promise<number> {
 }
 
 /**
- * Kiểm tra xem phòng đã được favorite chưa
- */
-export async function isFavorited(roomId: string): Promise<boolean> {
-  try {
-    const result: any = await BaseApiClient.get(`/favorites/rooms/${roomId}/check`);
-    return result === true || (typeof result === 'object' && result?.isFavorited === true);
-
-  } catch (error) {
-    console.error('Lỗi khi kiểm tra favorite status:', error);
-    return false;
-  }
-}
-
-/**
- * Toggle favorite (add nếu chưa có, remove nếu đã có)
+ * DEPRECATED: Toggle favorite
+ * Use addFavorite() or removeFavorite() explicitly with Zustand store
  */
 export async function toggleFavorite(roomId: string): Promise<boolean> {
-  try {
-    const isFav = await isFavorited(roomId);
-
-    if (isFav) {
-      return await removeFavorite(roomId);
-    } else {
-      return await addFavorite(roomId);
-    }
-  } catch (error) {
-    console.error('Lỗi khi toggle favorite:', error);
-    return false;
-  }
+  console.warn('⚠️ toggleFavorite() is deprecated. Use addFavorite() or removeFavorite() directly.');
+  return false;
 }

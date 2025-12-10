@@ -17,7 +17,7 @@ export interface CancellableRequest<T> {
 export class BaseApiClient {
   private static readonly MAX_RETRIES = 1;
   private static readonly RETRY_DELAY = 1000; // 1 giây
-  private static readonly DEFAULT_TIMEOUT = 5000; // 30 giây mặc định
+  private static readonly DEFAULT_TIMEOUT = 30000; // 30 giây mặc định (tăng lên để upload file)
   private static activeControllers = new Map<string, AbortController>();
 
   /**
@@ -105,22 +105,30 @@ export class BaseApiClient {
   private static async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      let errorDetails = null;
+
+      console.log(`🔴 Response not OK - Status: ${response.status} ${response.statusText}`);
 
       try {
         const errorData = await response.json();
+        console.log('🔴 Error response JSON:', JSON.stringify(errorData, null, 2));
+        errorDetails = errorData;
         errorMessage = errorData.details || errorData.message || errorData.error || errorMessage;
       } catch (e) {
         // Nếu phản hồi không phải JSON, thử lấy text
         try {
           const errorText = await response.text();
+          console.log('🔴 Error response text:', errorText);
           if (errorText) {
             errorMessage = errorText;
           }
         } catch (textError) {
+          console.log('🔴 Cannot parse error response');
           // Giữ thông báo lỗi mặc định
         }
       }
 
+      console.error('🔴 Final error message:', errorMessage);
       throw new Error(errorMessage);
     }
 
@@ -129,7 +137,22 @@ export class BaseApiClient {
       return {} as T;
     }
 
-    return response.json();
+    // Xử lý phản hồi có thể là rỗng hoặc JSON
+    try {
+      const text = await response.text();
+      
+      // Nếu response body trống, trả về object trống
+      if (!text || text.trim() === '') {
+        return {} as T;
+      }
+
+      // Nếu có content, parse JSON
+      return JSON.parse(text) as T;
+    } catch (parseError) {
+      // Nếu parse lỗi, trả về object trống
+      console.warn('⚠️ Failed to parse response as JSON, returning empty object');
+      return {} as T;
+    }
   }
 
   /**
@@ -378,15 +401,21 @@ export class BaseApiClient {
 
   /**
    * Upload file với FormData
+   * POST request - Do NOT set Content-Type header for FormData
+   * Timeout mặc định 30000ms để đủ thời gian upload ảnh
    */
   static async uploadFile<T>(
     endpoint: string,
     formData: FormData,
-    timeout: number = this.DEFAULT_TIMEOUT
+    timeout: number = 30000 // Tăng timeout cho upload file
   ): Promise<T> {
-    const headers = await this.getAuthHeaders('multipart/form-data');
-    // Xóa Content-Type cho FormData (để trình duyệt tự đặt)
-    delete headers['Content-Type'];
+    const token = await AsyncStorage.getItem('accessToken');
+    const headers: Record<string, string> = {};
+
+    // ONLY set Authorization, NOT Content-Type
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
     const url = `${API_URL}${endpoint}`;
     const requestId = this.generateRequestId(endpoint, 'UPLOAD');
@@ -399,16 +428,50 @@ export class BaseApiClient {
   }
 
   /**
+   * Yêu cầu PUT với FormData
+   * Do NOT set Content-Type header for FormData
+   * Timeout mặc định 30000ms để đủ thời gian upload ảnh
+   */
+  static async putUpload<T>(
+    endpoint: string,
+    formData: FormData,
+    timeout: number = 30000 // Tăng timeout cho upload file
+  ): Promise<T> {
+    const token = await AsyncStorage.getItem('accessToken');
+    const headers: Record<string, string> = {};
+
+    // ONLY set Authorization, NOT Content-Type
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const url = `${API_URL}${endpoint}`;
+    const requestId = this.generateRequestId(endpoint, 'PUT');
+
+    return this.executeRequest<T>(url, {
+      method: 'PUT',
+      headers,
+      body: formData,
+    }, 0, timeout, requestId);
+  }
+
+  /**
    * Yêu cầu PATCH với FormData
+   * Do NOT set Content-Type header for FormData
+   * Timeout mặc định 30000ms để đủ thời gian upload ảnh
    */
   static async patchUpload<T>(
     endpoint: string,
     formData: FormData,
-    timeout: number = this.DEFAULT_TIMEOUT
+    timeout: number = 30000 // Tăng timeout cho upload file
   ): Promise<T> {
-    const headers = await this.getAuthHeaders('multipart/form-data');
-    // Xóa Content-Type cho FormData
-    delete headers['Content-Type'];
+    const token = await AsyncStorage.getItem('accessToken');
+    const headers: Record<string, string> = {};
+
+    // ONLY set Authorization, NOT Content-Type
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
     const url = `${API_URL}${endpoint}`;
     const requestId = this.generateRequestId(endpoint, 'PATCH');

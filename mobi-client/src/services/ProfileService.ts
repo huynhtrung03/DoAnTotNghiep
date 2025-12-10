@@ -84,9 +84,20 @@ export async function getBanks() {
 
 /**
  * Kiem tra nguoi dung co tai khoan ngan hang khong
+ * 
+ * Fallback: Nếu API lỗi (HTTP 500 hoặc network error), trả về false
+ * Điều này cho phép UI tiếp tục hoạt động bình thường
  */
 export async function isHaveBankAccount() {
-  return await BaseApiClient.get<any>('/profile/ishavebank');
+  try {
+    const result = await BaseApiClient.get<any>('/profile/ishavebank');
+    // API có thể trả về boolean hoặc object
+    return typeof result === 'boolean' ? result : (result?.hasBankAccount ?? false);
+  } catch (error: any) {
+    console.warn('⚠️ [ProfileService] isHaveBankAccount error (HTTP 500 likely):', error?.message);
+    // Fallback: Trả về false (mặc định user không có tài khoản ngân hàng)
+    return false;
+  }
 }
 
 // ==================== Preferences APIs ====================
@@ -129,29 +140,38 @@ export async function setEmailNotifications(enabled: boolean) {
 
 /**
  * Lay tuy chon thong bao email
+ * 
+ * Fallback: Nếu API lỗi (Profile not found hoặc network error), trả về { emailNotifications: false }
+ * Điều này cho phép UI tiếp tục hoạt động bình thường
  */
 export async function getEmailNotifications(userId: string) {
-  const data = await BaseApiClient.get<any>('/profile/email-notifications', { userId });
-  const raw = data?.emailNotifications;
+  try {
+    const data = await BaseApiClient.get<any>('/profile/email-notifications', { userId });
+    const raw = data?.emailNotifications;
 
-  // Chuyen doi cac dai dien backend: boolean, number (1/0), string
-  let emailNotifications = false;
-  if (typeof raw === "boolean") {
-    emailNotifications = raw;
-  } else if (typeof raw === "number") {
-    emailNotifications = raw === 1;
-  } else if (typeof raw === "string") {
-    const normalized = raw.trim().toLowerCase();
-    emailNotifications =
-      normalized === "1" ||
-      normalized === "true" ||
-      normalized === "yes" ||
-      normalized === "on";
-  } else if (raw == null) {
-    emailNotifications = false;
-  } else {
-    emailNotifications = Boolean(raw);
+    // Chuyen doi cac dai dien backend: boolean, number (1/0), string
+    let emailNotifications = false;
+    if (typeof raw === "boolean") {
+      emailNotifications = raw;
+    } else if (typeof raw === "number") {
+      emailNotifications = raw === 1;
+    } else if (typeof raw === "string") {
+      const normalized = raw.trim().toLowerCase();
+      emailNotifications =
+        normalized === "1" ||
+        normalized === "true" ||
+        normalized === "yes" ||
+        normalized === "on";
+    } else if (raw == null) {
+      emailNotifications = false;
+    } else {
+      emailNotifications = Boolean(raw);
+    }
+
+    return { emailNotifications };
+  } catch (error: any) {
+    console.warn('⚠️ [ProfileService] getEmailNotifications error (Profile not found likely):', error?.message);
+    // Fallback: Trả về false (mặc định tắt thông báo email)
+    return { emailNotifications: false };
   }
-
-  return { emailNotifications };
 }

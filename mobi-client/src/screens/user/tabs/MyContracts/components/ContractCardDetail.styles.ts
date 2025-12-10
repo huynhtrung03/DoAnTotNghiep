@@ -2,6 +2,46 @@ import { StyleSheet } from 'react-native';
 import Colors from '../../../../../styles/colors';
 
 const styles = StyleSheet.create({
+  // Tab Navigation
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    paddingHorizontal: 8,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 6,
+  },
+  tabButtonActive: {
+    borderBottomWidth: 3,
+    borderBottomColor: Colors.primary,
+  },
+  tabButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9E9E9E',
+  },
+  tabButtonTextActive: {
+    color: Colors.primary,
+  },
+  tabIndicator: {
+    height: 0,
+  },
+  tabIndicatorBar: {
+    width: '50%',
+    height: 3,
+    backgroundColor: Colors.primary,
+  },
+  tabIndicatorBarRight: {
+    marginLeft: '50%',
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',

@@ -6,12 +6,33 @@ export default StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
-    padding: 16,
+    padding: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    overflow: 'hidden',
+  },
+
+  roomImageContainer: {
+    width: '100%',
+    height: 200,
+    position: 'relative',
+  },
+
+  roomImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  roomImageOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    padding: 8,
   },
 
   header: {
@@ -20,6 +41,8 @@ export default StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
@@ -55,6 +78,7 @@ export default StyleSheet.create({
 
   infoSection: {
     marginBottom: 12,
+    paddingHorizontal: 16,
     gap: 8,
   },
 
@@ -81,6 +105,7 @@ export default StyleSheet.create({
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
     padding: 12,
+    marginHorizontal: 16,
     marginBottom: 12,
     gap: 12,
   },
@@ -118,6 +143,7 @@ export default StyleSheet.create({
 
   imageSection: {
     marginBottom: 12,
+    paddingHorizontal: 16,
   },
 
   imageSectionTitle: {
@@ -158,6 +184,7 @@ export default StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
+    marginHorizontal: 16,
     marginBottom: 12,
     gap: 8,
     borderWidth: 1,
@@ -178,6 +205,7 @@ export default StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
+    marginHorizontal: 16,
     marginBottom: 12,
     gap: 8,
   },
@@ -190,6 +218,8 @@ export default StyleSheet.create({
 
   actionSection: {
     flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     gap: 8,
   },
 

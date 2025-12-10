@@ -76,7 +76,7 @@ export async function createBooking(bookingData: BookingData, userId: string) {
 /**
  * Cập nhật trạng thái booking
  * @param bookingId - ID của booking
- * @param newStatus - Trạng thái mới (0: pending, 1: confirmed, 2: cancelled, etc.)
+ * @param newStatus - Trạng thái mới (0: pending, 1: confirmed, 2: cancelled, 3: waiting for deposit confirmation, etc.)
  */
 export async function updateBookingStatus(
   bookingId: string,
@@ -85,7 +85,34 @@ export async function updateBookingStatus(
   try {
     console.log(`Cập nhật trạng thái booking ${bookingId}: ${newStatus}`);
 
-    return await BaseApiClient.patch(`/bookings/${bookingId}/status`, { status: newStatus });
+    // Lấy thông tin user để gửi actorId và actorRole
+    const userDataStr = await AsyncStorage.getItem('userData');
+    if (!userDataStr) {
+      throw new Error('Người dùng chưa đăng nhập. Vui lòng đăng nhập lại.');
+    }
+
+    const userData = JSON.parse(userDataStr);
+    const userId = userData.id;
+    
+    // Log để debug
+    console.log('userData:', JSON.stringify(userData, null, 2));
+    
+    // Xác định role - tenant thường là người thuê phòng
+    const userRole = userData.role || 'TENANT';
+
+    if (!userId) {
+      throw new Error('Không tìm thấy ID người dùng. Vui lòng đăng nhập lại.');
+    }
+
+    const payload = { 
+      status: newStatus,
+      actorId: userId,
+      actorRole: userRole
+    };
+
+    console.log('Payload gửi lên:', JSON.stringify(payload, null, 2));
+
+    return await BaseApiClient.patch(`/bookings/${bookingId}/status`, payload);
   } catch (error) {
     console.error('Lỗi khi cập nhật trạng thái booking:', error);
     throw error;

@@ -250,6 +250,10 @@ export default function UserScreen() {
     navigation.navigate('Users/RequestManagement' as never);
   };
 
+  const handleNavigateToResidents = () => {
+    navigation.navigate('Users/Residents' as never);
+  };
+
   const handleNavigateToPaymentMethod = () => {
     navigation.navigate('Users/Bank' as never);
   };
@@ -318,12 +322,12 @@ export default function UserScreen() {
       onPress: handleNavigateToRequests,
     },
     {
-      key: 'paymentMethod',
-      label: 'Phương thức thanh toán',
-      icon: 'card-outline',
+      key: 'residents',
+      label: 'Cư dân của tôi',
+      icon: 'people-outline',
       iconColor: '#10B981',
       iconBg: '#ECFDF5',
-      onPress: handleNavigateToPaymentMethod,
+      onPress: handleNavigateToResidents,
     },
     {
       key: 'password',

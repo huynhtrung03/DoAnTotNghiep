@@ -24,10 +24,12 @@ export interface Requirement {
 
 export interface RequirementDetail extends Requirement {
   userName?: string;
-  roomName?: string;
+  email?: string;
+  roomTitle?: string; // Tên phòng từ backend
   landlordName?: string;
   completionNote?: string; // Ghi chu khi hoan thanh
   rejectionReason?: string; // Ly do tu choi
+  createdDate?: string; // API trả về createdDate thay vì createdAt
 }
 
 export interface RequirementRequestRoomDto {
@@ -44,6 +46,8 @@ export interface UpdateRequestRoomDto {
 
 /**
  * Tao yeu cau moi
+ * Backend endpoint: POST /requirements/request-room-with-image
+ * Backend yeu cau: FormData voi field 'data' (JSON string) va 'image' (optional)
  */
 export async function createRequest(
   data: RequirementRequestRoomDto,
@@ -52,23 +56,47 @@ export async function createRequest(
   imageType?: string
 ): Promise<RequirementRequestRoomDto> {
   try {
+    console.log('📝 createRequest - Input data:', JSON.stringify(data, null, 2));
+    console.log('📝 createRequest - Image URI:', imageUri);
+    console.log('📝 createRequest - Image fileName:', imageFileName);
+    console.log('📝 createRequest - Image type:', imageType);
+
     const formData = new FormData();
 
-    // Them du lieu nhu JSON string
-    formData.append('data', JSON.stringify(data));
+    // Backend yeu cau field 'data' la JSON string
+    const dataJson = JSON.stringify(data);
+    console.log('📝 createRequest - Data JSON string:', dataJson);
+    
+    // Gửi JSON như một part với type application/json
+    // React Native FormData cần object với name, type và data cho string
+    formData.append('data', {
+      string: dataJson,
+      type: 'application/json',
+      name: 'data.json'
+    } as any);
 
     // Them anh neu co
     if (imageUri) {
-      formData.append('image', {
+      const imageData = {
         uri: imageUri,
         type: imageType || 'image/jpeg',
         name: imageFileName || 'request-image.jpg',
-      } as any);
+      };
+      console.log('📝 createRequest - Image data:', JSON.stringify(imageData, null, 2));
+      formData.append('image', imageData as any);
+    } else {
+      console.log('📝 createRequest - No image provided');
     }
 
-    return await BaseApiClient.uploadFile<RequirementRequestRoomDto>('/requirements/create', formData);
-  } catch (error) {
-    console.error('Loi tao yeu cau:', error);
+    console.log('📝 createRequest - Sending request to /requirements/request-room-with-image');
+    const result = await BaseApiClient.uploadFile<RequirementRequestRoomDto>('/requirements/request-room-with-image', formData);
+    console.log('✅ createRequest - Success:', JSON.stringify(result, null, 2));
+    
+    return result;
+  } catch (error: any) {
+    console.error('❌ createRequest - Error:', error);
+    console.error('❌ createRequest - Error message:', error.message);
+    console.error('❌ createRequest - Error stack:', error.stack);
     throw error;
   }
 }
@@ -110,13 +138,24 @@ export async function updateRequirementWithImage(
 
 /**
  * Lay yeu cau cua chu nha
+ * Backend endpoint: GET /requirements/landlord/{userId}/requests
  */
 export async function getRequestsByLandlordId(
   page = 0,
   size = 5
 ): Promise<PaginatedResponse<Requirement>> {
   try {
-    const result = await BaseApiClient.get<any>('/requirements/requirements-landlord', { page, size });
+    const token = await AsyncStorage.getItem('accessToken');
+    const userDataStr = await AsyncStorage.getItem('userData');
+
+    if (!token || !userDataStr) {
+      throw new Error('Yeu cau dang nhap');
+    }
+
+    const userData = JSON.parse(userDataStr);
+    const userId = userData.id;
+
+    const result = await BaseApiClient.get<any>(`/requirements/landlord/${userId}/requests`, { page, size });
 
     // Chuan hoa response tu backend
     const normalized: PaginatedResponse<Requirement> = {
@@ -137,10 +176,11 @@ export async function getRequestsByLandlordId(
 
 /**
  * Cap nhat trang thai yeu cau
+ * Backend endpoint: PATCH /requirements/{id}/status
  */
 export async function updateRequirementStatus(id: string): Promise<void> {
   try {
-    await BaseApiClient.patch('/requirements/update-status', { id });
+    await BaseApiClient.patch(`/requirements/${id}/status`);
   } catch (error) {
     console.error('Loi cap nhat trang thai yeu cau:', error);
     throw error;
@@ -149,6 +189,7 @@ export async function updateRequirementStatus(id: string): Promise<void> {
 
 /**
  * Upload anh yeu cau
+ * Backend endpoint: POST /requirements/{id}/upload-image
  */
 export async function uploadRequirementImage(
   idRequirement: string,
@@ -159,14 +200,13 @@ export async function uploadRequirementImage(
   try {
     const formData = new FormData();
 
-    formData.append('idRequirement', idRequirement);
     formData.append('image', {
       uri: imageUri,
       type: imageType || 'image/jpeg',
       name: imageFileName || 'requirement-image.jpg',
     } as any);
 
-    await BaseApiClient.uploadFile('/requirements/upload-image', formData);
+    await BaseApiClient.uploadFile(`/requirements/${idRequirement}/upload-image`, formData);
   } catch (error) {
     console.error('Loi upload anh yeu cau:', error);
     throw error;
@@ -175,10 +215,11 @@ export async function uploadRequirementImage(
 
 /**
  * Tu choi yeu cau
+ * Backend endpoint: PATCH /requirements/{id}/reject
  */
 export async function rejectRequirement(id: string): Promise<void> {
   try {
-    await BaseApiClient.patch('/requirements/reject', { id });
+    await BaseApiClient.patch(`/requirements/${id}/reject`);
   } catch (error) {
     console.error('Loi tu choi yeu cau:', error);
     throw error;

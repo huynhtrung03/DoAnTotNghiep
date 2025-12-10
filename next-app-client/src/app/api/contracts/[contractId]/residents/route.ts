@@ -78,7 +78,60 @@ export async function POST(
     
     residentData.contractId = contractId; // thêm contractId cho chắc
 
-    // Chuẩn bị form gửi sang Spring Boot giống như Postman
+    // Validate required fields
+    if (!residentData.fullName || residentData.fullName.trim() === "") {
+      return NextResponse.json(
+        { error: "fullName is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!residentData.idNumber || residentData.idNumber.trim() === "") {
+      return NextResponse.json(
+        { error: "idNumber is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!residentData.relationship) {
+      return NextResponse.json(
+        { error: "relationship is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!residentData.startDate || !residentData.endDate) {
+      return NextResponse.json(
+        { error: "startDate and endDate are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(residentData.startDate)) {
+      return NextResponse.json(
+        { error: "startDate must be YYYY-MM-DD format" },
+        { status: 400 }
+      );
+    }
+
+    if (!dateRegex.test(residentData.endDate)) {
+      return NextResponse.json(
+        { error: "endDate must be YYYY-MM-DD format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate date logic
+    const startDate = new Date(residentData.startDate);
+    const endDate = new Date(residentData.endDate);
+    if (startDate >= endDate) {
+      return NextResponse.json(
+        { error: "endDate must be after startDate" },
+        { status: 400 }
+      );
+    }
     const backendFormData = new FormData();
 
     // Gửi data dưới dạng Blob JSON để Spring Boot parse được
@@ -108,9 +161,23 @@ export async function POST(
 
     if (!backendResponse.ok) {
       const errorText = await backendResponse.text();
-      console.error("Backend error:", errorText);
+      console.error("Backend error status:", backendResponse.status);
+      console.error("Backend error response:", errorText);
+      console.error("Request data sent:", {
+        fullName: residentData.fullName,
+        idNumber: residentData.idNumber,
+        relationship: residentData.relationship,
+        startDate: residentData.startDate,
+        endDate: residentData.endDate,
+        contractId: residentData.contractId,
+        hasImages: { frontImage: !!frontImage, backImage: !!backImage }
+      });
       return NextResponse.json(
-        { error: "Failed to create resident" },
+        { 
+          error: "Failed to create resident",
+          details: errorText,
+          status: backendResponse.status
+        },
         { status: backendResponse.status }
       );
     }

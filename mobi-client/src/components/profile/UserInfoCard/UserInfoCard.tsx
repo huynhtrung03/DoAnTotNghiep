@@ -31,11 +31,10 @@ import Colors, { withOpacity } from '../../../styles/colors';
 import { getLandlordByRoomId } from '../../../services/RoomService';
 import { 
   addFavorite, 
-  removeFavorite, 
-  getFavoriteCount, 
-  isFavorited as checkIsFavorited,
+  removeFavorite,
 } from '../../../services/FavoriteService';
 import { URL_IMAGE } from '../../../services/Constant';
+import { useFavoriteStore } from '../../../stores/FavoriteStore';
 
 interface UserInfoCardProps {
   roomId: string;
@@ -71,16 +70,26 @@ const maskEmail = (email: string) => {
 };
 
 export default function UserInfoCard({ roomId, onChatPress, compact = false }: UserInfoCardProps) {
+  const {
+    favoriteRoomIds,
+    addFavorite: addFavoriteToStore,
+    removeFavorite: removeFavoriteFromStore,
+    getFavoriteCount: getLocalFavoriteCount,
+    incrementFavoriteCount,
+    decrementFavoriteCount
+  } = useFavoriteStore();
+
   const [landlord, setLandlord] = useState<LandlordDetailByRoom | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [favoriteCount, setFavoriteCount] = useState(0);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportDescription, setReportDescription] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
+
+  const isFavorited = favoriteRoomIds.has(roomId);
+  const favoriteCount = getLocalFavoriteCount(roomId);
 
   const REPORT_REASONS = [
     'Thông tin đã hết hạn/không còn hiệu lực',
@@ -97,37 +106,30 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
   }, [roomId]);
 
   /**
-   * Load tất cả dữ liệu: landlord info, favorite status, favorite count
+   * Load tất cả dữ liệu: chỉ load landlord info, favorite info từ store
    */
   const loadData = async () => {
     try {
       setLoading(true);
       
-      console.log(' UserInfoCard: Loading data for roomId:', roomId);
+      console.log('📋 UserInfoCard: Loading data for roomId:', roomId);
       
-      // Load parallel để nhanh hơn
-      const [landlordData, favoriteStatus, favCount] = await Promise.all([
-        getLandlordByRoomId(roomId),
-        checkIsFavorited(roomId),
-        getFavoriteCount(roomId),
-      ]);
+      // Chỉ load landlord info từ API
+      const landlordData = await getLandlordByRoomId(roomId);
 
-      console.log(' UserInfoCard: Landlord data:', landlordData);
-      console.log('️ UserInfoCard: Avatar URL:', landlordData?.avatar);
-      console.log(' UserInfoCard: Full avatar URL:', landlordData?.avatar ? `${URL_IMAGE}${landlordData.avatar.startsWith('/') ? landlordData.avatar.slice(1) : landlordData.avatar}` : 'No avatar');
-      console.log('️ UserInfoCard: Favorite status:', favoriteStatus, 'Count:', favCount);
+      console.log('📋 UserInfoCard: Landlord data:', landlordData);
+      console.log('🖼️ UserInfoCard: Avatar URL:', landlordData?.avatar);
+      console.log('📋 UserInfoCard: Full avatar URL:', landlordData?.avatar ? `${URL_IMAGE}${landlordData.avatar.startsWith('/') ? landlordData.avatar.slice(1) : landlordData.avatar}` : 'No avatar');
+      console.log('❤️ UserInfoCard: Favorite status from store:', favoriteRoomIds.has(roomId), 'Count:', getLocalFavoriteCount(roomId));
 
       if (landlordData) {
         setLandlord(landlordData);
       } else {
-        console.warn('️ UserInfoCard: No landlord data received');
+        console.warn('⚠️ UserInfoCard: No landlord data received');
       }
-      
-      setIsFavorited(favoriteStatus);
-      setFavoriteCount(favCount);
 
     } catch (error) {
-      console.error(' UserInfoCard: Error loading data:', error);
+      console.error('❌ UserInfoCard: Error loading data:', error);
       Alert.alert('Lỗi', 'Không thể tải thông tin chủ nhà');
     } finally {
       setLoading(false);
@@ -168,33 +170,37 @@ export default function UserInfoCard({ roomId, onChatPress, compact = false }: U
   };
 
   /**
-   * Toggle favorite
+   * Toggle favorite using Zustand store
    */
   const handleFavorite = async () => {
     try {
-      const newFavoriteState = !isFavorited;
-      
-      // Optimistic update
-      setIsFavorited(newFavoriteState);
-      setFavoriteCount(prev => newFavoriteState ? prev + 1 : prev - 1);
+      const wasAlreadyFavorite = isFavorited;
 
-      // Call API
-      const success = newFavoriteState 
-        ? await addFavorite(roomId)
-        : await removeFavorite(roomId);
-
-      if (!success) {
-        // Revert on failure
-        setIsFavorited(!newFavoriteState);
-        setFavoriteCount(prev => newFavoriteState ? prev - 1 : prev + 1);
-        Alert.alert('Lỗi', 'Không thể cập nhật yêu thích');
+      if (wasAlreadyFavorite) {
+        // Remove from favorite
+        const success = await removeFavorite(roomId);
+        
+        if (success) {
+          removeFavoriteFromStore(roomId);
+          decrementFavoriteCount(roomId);
+          console.log('✓ Removed from favorites:', roomId);
+        } else {
+          Alert.alert('Lỗi', 'Không thể xóa khỏi danh sách yêu thích');
+        }
+      } else {
+        // Add to favorite
+        const success = await addFavorite(roomId);
+        
+        if (success) {
+          addFavoriteToStore(roomId);
+          incrementFavoriteCount(roomId);
+          console.log('✓ Added to favorites:', roomId);
+        } else {
+          Alert.alert('Lỗi', 'Không thể thêm vào danh sách yêu thích');
+        }
       }
-
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Revert on error
-      setIsFavorited(!isFavorited);
-      setFavoriteCount(prev => isFavorited ? prev + 1 : prev - 1);
       Alert.alert('Lỗi', 'Đã xảy ra lỗi khi cập nhật yêu thích');
     }
   };

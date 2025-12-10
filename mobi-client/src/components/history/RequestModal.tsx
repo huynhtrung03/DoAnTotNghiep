@@ -40,8 +40,8 @@ const RequestModal: React.FC<RequestModalProps> = ({
       
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'Please grant camera roll permissions to upload images.'
+          'Cần cấp quyền',
+          'Vui lòng cấp quyền truy cập thư viện ảnh để tải lên hình ảnh.'
         );
         return;
       }
@@ -62,30 +62,39 @@ const RequestModal: React.FC<RequestModalProps> = ({
         });
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to pick image');
+      Alert.alert('Lỗi', error.message || 'Không thể chọn ảnh');
     }
   };
 
   const handleSubmit = async () => {
     if (!description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description');
+      Alert.alert('Lỗi xác thực', 'Vui lòng nhập mô tả');
       return;
     }
 
     if (!roomId) {
-      Alert.alert('Error', 'Room ID is missing');
+      Alert.alert('Lỗi', 'Thiếu ID phòng');
       return;
     }
 
     setLoading(true);
     try {
+      console.log('🚀 RequestModal - Starting submit');
+      console.log('🚀 RequestModal - roomId:', roomId);
+      console.log('🚀 RequestModal - description:', description);
+      
       // Get user ID from AsyncStorage
       const userDataStr = await AsyncStorage.getItem('userData');
+      console.log('🚀 RequestModal - userDataStr:', userDataStr);
+      
       const userData = userDataStr ? JSON.parse(userDataStr) : null;
+      console.log('🚀 RequestModal - userData:', JSON.stringify(userData, null, 2));
+      
       const userId = userData?.id;
+      console.log('🚀 RequestModal - userId:', userId);
 
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error('Không tìm thấy ID người dùng');
       }
 
       const requestData = {
@@ -93,23 +102,29 @@ const RequestModal: React.FC<RequestModalProps> = ({
         roomId: roomId,
         description: description.trim(),
       };
+      console.log('🚀 RequestModal - requestData:', JSON.stringify(requestData, null, 2));
+      console.log('🚀 RequestModal - selectedImage:', selectedImage ? JSON.stringify(selectedImage, null, 2) : 'null');
 
       // Create request with optional image
-      await createRequest(
+      console.log('🚀 RequestModal - Calling createRequest...');
+      const result = await createRequest(
         requestData,
         selectedImage?.uri,
         selectedImage?.fileName,
         selectedImage?.type
       );
+      console.log('✅ RequestModal - createRequest success:', JSON.stringify(result, null, 2));
 
       // Send notification to landlord
+      console.log('🚀 RequestModal - Sending notification...');
       await createRequestNotification(
         roomId,
         userId,
-        `New request: ${description.slice(0, 50)}${description.length > 50 ? '...' : ''}`
+        `Yêu cầu mới: ${description.slice(0, 50)}${description.length > 50 ? '...' : ''}`
       );
+      console.log('✅ RequestModal - Notification sent');
 
-      Alert.alert('Success', 'Your request has been sent successfully!', [
+      Alert.alert('Thành công', 'Yêu cầu của bạn đã được gửi thành công!', [
         {
           text: 'OK',
           onPress: () => {
@@ -119,7 +134,10 @@ const RequestModal: React.FC<RequestModalProps> = ({
         },
       ]);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create request');
+      console.error('❌ RequestModal - Error:', error);
+      console.error('❌ RequestModal - Error message:', error.message);
+      console.error('❌ RequestModal - Error stack:', error.stack);
+      Alert.alert('Lỗi', error.message || 'Không thể tạo yêu cầu');
     } finally {
       setLoading(false);
     }
@@ -145,7 +163,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Send New Request</Text>
+            <Text style={styles.title}>Gửi yêu cầu mới</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#757575" />
             </TouchableOpacity>
@@ -159,11 +177,11 @@ const RequestModal: React.FC<RequestModalProps> = ({
             <View style={styles.section}>
               <Text style={styles.label}>
                 <Ionicons name="document-text-outline" size={16} color="#1976D2" />{' '}
-                Description *
+                Mô tả *
               </Text>
               <TextInput
                 style={styles.textArea}
-                placeholder="Describe your request or issue (e.g., broken AC, water leakage, etc.)"
+                placeholder="Mô tả yêu cầu hoặc vấn đề của bạn (ví dụ: điều hòa hỏng, rò rỉ nước, v.v.)"
                 placeholderTextColor="#BDBDBD"
                 value={description}
                 onChangeText={setDescription}
@@ -172,7 +190,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
                 textAlignVertical="top"
               />
               <Text style={styles.charCount}>
-                {description.length} / 500 characters
+                {description.length} / 500 ký tự
               </Text>
             </View>
 
@@ -180,7 +198,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
             <View style={styles.section}>
               <Text style={styles.label}>
                 <Ionicons name="image-outline" size={16} color="#1976D2" />{' '}
-                Attach Image (Optional)
+                Đính kèm hình ảnh (Tùy chọn)
               </Text>
 
               {selectedImage ? (
@@ -201,7 +219,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
                     onPress={handlePickImage}
                   >
                     <Ionicons name="repeat-outline" size={20} color="#1976D2" />
-                    <Text style={styles.changeImageText}>Change Image</Text>
+                    <Text style={styles.changeImageText}>Đổi ảnh</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -211,10 +229,10 @@ const RequestModal: React.FC<RequestModalProps> = ({
                 >
                   <Ionicons name="camera-outline" size={40} color="#1976D2" />
                   <Text style={styles.uploadButtonText}>
-                    Tap to add image (optional)
+                    Nhấn để thêm ảnh (tùy chọn)
                   </Text>
                   <Text style={styles.uploadHint}>
-                    Photos help landlord understand the issue better
+                    Hình ảnh giúp chủ nhà hiểu rõ vấn đề hơn
                   </Text>
                 </TouchableOpacity>
               )}
@@ -224,12 +242,12 @@ const RequestModal: React.FC<RequestModalProps> = ({
             <View style={styles.instructionsCard}>
               <Ionicons name="information-circle-outline" size={20} color="#FF9800" />
               <View style={styles.instructionsContent}>
-                <Text style={styles.instructionsTitle}>Tips for better response:</Text>
+                <Text style={styles.instructionsTitle}>Mẹo để được phản hồi nhanh:</Text>
                 <Text style={styles.instructionsText}>
-                  • Be specific about the issue{'\n'}
-                  • Mention the urgency level{'\n'}
-                  • Include photos if applicable{'\n'}
-                  • Suggest your preferred time for resolution
+                  • Mô tả cụ thể vấn đề{'\n'}
+                  • Nêu mức độ khẩn cấp{'\n'}
+                  • Đính kèm ảnh nếu có{'\n'}
+                  • Đề xuất thời gian ưa thích để giải quyết
                 </Text>
               </View>
             </View>
@@ -241,7 +259,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
               style={[styles.button, styles.cancelButton]}
               onPress={handleClose}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Hủy</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -256,12 +274,12 @@ const RequestModal: React.FC<RequestModalProps> = ({
               {loading ? (
                 <>
                   <ActivityIndicator size="small" color="#FFF" />
-                  <Text style={styles.submitButtonText}>Sending...</Text>
+                  <Text style={styles.submitButtonText}>Đang gửi...</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="send-outline" size={20} color="#FFF" />
-                  <Text style={styles.submitButtonText}>Send Request</Text>
+                  <Text style={styles.submitButtonText}>Gửi yêu cầu</Text>
                 </>
               )}
             </TouchableOpacity>

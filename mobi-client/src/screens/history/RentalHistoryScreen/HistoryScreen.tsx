@@ -27,6 +27,7 @@ export default function HistoryScreen() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Modal states
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
@@ -60,34 +61,38 @@ export default function HistoryScreen() {
       status: booking.status,
       isRemoved: booking.isRemoved,
       imageProof: booking.imageProof || '',
+      roomImage: booking.room.thumbnail || '',
     };
   };
 
   const fetchBookings = async (pageNum: number, append = false) => {
-    if (loading || (!append && refreshing)) return;
+    // Ngăn chặn multiple calls
+    if (append && isLoadingMore) return;
+    if (!append && refreshing) return;
 
     if (append) {
-      if (!hasMore || pageNum >= totalPages) return;
+      if (!hasMore || pageNum >= totalPages) {
+        console.log(' HistoryScreen - No more data to load');
+        return;
+      }
     }
 
     try {
       if (append) {
+        setIsLoadingMore(true);
         setLoading(true);
       } else {
         setRefreshing(true);
       }
 
-      //console.log(' HistoryScreen - Fetching bookings, page:', pageNum, 'append:', append);
+      console.log(' HistoryScreen - Fetching bookings, page:', pageNum, 'append:', append);
       
-      const response = await userFetchBookings(pageNum, 10);
-      
-      //console.log(' HistoryScreen - Response:', JSON.stringify(response, null, 2));
+      const response = await userFetchBookings(pageNum, 10) as any;
       
       const fetchedBookings = response.bookings || response;
       const total = response.totalPages || 1;
 
-      //console.log(' HistoryScreen - Fetched bookings count:', fetchedBookings.length);
-      //console.log(' HistoryScreen - Total pages:', total);
+      console.log(' HistoryScreen - Fetched:', fetchedBookings.length, 'items, page', pageNum + 1, 'of', total);
 
       const mappedBookings = fetchedBookings.map(mapBookingToRentalData);
 
@@ -99,12 +104,14 @@ export default function HistoryScreen() {
 
       setTotalPages(total);
       setHasMore(pageNum + 1 < total);
+      setPage(pageNum);
     } catch (error) {
       console.error(' HistoryScreen - Failed to fetch bookings:', error);
       console.error(' Error details:', JSON.stringify(error, null, 2));
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setIsLoadingMore(false);
     }
   };
 
@@ -129,12 +136,14 @@ export default function HistoryScreen() {
   }, []);
 
   const handleLoadMore = useCallback(() => {
-    if (hasMore && !loading) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchBookings(nextPage, true);
+    if (!hasMore || isLoadingMore || refreshing) {
+      return;
     }
-  }, [hasMore, loading, page]);
+    
+    const nextPage = page + 1;
+    console.log(' HistoryScreen - Loading more, next page:', nextPage);
+    fetchBookings(nextPage, true);
+  }, [hasMore, isLoadingMore, refreshing, page]);
 
   const handlePressRequest = (roomId: string) => {
     setSelectedRoomId(roomId);
@@ -189,7 +198,7 @@ export default function HistoryScreen() {
   };
 
   const renderFooter = () => {
-    if (!loading) return null;
+    if (!isLoadingMore || !hasMore) return null;
 
     return (
       <View style={styles.footerLoader}>
