@@ -13,6 +13,8 @@ export default function GoogleSignInButton({ onSuccess, disabled }: { onSuccess?
 
   useEffect(() => {
     const webClientId = (Constants.expoConfig?.extra as any)?.GOOGLE_CLIENT_ID_WEB;
+    console.log('Google Sign-In Button mounted');
+    console.log('Web Client ID:', webClientId ? 'Configured' : 'Not found');
     
     GoogleSignin.configure({
         webClientId: webClientId,
@@ -22,19 +24,46 @@ export default function GoogleSignInButton({ onSuccess, disabled }: { onSuccess?
 
   const handlePress = async () => {
     try {
+        console.log('=== Google Sign-In Button Pressed ===');
+        console.log('Starting Google Sign-In process...');
+        
+        // Xóa session cũ để hiện lại dialog chọn tài khoản
+        try {
+          await GoogleSignin.signOut();
+          console.log('Previous session cleared');
+        } catch (e) {
+          console.log('No previous session to clear');
+        }
+        
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        console.log('Play Services verified');
+        
         await GoogleSignin.signIn();
+        console.log('Google Sign-In successful');
+        
         const { idToken } = await GoogleSignin.getTokens();
+        console.log('ID Token obtained:', idToken ? 'Yes' : 'No');
       if (!idToken) {
+        console.warn('No ID Token returned');
         Alert.alert('Google Sign-In failed', 'No idToken returned');
         return;
       }
+      
+      console.log('Exchanging token with backend...');
+      console.log('API_URL:', API_URL);
+      console.log('idToken length:', idToken?.length);
+      console.log('idToken first 50 chars:', idToken?.substring(0, 50));
+      
       // Exchange idToken for your app tokens
-      const response = await axios.post(`${API_URL}/auth/google`, { credential: idToken });
+      const response = await axios.post(`${API_URL}/auth/google-login`, { credential: idToken });
+      console.log('Backend response received');
+      
       const { accessToken, refreshToken, roles, userProfile, username: responseUsername, id } = response.data;
       
       console.log('Google login response:', response.data);
       console.log('Google login roles:', roles);
+      console.log('User ID:', id);
+      console.log('Username:', responseUsername);
       
       // Create user object from response data
       const user = {
@@ -43,20 +72,28 @@ export default function GoogleSignInButton({ onSuccess, disabled }: { onSuccess?
         roles: roles || [],
         userProfile: userProfile || {}
       };
+      console.log('User object created:', user);
       
       // Save tokens and user info to AsyncStorage (similar to loginWithUsername)
+      console.log('Saving to AsyncStorage...');
       await AsyncStorage.multiSet([
         ['accessToken', accessToken],
         ['refreshToken', refreshToken ?? ''],
         ['userRoles', JSON.stringify(roles || [])],
         ['userProfile', JSON.stringify(userProfile || {})],
       ]);
+      console.log('Data saved to AsyncStorage');
       
       console.log('Google login successful - User roles:', roles);
+      console.log('=== Google Sign-In Completed Successfully ===');
       
       // Call onSuccess callback to let AuthForms handle navigation
       onSuccess?.();
     } catch (e: any) {
+      console.error('=== Google Sign-In Error ===');
+      console.error('Error type:', e?.code);
+      console.error('Error message:', e?.message);
+      console.error('Full error:', JSON.stringify(e, null, 2));
       Alert.alert('Google Sign-In error', e?.message ?? 'Try again');
     }
   };

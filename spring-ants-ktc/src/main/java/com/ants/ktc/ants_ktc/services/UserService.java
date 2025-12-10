@@ -163,145 +163,134 @@ public class UserService {
 
         @CacheEvict(value = "manage-accounts", allEntries = true)
         public LoginResponseDto googleLogin(GoogleLoginRequestDto requestDto) {
-                String credential = requestDto.getCredential();
-                String url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + credential;
-                @SuppressWarnings("rawtypes")
-                ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-                @SuppressWarnings("unchecked")
-                Map<String, Object> payload = response.getBody();
-                if (response.getStatusCode() != HttpStatus.OK) {
-                        throw new HttpException("Invalid Google token", HttpStatus.UNAUTHORIZED);
-                }
-
-                String email;
-                if (payload != null && payload.containsKey("email")) {
-                        email = payload.get("email").toString();
-                } else {
-                        throw new HttpException("Email not found in token", HttpStatus.UNAUTHORIZED);
-                }
-
-                String iss = payload.get("iss").toString();
-                if (!iss.equals("https://accounts.google.com") && !iss.equals("accounts.google.com")) {
-                        throw new HttpException("Invalid Google token issuer", HttpStatus.UNAUTHORIZED);
-                }
-
-                long exp = Long.parseLong(payload.get("exp").toString());
-                if (exp < System.currentTimeMillis() / 1000) {
-                        throw new HttpException("Google token has expired", HttpStatus.UNAUTHORIZED);
-                }
-
-                User user = userJpaRepository.findByEmail(email);
-
-                if (user == null) {
-                        UserProfile existingProfile = profileJpaRepository.findByEmail(email).orElse(null);
-                        if (existingProfile != null) {
-                                throw new HttpException(
-                                                "Email already exists with username "
-                                                                + existingProfile.getUser().getUsername(),
-                                                HttpStatus.CONFLICT);
+                try {
+                        String credential = requestDto.getCredential();
+                        String url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + credential;
+                        @SuppressWarnings("rawtypes")
+                        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> payload = response.getBody();
+                        if (response.getStatusCode() != HttpStatus.OK) {
+                                throw new HttpException("Invalid Google token", HttpStatus.UNAUTHORIZED);
                         }
 
-                        user = new User();
-                        user.setUsername(email);
-                        user.setIsActive(0);
-                        UserProfile profile = new UserProfile();
+                        String email;
+                        if (payload != null && payload.containsKey("email")) {
+                                email = payload.get("email").toString();
+                        } else {
+                                throw new HttpException("Email not found in token", HttpStatus.UNAUTHORIZED);
+                        }
 
-                        profile.setEmail(email);
-                        profile.setFullName(payload.get("name").toString());
+                        String iss = payload.get("iss").toString();
+                        if (!iss.equals("https://accounts.google.com") && !iss.equals("accounts.google.com")) {
+                                throw new HttpException("Invalid Google token issuer", HttpStatus.UNAUTHORIZED);
+                        }
 
-                        // Upload ảnh lên Cloudinary
-                        String pictureUrl = payload.get("picture").toString();
-                        System.out.println("Attempting to upload Google avatar from URL: " + pictureUrl);
-                        try {
-                                // Tạo temporary file từ URL ảnh Google
-                                java.io.File tempFile = java.io.File.createTempFile("google_avatar", ".jpg");
-                                System.out.println("Created temp file: " + tempFile.getAbsolutePath());
+                        long exp = Long.parseLong(payload.get("exp").toString());
+                        if (exp < System.currentTimeMillis() / 1000) {
+                                throw new HttpException("Google token has expired", HttpStatus.UNAUTHORIZED);
+                        }
 
-                                // Download ảnh từ Google về temp file
-                                try (InputStream in = URI.create(pictureUrl).toURL().openStream();
-                                                FileOutputStream out = new FileOutputStream(tempFile)) {
-                                        IOUtils.copy(in, out);
+                        User user = userJpaRepository.findByEmail(email);
+
+                        if (user == null) {
+                                UserProfile existingProfile = profileJpaRepository.findByEmail(email).orElse(null);
+                                if (existingProfile != null && existingProfile.getUser() != null) {
+                                        // Email đã tồn tại, login với user cũ
+                                        user = existingProfile.getUser();
+                                        System.out.println("User already exists, logging in existing user: " + user.getUsername());
+                                } else {
+                                        // Tạo user mới
+                                        user = new User();
+                                        user.setUsername(email);
+                                        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Random password cho Google users
+                                        user.setIsActive(0);
+                                        UserProfile profile = new UserProfile();
+
+                                        profile.setEmail(email);
+                                        profile.setFullName(payload.get("name") != null ? payload.get("name").toString() : "");
+
+                                        // Upload ảnh lên Cloudinary
+                                        if (payload.get("picture") != null) {
+                                                String pictureUrl = payload.get("picture").toString();
+                                                System.out.println("Attempting to upload Google avatar from URL: " + pictureUrl);
+                                                try {
+                                                        java.io.File tempFile = java.io.File.createTempFile("google_avatar", ".jpg");
+                                                        System.out.println("Created temp file: " + tempFile.getAbsolutePath());
+
+                                                        try (InputStream in = URI.create(pictureUrl).toURL().openStream();
+                                                                        FileOutputStream out = new FileOutputStream(tempFile)) {
+                                                                IOUtils.copy(in, out);
+                                                        }
+                                                        System.out.println("Downloaded image from Google to temp file, size: " + tempFile.length() + " bytes");
+
+                                                        System.out.println("Uploading to Cloudinary...");
+                                                        Map<String, String> uploadResult = cloudinaryService.uploadFile(tempFile);
+                                                        String cloudinaryUrl = uploadResult.get("url");
+                                                        System.out.println("Upload successful! Cloudinary URL: " + cloudinaryUrl);
+                                                        profile.setAvatar(cloudinaryUrl);
+
+                                                        boolean deleted = tempFile.delete();
+                                                        System.out.println("Temp file deleted: " + deleted);
+                                                } catch (Exception e) {
+                                                        profile.setAvatar(null);
+                                                        System.err.println("Failed to upload avatar to Cloudinary: " + e.getMessage());
+                                                        e.printStackTrace();
+                                                }
+                                        }
+
+                                        user.setProfile(profile);
+                                        Role userRole = roleJpaRepository.findByName("Users").orElseThrow();
+                                        user.setRoles(List.of(userRole));
+                                        userJpaRepository.save(user);
                                 }
-                                System.out.println("Downloaded image from Google to temp file, size: "
-                                                + tempFile.length() + " bytes");
-
-                                // Upload lên Cloudinary
-                                System.out.println("Uploading to Cloudinary...");
-                                Map<String, String> uploadResult = cloudinaryService.uploadFile(tempFile);
-                                String cloudinaryUrl = uploadResult.get("url");
-                                System.out.println("Upload successful! Cloudinary URL: " + cloudinaryUrl);
-                                profile.setAvatar(cloudinaryUrl);
-
-                                // Xóa temp file
-                                boolean deleted = tempFile.delete();
-                                System.out.println("Temp file deleted: " + deleted);
-                        } catch (Exception e) {
-                                profile.setAvatar(null);
-                                System.err.println("Failed to upload avatar to Cloudinary: " + e.getMessage());
-                                e.printStackTrace(); // In stack trace để debug
                         }
 
-                        // Code cũ
-                        /*
-                         * String pictureUrl = payload.get("picture").toString();
-                         * String fileName = "google_" + System.currentTimeMillis() + ".jpg";
-                         * String uploadPath = "public/uploads/" + fileName;
-                         * try (InputStream in = URI.create(pictureUrl).toURL().openStream();
-                         * FileOutputStream out = new FileOutputStream(uploadPath)) {
-                         * IOUtils.copy(in, out);
-                         * profile.setAvatar("/uploads/" + fileName);
-                         * } catch (Exception e) {
-                         * profile.setAvatar(null);
-                         * }
-                         */
-                        user.setProfile(profile);
-                        // Gán role USER
-                        Role userRole = roleJpaRepository.findByName("Users").orElseThrow();
-                        user.setRoles(List.of(userRole));
-                        userJpaRepository.save(user);
-                }
-
-                if (user.getIsActive() == 1) {
-                        throw new HttpException("Your account is not active. Please contact support.",
-                                        HttpStatus.FORBIDDEN);
-                }
-
-                String accessToken = jwtService.generateAccessToken(user);
-                String refreshToken = jwtService.generateRefreshToken(user);
-
-                UserProfileResponseDto userProfileDto = null;
-                AddressResponseDto addressDto = null;
-
-                if (user.getProfile() != null) {
-                        if (user.getProfile().getAddress() != null
-                                        && user.getProfile().getAddress().getWard() != null) {
-                                addressDto = convertAddressDto(user.getProfile().getAddress());
+                        if (user.getIsActive() == 1) {
+                                throw new HttpException("Your account is not active. Please contact support.",
+                                                HttpStatus.FORBIDDEN);
                         }
 
-                        userProfileDto = UserProfileResponseDto.builder()
-                                        .id(user.getProfile().getId())
-                                        .fullName(user.getProfile().getFullName())
-                                        .email(user.getProfile().getEmail())
-                                        .phoneNumber(user.getProfile().getPhoneNumber())
-                                        .avatar(user.getProfile().getAvatar())
-                                        .bankName(user.getProfile().getBankName())
-                                        .bankNumber(user.getProfile().getBankNumber())
-                                        .binCode(user.getProfile().getBinCode())
-                                        .accoutHolderName(user.getProfile().getAccoutHolderName())
-                                        .address(addressDto)
+                        String accessToken = jwtService.generateAccessToken(user);
+                        String refreshToken = jwtService.generateRefreshToken(user);
+
+                        UserProfileResponseDto userProfileDto = null;
+                        AddressResponseDto addressDto = null;
+
+                        if (user.getProfile() != null) {
+                                if (user.getProfile().getAddress() != null
+                                                && user.getProfile().getAddress().getWard() != null) {
+                                        addressDto = convertAddressDto(user.getProfile().getAddress());
+                                }
+
+                                userProfileDto = UserProfileResponseDto.builder()
+                                                .id(user.getProfile().getId())
+                                                .fullName(user.getProfile().getFullName())
+                                                .email(user.getProfile().getEmail())
+                                                .phoneNumber(user.getProfile().getPhoneNumber())
+                                                .avatar(user.getProfile().getAvatar())
+                                                .bankName(user.getProfile().getBankName())
+                                                .bankNumber(user.getProfile().getBankNumber())
+                                                .binCode(user.getProfile().getBinCode())
+                                                .accoutHolderName(user.getProfile().getAccoutHolderName())
+                                                .address(addressDto)
+                                                .build();
+                        }
+                        return LoginResponseDto.builder()
+                                        .id(user.getId())
+                                        .username(user.getUsername())
+                                        .userProfile(userProfileDto)
+                                        .roles(user.getRoles() != null
+                                                        ? user.getRoles().stream().map(Role::getName).toList()
+                                                        : null)
+                                        .accessToken(accessToken)
+                                        .refreshToken(refreshToken)
                                         .build();
+                } catch (Exception e) {
+                        System.err.println("Error in googleLogin: " + e.getMessage());
+                        e.printStackTrace();
+                        throw new HttpException("Google login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
-                return LoginResponseDto.builder()
-                                .id(user.getId())
-                                .username(user.getUsername())
-                                .userProfile(userProfileDto)
-                                .roles(user.getRoles() != null
-                                                ? user.getRoles().stream().map(Role::getName).toList()
-                                                : null)
-                                .accessToken(accessToken)
-                                .refreshToken(refreshToken)
-                                .build();
-
         }
 
         @CacheEvict(value = "manage-accounts", allEntries = true)
