@@ -47,6 +47,8 @@ import Colors from '../../../styles/colors';
 import { useFavoriteStore } from '../../../stores/FavoriteStore';
 import { useSearchLocation } from '../../../hooks/useSearchLocation';
 
+import CompareFloatingButton from '../../../components/compare/CompareFloatingButton';
+
 const { width } = Dimensions.get('window');
 
 // --- Quick Action Button Component ---
@@ -1225,6 +1227,7 @@ export default function UserHomeScreen() {
           </View>
         </View>
       )}
+      <CompareFloatingButton />
       
       {/* Filter Modal */}
       <FilterModal

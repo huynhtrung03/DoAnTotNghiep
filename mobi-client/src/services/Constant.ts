@@ -4,9 +4,9 @@
 
 //trung
 // export const API_URL = "https://rustproof-unpertinently-judy.ngrok-free.dev/api";
-export const API_URL = "http://192.168.1.10:3333/api";
+// export const API_URL = "http://192.168.1.5:3333/api";
 
-
+export const API_URL = "https://directions-sectors-seemed-aspect.trycloudflare.com/api";
 
 
 // export const URL_IMAGE = "http://localhost:3333";

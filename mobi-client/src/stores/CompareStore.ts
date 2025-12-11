@@ -1,9 +1,12 @@
-import { RoomInUser } from '../types/types';
+import { RoomDetail } from '../types/types';
+// import { RoomInUser } from '../types/types';
+
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
 export interface ItemRoom {
-    room: RoomInUser;
+    // room: RoomInUser;
+    room: RoomDetail;
 }
 
 interface CompareStore {

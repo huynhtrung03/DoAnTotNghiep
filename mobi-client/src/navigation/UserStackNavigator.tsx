@@ -18,6 +18,8 @@ import HistoryScreen from '../screens/history/RentalHistoryScreen/HistoryScreen'
 import BankScreen from '../screens/user/tabs/bank/BankScreen';
 import PaymentResultScreen from '../screens/user/tabs/PaymentResult/PaymentResultScreen';
 
+
+
 const Stack = createNativeStackNavigator();
 
 export default function UserStackNavigator() {

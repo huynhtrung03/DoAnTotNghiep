@@ -16,6 +16,9 @@ import RegisterScreen from '../screens/auth/RegisterScreen/RegisterScreen';
 // Import màn hình chi tiết (dùng chung cho cả 2 role)
 import RoomDetailScreen from '../screens/main/RoomDetailScreen/RoomDetailScreen';
 
+import CompareRoomsScreen from '../screens/compare/CompareRoomsScreen';
+
+
 // Import NotificationScreen
 import NotificationScreen from '../screens/notification/NotificationScreen';
 
@@ -27,6 +30,7 @@ import HistoryRoomDetail from '../components/rooms/HistoryRoomDetail/HistoryRoom
 
 // Import PaymentWebView
 import PaymentWebView from '../screens/landlord/paymenthistory/PaymentWebView';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -154,6 +158,15 @@ export default function RootNavigator() {
               headerTitleStyle: {
                 fontWeight: '700',
               },
+            }} 
+          />
+
+          <Stack.Screen 
+            name="CompareRooms" 
+            component={CompareRoomsScreen}
+            options={{ 
+              headerShown: false, // Vì CompareRoomsScreen đã có header riêng
+              presentation: 'modal', // Hiển thị như modal từ dưới lên
             }} 
           />
           <Stack.Screen 
