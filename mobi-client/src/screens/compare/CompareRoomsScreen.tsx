@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { formatPrice } from '../../utils/format';
 import { URL_IMAGE } from '../../services/Constant';
+import BookingButton from '../../components/rooms/BookingModal/BookingButton';
 
 
 export default function CompareRoomsScreen() {
@@ -72,7 +73,7 @@ export default function CompareRoomsScreen() {
             {/* Bảng so sánh */}
 
 <View style={styles.compareTable}>
-  <View style={styles.bookingSection}>
+  {/* <View style={styles.bookingSection}>
     <Text style={styles.bookingSectionTitle}>Đặt phòng ngay</Text>
     <View style={styles.bookingButtons}>
       {items.map((item, index) => (
@@ -89,7 +90,18 @@ export default function CompareRoomsScreen() {
         </Pressable>
       ))}
     </View>
+  </View> */}
+  <View style={styles.bookingSection}>
+  {/* <Text style={styles.bookingSectionTitle}>Đặt phòng ngay</Text> */}
+  <View style={styles.bookingButtons}>
+    {items.map((item, index) => (
+      <BookingButton 
+        key={`booking-${item.room.id}`}
+        room={item.room}
+      />
+    ))}
   </View>
+</View>
   <CompareRow 
     label="Giá thuê"
     values={[
