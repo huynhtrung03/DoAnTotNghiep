@@ -11,13 +11,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { RentalData, BookingResponse } from '../../../types/rental';
-import { userFetchBookings } from '../../../services/BookingService';
-import RentalHistoryItem from '../../../components/history/RentalHistoryItem';
-import PaymentModal from '../../../components/history/PaymentModal';
-import RequestModal from '../../../components/history/RequestModal';
-import ImageViewModal from '../../../components/history/ImageViewModal';
-import styles from '../../../styles/screens/user/HistoryScreen.styles';
+import { RentalData, BookingResponse } from '../../types/rental';
+import { userFetchBookings } from '../../services/BookingService';
+import RentalHistoryItem from '../../components/history/RentalHistoryItem';
+import PaymentModal from '../../components/history/PaymentModal';
+import RequestModal from '../../components/history/RequestModal';
+import ImageViewModal from '../../components/history/ImageViewModal';
+import styles from './HistoryScreen.styles';
 
 export default function HistoryScreen() {
   const navigation = useNavigation<any>();

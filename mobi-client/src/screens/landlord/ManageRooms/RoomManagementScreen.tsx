@@ -26,7 +26,7 @@ import {
 import { getPostTypes } from '../../../services/TypePostService';
 import { getProfileById } from '../../../services/ProfileService';
 import { URL_IMAGE } from '../../../services/Constant';
-import { Colors } from '../../../styles/colors';
+import { Colors } from '../../../colors/colors';
 import type { TypePost, PaginatedResponse } from '../../../types/types';
 import { styles } from './RoomManagementScreen.style';
 import EditPostModal from './EditPostModal';

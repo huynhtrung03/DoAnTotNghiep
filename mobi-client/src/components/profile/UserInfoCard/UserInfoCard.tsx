@@ -27,7 +27,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import Colors, { withOpacity } from '../../../styles/colors';
+import Colors, { withOpacity } from '../../../colors/colors';
 import { getLandlordByRoomId } from '../../../services/RoomService';
 import { 
   addFavorite, 

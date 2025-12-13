@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors } from '../../../../styles/colors';
+import { Colors } from '../../../../colors/colors';
 import { RoomFormData } from '../AddRoom';
 import { TypePost } from '../../../../types/types';
 import { getPostTypes } from '../../../../services/TypePostService';

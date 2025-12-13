@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 import { createPayment } from '../../../../services/PaymentServive';
 import NotificationService from '../../../../services/NotificationServiceMobi';
 

@@ -23,7 +23,7 @@ import {
   PaginatedResponse,
   updateRequirementWithImage,
 } from '../../../../services/Requirements';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 import { URL_IMAGE } from '../../../../services/Constant';
 
 type StatusType = 0 | 1 | 2;

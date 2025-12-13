@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '../../../styles/colors';
+import { Colors } from '../../../colors/colors';
 import { useNavigation } from '@react-navigation/native';
 import { createRoom } from '../../../services/RoomService';
 import { getProfileById } from '../../../services/ProfileService';

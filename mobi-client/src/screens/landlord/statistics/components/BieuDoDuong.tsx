@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Line, Circle, Text as SvgText, G, Rect } from 'react-native-svg';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 32; // Padding 16px mỗi bên

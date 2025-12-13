@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 import {
   getAllKPICounts,
   getAllStatistics,

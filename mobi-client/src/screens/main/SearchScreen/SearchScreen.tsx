@@ -16,7 +16,7 @@ import MapboxGL from '@rnmapbox/maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
-import styles from '../../../styles/screens/user/SearchScreen.styles';
+import styles from './SearchScreen.styles';
 import { useSearchLocation, getMarkerScale } from '../../../hooks/useSearchLocation';
 import SearchRoomCard from '../../../components/rooms/SearchRoomCard/SearchRoomCard';
 

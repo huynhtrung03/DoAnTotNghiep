@@ -15,7 +15,7 @@ import {
   getTransactionsByUserIdAndDateRange,
 } from '../../../services/PaymentServive';
 import { landlordService } from '../../../services/LandlordService';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 import PaymentStats from './components/PaymentStats';
 import PaymentFilter from './components/PaymentFilter';
 import PaymentPagination from './components/PaymentPagination';

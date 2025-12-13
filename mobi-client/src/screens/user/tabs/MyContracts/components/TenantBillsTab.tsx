@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
-import Colors from '../../../../../styles/colors';
+import Colors from '../../../../../colors/colors';
 import { BillData, ContractData } from '../../../../../types/types';
 import { BillService } from '../../../../../services/BillService';
 import { styles } from './TenantBillsTab.styles';

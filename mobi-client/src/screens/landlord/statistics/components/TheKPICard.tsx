@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 
 interface TheKPICardProps {
   tieuDe: string;

@@ -6,7 +6,7 @@ import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { AuthLayout, FormCard, FormInput } from '../../../components/auth/shared';
 import { RegisterService } from '../../../services/RegisterService';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 
 type RegisterInputs = {
   fullName: string;

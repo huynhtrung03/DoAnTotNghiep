@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors } from '../../../../styles/colors';
+import { Colors } from '../../../../colors/colors';
 import TextInputWithLabel from '../components/TextInputWithLabel';
 import { RoomFormData } from '../AddRoom';
 import { getProvinces, getDistricts, getWards } from '../../../../services/AddressService';

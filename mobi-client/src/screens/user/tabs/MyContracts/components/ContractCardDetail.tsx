@@ -17,7 +17,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { ContractData } from '../../../../../types/types';
 import { ContractService } from '../../../../../services/ContractService';
 import { URL_IMAGE } from '../../../../../services/Constant';
-import Colors from '../../../../../styles/colors';
+import Colors from '../../../../../colors/colors';
 import styles from './ContractCardDetail.styles';
 import TenantBillsTab from './TenantBillsTab';
 

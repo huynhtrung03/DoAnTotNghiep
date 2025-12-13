@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Colors from '../../../../../styles/colors';
+import Colors from '../../../../../colors/colors';
 import { BillData, ContractData } from '../../../../../types/types';
 import { styles } from './BillDetailModal.styles';
 

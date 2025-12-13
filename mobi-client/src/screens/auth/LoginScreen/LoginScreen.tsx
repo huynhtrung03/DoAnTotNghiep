@@ -194,7 +194,7 @@ import { AuthLayout, FormCard, FormInput } from '../../../components/auth/shared
 import GoogleSignInButton from '../../../components/common/Button/GoogleSignInButton';
 import { loginWithUsername, getUserRoles } from '../../../lib/auth';
 import { styles } from './LoginScreen.styles';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 
 type FormValues = {
   username: string;

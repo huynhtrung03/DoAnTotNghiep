@@ -42,8 +42,8 @@ import { getPublicStatistics, PublicStatistics } from '../../../services/Statist
 import { getAllFavoriteIds } from '../../../services/FavoriteService';
 import { getNotificationsForUser } from '../../../services/NotificationService';
 import RoomCard from '../../../components/rooms/RoomCard/RoomCard';
-import styles from '../../../styles/screens/user/HomeScreen.styles';
-import Colors from '../../../styles/colors';
+import styles from './HomeScreen.styles';
+import Colors from '../../../colors/colors';
 import { useFavoriteStore } from '../../../stores/FavoriteStore';
 import { useSearchLocation } from '../../../hooks/useSearchLocation';
 

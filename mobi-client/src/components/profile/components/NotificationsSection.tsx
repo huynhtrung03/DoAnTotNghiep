@@ -13,7 +13,7 @@ import React from 'react';
 import { View, Text, Switch, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NotificationsSectionProps } from '../types';
-import { styles } from '../../../styles/screens/user/ProfileInformation.styles';
+import { styles } from '../ProfileInformation.styles';
 
 const NotificationsSection: React.FC<NotificationsSectionProps> = ({
   emailNotificationsEnabled,

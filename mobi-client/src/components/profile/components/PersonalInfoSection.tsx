@@ -14,7 +14,7 @@ import React from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PersonalInfoSectionProps } from '../types';
-import { styles } from '../../../styles/screens/user/ProfileInformation.styles';
+import { styles } from '../ProfileInformation.styles';
 
 const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
   fullName,

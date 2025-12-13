@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import Svg, { Rect, Text as SvgText, G, Line } from 'react-native-svg';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 32;

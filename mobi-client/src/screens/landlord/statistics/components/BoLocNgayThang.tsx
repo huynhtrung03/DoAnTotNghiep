@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 
 interface BoLocNgayThangProps {
   hienThi: boolean;

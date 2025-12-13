@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FormCard, FormInput } from '../../../components/auth/shared';
 import { updatePassword } from '../../../services/ResetPassService';
 import { styles } from './ChangePassword.styles';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 
 /**
  * Màn hình đổi mật khẩu cho người dùng đã đăng nhập

@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 import ZaloPayService, { ZaloPayErrorCode } from '../../../../services/ZaloPayService';
 import NotificationService from '../../../../services/NotificationServiceMobi';
 import { ZaloPayApiService } from '../../../../services/api/ZaloPayApiService';

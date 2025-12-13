@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import Colors, { withOpacity } from '../../styles/colors';
+import Colors, { withOpacity } from '../../colors/colors';
 
 export default StyleSheet.create({
   container: {

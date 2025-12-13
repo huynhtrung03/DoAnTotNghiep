@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ContractDisplayData, statusMap } from '../types';
 import { styles } from '../styles';
-import Colors from '../../../../../styles/colors';
+import Colors from '../../../../../colors/colors';
 
 interface ContractCardProps {
   contract: ContractDisplayData;

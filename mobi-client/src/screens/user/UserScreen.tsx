@@ -29,7 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import * as Updates from 'expo-updates';
-import Colors, { withOpacity } from '../../styles/colors';
+import Colors, { withOpacity } from '../../colors/colors';
 
 interface UserProfileData {
   id: string;

@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Text,
 } from 'react-native';
-import { Colors } from '../../../../styles/colors';
+import { Colors } from '../../../../colors/colors';
 
 interface NumberInputWithFormatProps {
   label: string;

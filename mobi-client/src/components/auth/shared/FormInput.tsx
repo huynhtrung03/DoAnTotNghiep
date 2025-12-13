@@ -9,7 +9,7 @@ import {
   TextInputProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 
 interface FormInputProps extends TextInputProps {
   label: string;

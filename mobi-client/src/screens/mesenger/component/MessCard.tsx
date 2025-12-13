@@ -18,7 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ChatUser } from '../../../services/ChatService';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 import styles from '../MesengerScreen.styles';
 import { URL_IMAGE } from '../../../services/Constant';
 

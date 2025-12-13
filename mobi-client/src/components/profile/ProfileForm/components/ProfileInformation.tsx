@@ -25,7 +25,7 @@ import PersonalInfoSection from '../../components/PersonalInfoSection';
 import AddressSection from '../../components/AddressSection';
 
 // Import Styles
-import { styles } from '../../../../styles/screens/user/ProfileInformation.styles';
+import { styles } from '../../ProfileInformation.styles';
 
 // Import Functions
 import {

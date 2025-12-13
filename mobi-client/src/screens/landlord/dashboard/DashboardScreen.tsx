@@ -35,7 +35,7 @@ import { getProfileById, getFullName } from '../../../services/ProfileService';
 
 // Import Styles
 import { styles } from './styles/DashboardScreen.style';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 
 // ===== TYPES =====
 interface DashboardStatistics {

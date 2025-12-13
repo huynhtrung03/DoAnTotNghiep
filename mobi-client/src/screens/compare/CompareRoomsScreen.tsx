@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image, Pressable, SafeAreaView } fr
 import { Ionicons } from '@expo/vector-icons';
 import { useCompareStore } from '../../stores/CompareStore';
 import { useNavigation } from '@react-navigation/native';
-import Colors from '../../styles/colors';
+import Colors from '../../colors/colors';
 import { formatPrice } from '../../utils/format';
 import { URL_IMAGE } from '../../services/Constant';
 import BookingButton from '../../components/rooms/BookingModal/BookingButton';

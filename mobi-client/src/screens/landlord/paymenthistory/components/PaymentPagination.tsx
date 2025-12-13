@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 
 interface PaymentPaginationProps {
   currentPage: number;

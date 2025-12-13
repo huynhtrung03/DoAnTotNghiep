@@ -1,5 +1,5 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import Colors, { withOpacity } from '../../../../styles/colors';
+import Colors, { withOpacity } from '../../../../colors/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

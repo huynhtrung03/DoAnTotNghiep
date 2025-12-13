@@ -5,7 +5,7 @@ import { AuthLayout, FormCard, FormInput } from '../../../components/auth/shared
 import { API_URL } from '../../../services/Constant';
 import axios from 'axios';
 import { styles } from './ForgotPasswordScreen.styles';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation<any>();

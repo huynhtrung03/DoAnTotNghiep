@@ -17,7 +17,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Colors from '../../styles/colors';
+import Colors from '../../colors/colors';
 
 export interface PaymentMethod {
   id: string;

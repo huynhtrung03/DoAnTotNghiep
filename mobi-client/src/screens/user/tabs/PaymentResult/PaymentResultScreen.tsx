@@ -19,7 +19,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 import { confirmPayment } from '../../../../services/PaymentServive';
 import styles from './PaymentResultScreen.style';
 

@@ -21,7 +21,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { getRoomById, updateRoom } from '../../../services/RoomService';
 import { getPostTypes } from '../../../services/TypePostService';
 import { getProvinces, getDistricts, getWards } from '../../../services/AddressService';
-import { Colors } from '../../../styles/colors';
+import { Colors } from '../../../colors/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import Colors, { withOpacity } from '../../../styles/colors';
+import Colors, { withOpacity } from '../../../colors/colors';
 
 interface Language {
   code: string;

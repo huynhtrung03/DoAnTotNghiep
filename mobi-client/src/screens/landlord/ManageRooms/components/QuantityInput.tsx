@@ -6,7 +6,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors } from '../../../../styles/colors';
+import { Colors } from '../../../../colors/colors';
 
 interface QuantityInputProps {
   value: number;

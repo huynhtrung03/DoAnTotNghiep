@@ -41,7 +41,7 @@ import {
   markConversationAsRead,
   getUserStatus,
 } from '../../services/ChatService';
-import Colors from '../../styles/colors';
+import Colors from '../../colors/colors';
 import styles from './ChatScreenDetail.style';
 import MessengerNotification from '../../services/notification/MesengerNotification';
 

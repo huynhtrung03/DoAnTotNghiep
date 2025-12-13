@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors } from '../../../../styles/colors';
+import { Colors } from '../../../../colors/colors';
 import TextInputWithLabel from '../components/TextInputWithLabel';
 import { RoomFormData } from '../AddRoom';
 import { Video } from 'expo-av';

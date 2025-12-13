@@ -23,7 +23,7 @@ import { getRoomById } from '../../../../services/RoomService';
 import { URL_IMAGE } from '../../../../services/Constant';
 import UserInfoCard from '../../../profile/UserInfoCard/UserInfoCard';
 import BookingModal from '../../BookingModal/BookingModal';
-import Colors, { withOpacity } from '../../../../styles/colors';
+import Colors, { withOpacity } from '../../../../colors/colors';
 import { styles } from './RoomCartDetail.styles';
 import { useFavoriteStore } from '../../../../stores/FavoriteStore';
 import { 

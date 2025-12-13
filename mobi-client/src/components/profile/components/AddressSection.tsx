@@ -13,7 +13,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AddressSectionProps } from '../types';
-import { styles } from '../../../styles/screens/user/ProfileInformation.styles';
+import { styles } from '../ProfileInformation.styles';
 
 const AddressSection: React.FC<AddressSectionProps> = ({ address }) => {
   return (

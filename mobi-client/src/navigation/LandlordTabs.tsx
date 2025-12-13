@@ -16,7 +16,7 @@ import ZaloPayScreen from '../screens/landlord/paymenthistory/components/ZaloPay
 import StatisticsDashboardScreen from '../screens/landlord/statistics/StatisticsDashboardScreen';
 
 
-import Colors, { withOpacity } from '../styles/colors';
+import Colors, { withOpacity } from '../colors/colors';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();

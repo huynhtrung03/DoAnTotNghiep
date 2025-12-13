@@ -5,7 +5,7 @@ import {
   ScrollView,
   Text,
 } from 'react-native';
-import { Colors } from '../../../../styles/colors';
+import { Colors } from '../../../../colors/colors';
 import TextInputWithLabel from '../components/TextInputWithLabel';
 import { RoomFormData } from '../AddRoom';
 

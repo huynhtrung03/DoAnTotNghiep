@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 import DepositModal from './DepositModal';
 import PaymentList, { PaymentMethod } from '../../../../components/payment/PaymentList';
 

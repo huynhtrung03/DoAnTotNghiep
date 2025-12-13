@@ -1,5 +1,5 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import Colors from '../../../../../styles/colors';
+import Colors from '../../../../../colors/colors';
 
 const { width } = Dimensions.get('window');
 const CARD_MARGIN = 12;

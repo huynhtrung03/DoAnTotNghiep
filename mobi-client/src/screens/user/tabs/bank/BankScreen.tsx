@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 import styles from './BankScreen.style';
 
 export default function BankScreen() {

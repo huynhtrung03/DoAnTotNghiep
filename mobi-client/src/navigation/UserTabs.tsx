@@ -8,7 +8,7 @@ import SearchScreen from '../screens/main/SearchScreen/SearchScreen';
 import FavoritedScreen from '../screens/favorites/FavoritesScreen/FavoritedScreen';
 import MessengerScreen from '../screens/mesenger/MesengerScreen';
 import UserStackNavigator from './UserStackNavigator';
-import Colors, { withOpacity } from '../styles/colors';
+import Colors, { withOpacity } from '../colors/colors';
 import { useFavoriteStore } from '../stores/FavoriteStore';
 import { getAllFavoriteIds } from '../services/FavoriteService';
 import AsyncStorage from '@react-native-async-storage/async-storage';

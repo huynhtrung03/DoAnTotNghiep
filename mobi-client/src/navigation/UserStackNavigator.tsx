@@ -14,7 +14,7 @@ import RequestManagementScreen from '../screens/user/tabs/RequestManagement/Requ
 import MyContracts from '../screens/user/tabs/MyContracts/MyContracts';
 import ContractDetailScreen from '../screens/user/tabs/MyContracts/ContractDetailScreen';
 import ChangePasswordScreen from '../screens/auth/ChangePassword/ChangePassword';
-import HistoryScreen from '../screens/history/RentalHistoryScreen/HistoryScreen';
+import HistoryScreen from '../screens/history/HistoryScreen';
 import BankScreen from '../screens/user/tabs/bank/BankScreen';
 import PaymentResultScreen from '../screens/user/tabs/PaymentResult/PaymentResultScreen';
 import ResidentScreen from '../screens/user/tabs/Residents/ResidentScreen';

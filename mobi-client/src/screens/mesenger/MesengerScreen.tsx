@@ -27,7 +27,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChatUser, listenForConversations, markConversationAsRead, setChatActive, setChatInactive, sendHeartbeat, getUsersStatus } from '../../services/ChatService';
 import { getFirestore, collection, query, where, onSnapshot } from '@react-native-firebase/firestore';
-import Colors from '../../styles/colors';
+import Colors from '../../colors/colors';
 import MessCard from './component/MessCard';
 import AIChatbot from './component/AIChatbot';
 import styles from './MesengerScreen.styles';

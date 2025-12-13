@@ -20,7 +20,7 @@ import { ContractDisplayData, statusMap, ContractStatus } from './types';
 import { ContractData } from '../../../../types/types';
 import { styles } from './styles';
 import ContractCard from './components/ContractCard';
-import Colors from '../../../../styles/colors';
+import Colors from '../../../../colors/colors';
 
 const MyContracts = () => {
   const navigation = useNavigation();

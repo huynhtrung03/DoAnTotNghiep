@@ -13,7 +13,7 @@ import React from 'react';
 import { View, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AvatarSectionProps } from '../types';
-import { styles } from '../../../styles/screens/user/ProfileInformation.styles';
+import { styles } from '../ProfileInformation.styles';
 
 const AvatarSection: React.FC<AvatarSectionProps> = ({
   avatarUri,

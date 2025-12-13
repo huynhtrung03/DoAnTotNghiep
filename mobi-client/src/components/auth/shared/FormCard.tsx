@@ -1,7 +1,7 @@
 // Card wrapper cho Auth forms
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 
 interface FormCardProps {
   children: React.ReactNode;

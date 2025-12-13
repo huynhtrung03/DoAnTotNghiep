@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors } from '../../../../styles/colors';
+import { Colors } from '../../../../colors/colors';
 import NumberInputWithFormat from '../components/NumberInputWithFormat';
 import QuantityInput from '../components/QuantityInput';
 import { RoomFormData } from '../AddRoom';

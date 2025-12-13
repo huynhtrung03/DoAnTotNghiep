@@ -3,7 +3,7 @@ import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Colors from '../../../styles/colors';
+import Colors from '../../../colors/colors';
 import { confirmPayment } from '../../../services/PaymentServive';
 
 interface RouteParams {
