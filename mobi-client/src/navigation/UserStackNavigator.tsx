@@ -19,6 +19,8 @@ import BankScreen from '../screens/user/tabs/bank/BankScreen';
 import PaymentResultScreen from '../screens/user/tabs/PaymentResult/PaymentResultScreen';
 import ResidentScreen from '../screens/user/tabs/Residents/ResidentScreen';
 
+
+
 const Stack = createNativeStackNavigator();
 
 export default function UserStackNavigator() {

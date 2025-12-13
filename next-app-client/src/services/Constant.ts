@@ -9,3 +9,4 @@ export const URL_PPYTHON = "http://localhost:5001";
 // export const API_URL = "https://rentalroom-51g4.onrender.com/api";
 // export const URL_IMAGE = "https://rentalroom-51g4.onrender.com";
 // export const URL_PPYTHON = "https://ants-chatbot.onrender.com"
+

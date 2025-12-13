@@ -1,11 +1,15 @@
 // components/cards/RoomCard.tsx
-import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RoomInUser } from '../../../types/types';
 import { URL_IMAGE } from '../../../services/Constant';
 import RoomCardActions from '../RoomCardActions';
+import { useCompareStore } from '../../../stores/CompareStore';
+
+import { getRoomById } from '../../../services/RoomService';
+import { RoomDetail } from '../../../types/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32; // 16px padding on each side
@@ -23,6 +27,53 @@ const getFullPrice = (price: number) => new Intl.NumberFormat('vi-VN').format(pr
 
 export default function RoomCard({ room }: { room: RoomInUser }) {
   const navigation = useNavigation<any>();
+
+// Zustand store for compare functionality
+    const { items, addItem, removeItem } = useCompareStore();
+
+
+      const [isAddingToCompare, setIsAddingToCompare] = useState(false);
+
+    const isInCompare = items.some(item => item.room.id === room.id);
+  
+  // const handleCompareToggle = () => {
+  //   if (isInCompare) {
+  //     removeItem(room.id);
+  //   } else {
+  //     // Kiểm tra nếu đã có 2 phòng thì thay thế phòng đầu tiên
+  //     if (items.length >= 2) {
+  //       removeItem(items[0].room.id);
+  //     }
+  //     addItem({ room });
+  //   }
+  // };
+  const handleCompareToggle = async () => {
+  if (isInCompare) {
+    removeItem(room.id);
+  } else {
+    setIsAddingToCompare(true);
+    try {
+      if (items.length >= 2) {
+        removeItem(items[0].room.id);
+      }
+      
+      const roomDetail = await getRoomById(room.id); // Bỏ type annotation
+      
+      if (roomDetail) { // Kiểm tra null trước khi dùng
+        addItem({ room: roomDetail });
+      } else {
+        console.error('Không thể lấy thông tin chi tiết phòng');
+        // Có thể hiển thị thông báo lỗi cho user
+      }
+    } catch (error) {
+      console.error('Lỗi khi fetch room detail:', error);
+      // Có thể hiển thị thông báo lỗi cho user
+    } finally {
+      setIsAddingToCompare(false);
+    }
+  }
+};
+  ///////
   
   const mainMediaUri = room.images?.[0]?.url 
     ? `${URL_IMAGE}${room.images[0].url.startsWith('/') ? room.images[0].url.slice(1) : room.images[0].url}` 
@@ -66,10 +117,50 @@ export default function RoomCard({ room }: { room: RoomInUser }) {
                   </View>
                 )}
               </View>
+{/* //compare */}
+              {/* <View style={styles.actionsContainer}>
+                <TouchableOpacity 
+                  onPress={handleCompareToggle}
+                  style={[
+                    styles.compareButton,
+                    isInCompare && styles.compareButtonSelected
+                  ]}
+                >
+                  <Ionicons 
+                    name={isInCompare ? "checkmark" : "add"} 
+                    size={16} 
+                    color="white" 
+                  />
+                </TouchableOpacity>
+                </View> */}
+                <TouchableOpacity 
+    onPress={handleCompareToggle}
+    style={[
+      styles.compareButton,
+      isInCompare && styles.compareButtonSelected
+    ]}
+    disabled={isAddingToCompare} // Disable khi đang loading
+  >
+    {isAddingToCompare ? (
+      <ActivityIndicator size={16} color="white" />
+    ) : (
+      <Ionicons 
+        name={isInCompare ? "checkmark" : "add"} 
+        size={16} 
+        color="white" 
+      />
+    )}
+  </TouchableOpacity>
+
+
+                
+
+
               <View style={styles.heartContainer}>
                 <RoomCardActions room={room} showHeartOnly />
               </View>
             </View>
+            
 
             {/* Bottom info on image */}
             <View style={styles.imageBottomInfo}>
@@ -157,6 +248,28 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   
+  //compare
+  actionsContainer: {
+    flexDirection: 'column',
+    gap: 8,
+    alignItems: 'flex-end',
+  },
+  compareButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(26, 26, 25, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  compareButtonSelected: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  
+
   // Image section
   imageContainer: {
     height: 220,
