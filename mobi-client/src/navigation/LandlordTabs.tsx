@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,12 +9,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Import màn hình cho Landlord
 import DashboardScreen from '../screens/landlord/dashboard/DashboardScreen';
 import PaymentHistoryScreen from '../screens/landlord/paymenthistory/PaymentHistoryScreen';
+import RoomManagementScreen from '../screens/landlord/ManageRooms/RoomManagementScreen';
 import UserScreen from '../screens/user/UserScreen';
 import MesengerScreen from '../screens/mesenger/MesengerScreen';
-import PaymentScreen from '../screens/PaymentScreen';
+import ZaloPayScreen from '../screens/landlord/paymenthistory/components/ZaloPayScreen';
+import StatisticsDashboardScreen from '../screens/landlord/statistics/StatisticsDashboardScreen';
+
+
 import Colors, { withOpacity } from '../styles/colors';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 // Placeholder Component
 const PlaceholderScreen = ({ title, icon }: { title: string; icon: string }) => {
@@ -31,17 +37,33 @@ const PlaceholderScreen = ({ title, icon }: { title: string; icon: string }) => 
 };
 
 // Các màn hình placeholder
-const RoomManagementScreen = () => (
-  <PlaceholderScreen title="Quản lý phòng trọ" icon="home" />
-);
-
 const ContractManagementScreen = () => (
   <PlaceholderScreen title="Quản lý hợp đồng" icon="document-text" />
 );
 
 const FinanceScreen = () => <PaymentHistoryScreen />;
 
-// Get gradient colors for each tab
+// Stack Navigator for Payment Flow (Contracts tab)
+const ContractStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen 
+        name="ZaloPayScreen" 
+        component={ZaloPayScreen}
+      />
+      <Stack.Screen 
+        name="StatisticsDashboard" 
+        component={StatisticsDashboardScreen}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Get gradient colors for each taba
 const getTabGradient = (index: number) => {
   const gradients = [
     Colors.gradients.blue,     // Dashboard
@@ -224,16 +246,16 @@ export default function LandlordTabs() {
         }}
       />
       <Tab.Screen 
-        name="Contracts" 
-        component={PaymentScreen}
+        name="Statistics" 
+        component={StatisticsDashboardScreen}
         options={{
           tabBarLabel: ({ focused }) => (
-            <TabLabel label="Thanh toán" focused={focused} tabIndex={2} />
+            <TabLabel label="Thống kê" focused={focused} tabIndex={2} />
           ),
           tabBarIcon: ({ size, focused }) => (
             <TabIcon 
-              name="card-outline" 
-              focusedName="card"
+              name="stats-chart-outline" 
+              focusedName="stats-chart"
               size={size} 
               focused={focused}
               tabIndex={2}

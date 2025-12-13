@@ -30,7 +30,13 @@ public class ZPModule extends ReactContextBaseJavaModule {
     private final ActivityEventListener mActivityEventListener = new BaseActivityEventListener() {
         @Override
         public void onNewIntent(Intent intent) {
-            ZaloPaySDK.getInstance().onResult(intent);
+            try {
+                if (intent != null) {
+                    ZaloPaySDK.getInstance().onResult(intent);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     };
 
@@ -38,6 +44,13 @@ public class ZPModule extends ReactContextBaseJavaModule {
         super(reactContext);
         this.reactContext = reactContext;
         reactContext.addActivityEventListener(mActivityEventListener);
+        
+        // Khởi tạo SDK ngay lập tức để sẵn sàng xử lý deep link
+        try {
+            ZaloPaySDK.init(${appId}, vn.zalopay.sdk.Environment.SANDBOX);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -55,10 +68,8 @@ public class ZPModule extends ReactContextBaseJavaModule {
         Activity currentActivity = getCurrentActivity();
         if (currentActivity == null) return;
 
-        // Khởi tạo SDK với AppID
-        // Environment.SANDBOX cho môi trường test
-        // Environment.PRODUCTION cho môi trường thật
-        ZaloPaySDK.init(${appId}, vn.zalopay.sdk.Environment.SANDBOX);
+        // SDK đã được khởi tạo trong constructor
+        // Nếu cần thay đổi environment, thực hiện ở đây
 
         ZaloPaySDK.getInstance().payOrder(currentActivity, zpTransToken, "${scheme}://app", new PayOrderListener() {
             @Override

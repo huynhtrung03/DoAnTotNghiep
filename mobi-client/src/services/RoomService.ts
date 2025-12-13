@@ -32,10 +32,12 @@ export async function createRoom(
   room: string | object
 ) {
   try {
+    console.log('🏠 [createRoom] Creating new room...');
     const formData = new FormData();
 
     // Xu ly anh tu React Native image picker
     if (images && Array.isArray(images)) {
+      console.log(`📸 [createRoom] Adding ${images.length} images to formData`);
       images.forEach((image, index) => {
         formData.append("images", {
           uri: image.uri,
@@ -47,11 +49,13 @@ export async function createRoom(
 
     // Xu ly du lieu phong (chuyen object thanh string neu can)
     const roomData = typeof room === "string" ? room : JSON.stringify(room);
+    console.log('📝 [createRoom] Room data:', roomData);
     formData.append("room", roomData);
 
-    return await BaseApiClient.uploadFile('/landlord/room', formData);
+    console.log('🚀 [createRoom] Calling POST /rooms endpoint');
+    return await BaseApiClient.uploadFile('/rooms', formData);
   } catch (error: any) {
-    console.error("Loi tao phong:", error);
+    console.error("❌ [createRoom] Error creating room:", error);
     throw error;
   }
 }
@@ -63,7 +67,7 @@ export async function createRoom(
  */
 export async function updateRoom(roomId: string, formData: FormData) {
   try {
-    return await BaseApiClient.patchUpload(`/landlord/room?roomId=${roomId}`, formData);
+    return await BaseApiClient.patchUpload(`/rooms/${roomId}`, formData);
   } catch (error: any) {
     console.error("Loi cap nhat phong:", error);
     throw error;
@@ -73,14 +77,32 @@ export async function updateRoom(roomId: string, formData: FormData) {
 /**
  * Lay cac phong cua chu nha (phan trang)
  * Can xac thuc
+ * @param page - So trang (bat dau tu 1)
+ * @param size - So luong phong moi trang
+ * @param landlordId - ID chu nha (neu co), neu khong co se su dung endpoint cho user hien tai
  */
 export async function getRoomsByLandlord(
   page: number,
   size: number,
+  landlordId?: string,
   authToken?: string
 ) {
   try {
-    return await BaseApiClient.get('/landlord/room', { page, size });
+    // Neu co landlordId, su dung endpoint v2 (co images)
+    if (landlordId) {
+      console.log(`📡 [getRoomsByLandlord] Using v2 API with images for landlord: ${landlordId}`);
+      // /rooms/v2/by-landlord/{id}/paging
+      return await BaseApiClient.get(`/rooms/v2/by-landlord/${landlordId}/paging`, { page, size });
+      // return await BaseApiClient.get(`/rooms/by-landlord/${landlordId}/paging`, { page, size });
+    }
+    
+    // Fallback: thay vi endpoint '/landlord/room', su dung endpoint public de lay cac phong vip
+    // hoac normal rooms. Tuy nhien, dung chi ra la can landlordId de lay phong cua chu nha hien tai
+    console.warn('getLandlordId chua co landlordId, vui long cap landlordId de lay phong');
+    
+    // Fallback tạm thời - dùng endpoint chung (có thể không chính xác nếu user là tenant)
+    // Thay vào đó, nên lấy landlordId từ ProfileService hoặc AuthService
+    return await BaseApiClient.get('/rooms/allroom-vip', { page, size });
   } catch (error: any) {
     console.error("Loi lay cac phong cua chu nha:", error);
     return null;
@@ -106,7 +128,7 @@ export async function updateRoomPostExtend(
       typepostId,
     };
 
-    return await BaseApiClient.patch('/landlord/room/extend', data);
+    return await BaseApiClient.patch('/rooms/update-post-extend', data);
   } catch (error: any) {
     console.error("Loi cap nhat gia han bai dang phong:", error);
     throw error;
@@ -124,8 +146,8 @@ export async function hideShowRoom(
   authToken?: string
 ) {
   try {
-    const data = { roomId, isHidden };
-    return await BaseApiClient.patch('/landlord/room/hide-show', data);
+    const data = { isHidden };
+    return await BaseApiClient.patch(`/rooms/${roomId}/hidden`, data);
   } catch (error: any) {
     console.error("Loi cap nhat trang thai an/hien phong:", error);
     throw error;

@@ -11,5 +11,5 @@ export const VNPAY_CONFIG = {
   // URL mà VNPay sẽ redirect sau khi thanh toán (React Native - sử dụng deep linking)
   // Trong production, thay bằng URL scheme của app: myapp://payment-result
   // Hoặc sử dụng universal links/website URL dẫn đến app
-  vnp_ReturnUrl: "big-whole-camel.ngrok-free.app", // Thay bằng domain thực tế
+  vnp_ReturnUrl: "directions-sectors-seemed-aspect.trycloudflare.com", // Thay bằng domain thực tế
 };

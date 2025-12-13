@@ -68,6 +68,28 @@ public interface RoomJpaRepository extends JpaRepository<Room, UUID> {
             "WHERE r.user.id = :userId")
     Page<RoomByLandlordPagingProjection> findAllByLandlord(@Param("userId") UUID userId, Pageable pageable);
 
+    // @Query get all rooms for landlord with images
+    // Note: Cannot fetch multiple bags (images + convenients) with pagination
+    // Only fetch single-valued associations and one collection
+    @EntityGraph(attributePaths = {
+            "images",
+            "user",
+            "user.profile",
+            "postType",
+            "address",
+            "address.ward",
+            "address.ward.district",
+            "address.ward.district.province"
+    })
+    @Query("SELECT r FROM Room r " +
+            "JOIN FETCH r.postType pt " +
+            "LEFT JOIN FETCH r.address a " +
+            "LEFT JOIN FETCH a.ward w " +
+            "LEFT JOIN FETCH w.district d " +
+            "LEFT JOIN FETCH d.province pr " +
+            "WHERE r.user.id = :userId")
+    Page<Room> findAllRoomByLandlordWithImages(@Param("userId") UUID userId, Pageable pageable);
+
     // @Query get all rooms for admin with pagination
     @Query("SELECT r FROM Room r " +
             "JOIN FETCH r.user u " +

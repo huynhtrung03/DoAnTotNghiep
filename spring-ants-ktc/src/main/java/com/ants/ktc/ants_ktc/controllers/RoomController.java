@@ -118,6 +118,16 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
+    @GetMapping("/v2/by-landlord/{id}/paging")
+    @Operation(summary = "Get all rooms by landlord ID with images (v2)", description = "Returns paginated list of rooms with images for a specific landlord")
+    public ResponseEntity<PaginationRoomInUserResponseDto> getAllRoomByLandlordIdPaginatedWithImages(
+            @PathVariable("id") UUID id,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size) {
+        PaginationRoomInUserResponseDto rooms = roomService.getAllRoomByLandlordIdPaginatedWithImages(id, page, size);
+        return ResponseEntity.ok(rooms);
+    }
+   
     @GetMapping("/by-admin/paging")
     public ResponseEntity<PaginationRoomAdminResponseDto> getAllRoomByAdminPaginated(
             @RequestParam(value = "page", defaultValue = "0") int page,

@@ -1,8 +1,17 @@
 // export const API_URL = "http://localhost:3333/api";
-// export const URL_IMAGE = "http://localhost:3333";
+
 // export const API_URL = "https://big-whole-camel.ngrok-free.app/api";
 export const API_URL = "https://directions-sectors-seemed-aspect.trycloudflare.com/api";
-export const URL_IMAGE = "https://res.cloudinary.com";
+
+//trung
+// export const API_URL = "https://rustproof-unpertinently-judy.ngrok-free.dev/api";
+// export const API_URL = "http://192.168.1.10:3333/api";
+
+
+
+
+// export const URL_IMAGE = "http://localhost:3333";
+export const URL_IMAGE = "https://res.cloudinary.com/";
 export const URL_PPYTHON = "http://localhost:5001";
 
 // export const API_URL = "http://138.68.234.160:3333/api";

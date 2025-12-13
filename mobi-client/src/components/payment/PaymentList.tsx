@@ -7,7 +7,7 @@
  * - Các phương thức khác
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ interface PaymentListProps {
   visible: boolean;
   onClose: () => void;
   onSelectMethod: (method: PaymentMethod) => void;
+  onZaloPayPress?: () => void;
 }
 
 const paymentMethods: PaymentMethod[] = [
@@ -65,13 +66,24 @@ const paymentMethods: PaymentMethod[] = [
   },
 ];
 
-export default function PaymentList({ visible, onClose, onSelectMethod }: PaymentListProps) {
+export default function PaymentList({ visible, onClose, onSelectMethod, onZaloPayPress }: PaymentListProps) {
+
   const renderPaymentMethod = ({ item }: { item: PaymentMethod }) => (
     <TouchableOpacity
       style={styles.methodItem}
       onPress={() => {
-        onSelectMethod(item);
-        onClose();
+        if (item.id === 'zalopay') {
+          // Handle ZaloPay via callback
+          onClose();
+          if (onZaloPayPress) {
+            onZaloPayPress();
+          } else {
+            onSelectMethod(item);
+          }
+        } else {
+          onSelectMethod(item);
+          onClose();
+        }
       }}
       activeOpacity={0.7}
     >
@@ -89,12 +101,12 @@ export default function PaymentList({ visible, onClose, onSelectMethod }: Paymen
   );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <>
+      <Modal
+        visible={visible}
+        transparent
+        onRequestClose={onClose}
+      >
       <View style={styles.overlay}>
         <View style={styles.container}>
           {/* Header */}
@@ -115,7 +127,8 @@ export default function PaymentList({ visible, onClose, onSelectMethod }: Paymen
           />
         </View>
       </View>
-    </Modal>
+      </Modal>
+    </>
   );
 }
 

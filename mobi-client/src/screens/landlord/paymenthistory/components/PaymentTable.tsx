@@ -9,7 +9,9 @@ interface Payment {
   status: number; // 0: failed, 1: success
   transactionType: number; // 0: out, 1: in
   createdAt: string;
+  transactionDate?: string;
   description?: string;
+  bankTransactionName?: string;
 }
 
 interface PaymentTableProps {
@@ -18,203 +20,171 @@ interface PaymentTableProps {
 
 const PaymentTable: React.FC<PaymentTableProps> = ({ payments }) => {
   const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('vi-VN') + '₫';
+    if (amount >= 1000000) {
+      return (amount / 1000000).toFixed(1) + 'M';
+    } else if (amount >= 1000) {
+      return (amount / 1000).toFixed(0) + 'K';
+    }
+    return amount.toLocaleString('vi-VN');
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusInfo = (status: number) => {
-    return status === 1
-      ? { text: 'Thành công', color: Colors.success, icon: 'checkmark-circle-outline' }
-      : { text: 'Thất bại', color: Colors.error, icon: 'close-circle-outline' };
-  };
-
-  const getTransactionTypeInfo = (type: number) => {
-    return type === 1
-      ? { text: 'Tiền vào', color: Colors.success, icon: 'arrow-down-outline' }
-      : { text: 'Tiền ra', color: Colors.error, icon: 'arrow-up-outline' };
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 60) {
+      return `${diffMins} phút trước`;
+    } else if (diffMins < 1440) {
+      return `${Math.floor(diffMins / 60)} giờ trước`;
+    } else {
+      return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+      });
+    }
   };
 
   const renderPaymentItem = ({ item }: { item: Payment }) => {
-    const statusInfo = getStatusInfo(item.status);
-    const typeInfo = getTransactionTypeInfo(item.transactionType);
+    const isIncome = item.transactionType === 1;
+    const isSuccess = item.status === 1;
+    const displayDate = item.transactionDate || item.createdAt;
 
     return (
-      <View style={styles.paymentRow}>
-        {/* Transaction Type */}
-        <View style={styles.cell}>
-          <View style={[styles.typeBadge, { backgroundColor: typeInfo.color + '20' }]}>
-            <Ionicons name={typeInfo.icon as any} size={16} color={typeInfo.color} />
-            <Text style={[styles.typeText, { color: typeInfo.color }]}>
-              {typeInfo.text}
-            </Text>
+      <TouchableOpacity style={styles.transactionCard} activeOpacity={0.7}>
+        {/* Left: Icon */}
+        <View style={[
+          styles.iconContainer,
+          { backgroundColor: isIncome ? '#DCFCE7' : '#FEE2E2' }
+        ]}>
+          <Ionicons
+            name={isIncome ? 'arrow-down' : 'arrow-up'}
+            size={20}
+            color={isIncome ? '#16A34A' : '#DC2626'}
+          />
+        </View>
+
+        {/* Middle: Info */}
+        <View style={styles.middleContent}>
+          <Text style={styles.transactionName} numberOfLines={1}>
+            {item.bankTransactionName || item.description || (isIncome ? 'Nạp tiền' : 'Rút tiền')}
+          </Text>
+          <Text style={styles.transactionTime}>{formatDate(displayDate)}</Text>
+        </View>
+
+        {/* Right: Amount & Status */}
+        <View style={styles.rightContent}>
+          <Text style={[
+            styles.amountText,
+            { color: isIncome ? '#16A34A' : '#DC2626' }
+          ]}>
+            {isIncome ? '+' : '-'}{formatCurrency(item.amount)}₫
+          </Text>
+          <View style={styles.statusIcon}>
+            {isSuccess ? (
+              <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+            ) : (
+              <Ionicons name="close-circle" size={16} color="#EF4444" />
+            )}
           </View>
         </View>
-
-        {/* Amount */}
-        <View style={styles.cell}>
-          <Text style={[styles.amount, { color: typeInfo.color }]}>
-            {item.transactionType === 1 ? '+' : '-'}{formatCurrency(item.amount)}
-          </Text>
-        </View>
-
-        {/* Status */}
-        <View style={styles.cell}>
-          <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '20' }]}>
-            <Ionicons name={statusInfo.icon as any} size={14} color={statusInfo.color} />
-            <Text style={[styles.statusText, { color: statusInfo.color }]}>
-              {statusInfo.text}
-            </Text>
-          </View>
-        </View>
-
-        {/* Date */}
-        <View style={styles.cell}>
-          <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-        </View>
-
-        {/* Description */}
-        <View style={styles.cell}>
-          <Text style={styles.descriptionText} numberOfLines={2}>
-            {item.description || 'Không có mô tả'}
-          </Text>
-        </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
-  const renderHeader = () => (
-    <View style={styles.headerRow}>
-      <Text style={styles.headerText}>Loại</Text>
-      <Text style={styles.headerText}>Số tiền</Text>
-      <Text style={styles.headerText}>Trạng thái</Text>
-      <Text style={styles.headerText}>Thời gian</Text>
-      <Text style={styles.headerText}>Mô tả</Text>
-    </View>
-  );
-
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="receipt-outline" size={48} color={Colors.textTertiary} />
-      <Text style={styles.emptyText}>Không có giao dịch nào</Text>
+      <Ionicons name="wallet-outline" size={64} color={Colors.textTertiary} />
+      <Text style={styles.emptyTitle}>Chưa có giao dịch nào</Text>
+      <Text style={styles.emptySubtitle}>Hãy thực hiện nạp tiền ngay!</Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Danh sách giao dịch</Text>
-
-      {renderHeader()}
-
-      <FlatList
-        data={payments}
-        renderItem={renderPaymentItem}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={renderEmpty}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={payments.length === 0 ? styles.emptyList : undefined}
-      />
-    </View>
+    <FlatList
+      data={payments}
+      renderItem={renderPaymentItem}
+      keyExtractor={(item, index) => item.id ? `${item.id}-${index}` : index.toString()}
+      ListEmptyComponent={renderEmpty}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={payments.length === 0 ? styles.emptyList : styles.listContent}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: Colors.textPrimary,
-    marginBottom: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    paddingVertical: 12,
+  listContent: {
     paddingHorizontal: 16,
-    backgroundColor: Colors.backgroundDark,
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingBottom: 16,
   },
-  headerText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  paymentRow: {
-    flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.backgroundLight,
-    borderRadius: 8,
-    marginBottom: 8,
-    alignItems: 'center',
-  },
-  cell: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  typeBadge: {
+  transactionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: '#FFF',
     borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  middleContent: {
+    flex: 1,
     gap: 4,
   },
-  typeText: {
-    fontSize: 10,
+  transactionName: {
+    fontSize: 15,
     fontWeight: '600',
-  },
-  amount: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    gap: 2,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  dateText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  descriptionText: {
-    fontSize: 12,
     color: Colors.textPrimary,
-    textAlign: 'center',
+  },
+  transactionTime: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+  },
+  rightContent: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  amountText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  statusIcon: {
+    // Just container for icon
   },
   emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
-  emptyText: {
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
     fontSize: 14,
-    color: Colors.textTertiary,
-    marginTop: 8,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
   emptyList: {
     flexGrow: 1,
-    justifyContent: 'center',
   },
 });
 

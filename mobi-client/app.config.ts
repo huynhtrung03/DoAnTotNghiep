@@ -13,7 +13,7 @@ export default (): ExpoConfig => ({
   newArchEnabled: true,
 
   splash: {
-    image: './assets/favicon.png',
+    image: './assets/images/logo-ant.png',
     resizeMode: 'contain',
     backgroundColor: '#ffffff',
   },
@@ -75,7 +75,7 @@ export default (): ExpoConfig => ({
     // Đảm bảo file này đã nằm đúng vị trí (cùng cấp với app.config.ts hoặc trong thư mục android/app)
     googleServicesFile: './google-services.json', 
     adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
+      foregroundImage: './assets/images/logo-ant.png',
       backgroundColor: '#ffffff',
     },
     permissions: [

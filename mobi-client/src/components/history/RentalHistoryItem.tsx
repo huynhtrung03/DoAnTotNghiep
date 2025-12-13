@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { RentalHistoryItemProps, BookingStatus, PaymentMethod } from '../../types/rental';
 import { URL_IMAGE } from '../../services/Constant';
 import PaymentList from '../payment/PaymentList';
@@ -14,7 +15,19 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
   onPressImage,
   onPressRoomDetail,
 }) => {
+  const navigation = useNavigation();
   const [showPaymentList, setShowPaymentList] = useState(false);
+
+  const handleZaloPayPress = () => {
+    setShowPaymentList(false);
+    // @ts-ignore - Navigate to ZaloPayScreen
+    navigation.navigate('ZaloPayScreen', {
+      onSuccess: () => {
+        // Payment successful, you may want to refresh the rental history
+        console.log('ZaloPay payment successful for rental item:', item.key);
+      }
+    });
+  };
   const getStatusInfo = () => {
     const today = new Date();
     const rentalDate = new Date(item.rentalDate);
@@ -266,6 +279,7 @@ const RentalHistoryItem: React.FC<RentalHistoryItemProps> = ({
           }
           setShowPaymentList(false);
         }}
+        onZaloPayPress={handleZaloPayPress}
       />
     </View>
   );

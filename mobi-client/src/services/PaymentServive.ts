@@ -166,12 +166,22 @@ export const createPayment = async (payload: {
 };
 
 /**
+ * Interface for payment confirmation response
+ */
+export interface PaymentConfirmationResponse {
+  success?: boolean;
+  status?: string;
+  message?: string;
+  data?: any;
+}
+
+/**
  * Xac nhan thanh toan
  */
-export const confirmPayment = async (query: string) => {
+export const confirmPayment = async (query: string): Promise<PaymentConfirmationResponse> => {
   try {
     const params = Object.fromEntries(new URLSearchParams(query));
-    return await BaseApiClient.get('/payments/confirm', params);
+    return await BaseApiClient.get<PaymentConfirmationResponse>('/payments/confirm', params);
   } catch (error: any) {
     console.error('Loi xac nhan thanh toan:', error);
     throw error;

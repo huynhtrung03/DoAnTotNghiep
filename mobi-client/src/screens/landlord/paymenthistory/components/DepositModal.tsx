@@ -15,11 +15,17 @@ import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '../../../../styles/colors';
 import { createPayment } from '../../../../services/PaymentServive';
+import NotificationService from '../../../../services/NotificationServiceMobi';
 
 interface DepositModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+}
+
+interface PaymentResponse {
+  zpTransToken?: string;
+  paymentUrl?: string;
 }
 
 const DepositModal: React.FC<DepositModalProps> = ({
@@ -43,13 +49,17 @@ const DepositModal: React.FC<DepositModalProps> = ({
 
   const handleDeposit = async () => {
     const amountNumber = Number(amount);
+    const startTime = new Date().toISOString();
+    console.log(`[${startTime}] 💳 [DepositModal] handleDeposit started with amount:`, amountNumber);
 
     if (amountNumber < 5000) {
+      console.warn(`[${new Date().toISOString()}] ⚠️ [DepositModal] Amount too small: ${amountNumber}`);
       Alert.alert('Lỗi', 'Số tiền nạp tối thiểu là 5,000 VND');
       return;
     }
 
     if (!amountNumber || amountNumber <= 0) {
+      console.warn(`[${new Date().toISOString()}] ⚠️ [DepositModal] Invalid amount: ${amountNumber}`);
       Alert.alert('Lỗi', 'Vui lòng nhập số tiền hợp lệ');
       return;
     }
@@ -59,11 +69,13 @@ const DepositModal: React.FC<DepositModalProps> = ({
       // Get userId from JWT token
       const accessToken = await AsyncStorage.getItem('accessToken');
       if (!accessToken) {
+        console.error(`[${new Date().toISOString()}] ❌ [DepositModal] No accessToken found`);
         throw new Error('Không tìm thấy thông tin đăng nhập');
       }
 
       const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
       const userId = tokenPayload.id;
+      console.log(`[${new Date().toISOString()}] 👤 [DepositModal] User ID: ${userId}`);
 
       const paymentData = {
         amount: amountNumber,
@@ -71,19 +83,26 @@ const DepositModal: React.FC<DepositModalProps> = ({
         userId,
       };
 
-      // console.log('Creating payment with data:', paymentData);
+      console.log(`[${new Date().toISOString()}] 📝 [DepositModal] Payment data:`, paymentData);
 
-      const data = await createPayment(paymentData);
-      // console.log('Payment creation response:', data);
+      const data = await createPayment(paymentData) as PaymentResponse;
+      console.log(`[${new Date().toISOString()}] ✅ [DepositModal] Payment created successfully`);
+      console.log(`[${new Date().toISOString()}] 🔗 [DepositModal] Payment URL:`, data.paymentUrl);
 
       if (!data.paymentUrl) {
+        console.error(`[${new Date().toISOString()}] ❌ [DepositModal] No paymentUrl in response`);
         throw new Error('Không nhận được URL thanh toán');
       }
+
+      // Gửi thông báo thanh toán thành công (payload created)
+      console.log(`[${new Date().toISOString()}] 🔔 [DepositModal] Sending success notification`);
+      NotificationService.notifyPaymentSuccess(amountNumber, `VNPay-${Date.now()}`);
 
       // Close modal first
       onClose();
 
       // Navigate to payment WebView using CommonActions to navigate to root stack
+      console.log(`[${new Date().toISOString()}] 🚀 [DepositModal] Navigating to PaymentWebView`);
       navigation.dispatch(
         CommonActions.navigate({
           name: 'PaymentWebView',
@@ -94,11 +113,27 @@ const DepositModal: React.FC<DepositModalProps> = ({
           },
         })
       );
+      console.log(`[${new Date().toISOString()}] ✅ [DepositModal] Navigation dispatched successfully`);
+
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        console.log(`[${new Date().toISOString()}] 📞 [DepositModal] Calling onSuccess callback`);
+        onSuccess();
+      }
     } catch (error: any) {
-      console.error('Payment error:', error);
+      const errorTime = new Date().toISOString();
+      console.error(`[${errorTime}] ❌ [DepositModal] Payment error:`, error);
+      console.error(`[${errorTime}] ❌ [DepositModal] Error message:`, error.message);
+      console.error(`[${errorTime}] ❌ [DepositModal] Error stack:`, error.stack);
+
+      // Gửi thông báo lỗi
+      const errorMsg = error.message || 'Có lỗi xảy ra khi tạo thanh toán';
+      console.log(`[${errorTime}] 🔔 [DepositModal] Sending error notification`);
+      NotificationService.notifyPaymentError(errorMsg);
+
       Alert.alert(
         'Lỗi thanh toán',
-        error.message || 'Có lỗi xảy ra khi tạo thanh toán'
+        errorMsg
       );
     } finally {
       setLoading(false);
@@ -121,7 +156,6 @@ const DepositModal: React.FC<DepositModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>

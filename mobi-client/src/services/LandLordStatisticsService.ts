@@ -1,49 +1,119 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Landlord Statistics Service
+ * Cung cấp các API để lấy thống kê cho chủ trọ
+ * Sử dụng BaseApiClient để xử lý authentication và error handling
+ * 
+ * IMPORTANT: Backend trả về mảng trực tiếp, không phải object wrapper
+ */
+
 import { BaseApiClient } from './api/BaseApiClient';
 
-// ===== TYPES =====
+// ===== TYPE DEFINITIONS =====
 
-/** Số lượng phòng (response đơn giản) */
+/**
+ * Response đơn giản cho số lượng phòng
+ */
 export interface RoomCountResponse {
   count: number;
 }
 
-/** Thống kê bảo trì phòng */
-export interface MaintenanceStatistics {
-  totalMaintenances: number;
-  pendingMaintenances: number;
-  completedMaintenances: number;
-  totalCost: number;
-  averageCost: number;
-  maintenancesByMonth?: Array<{
-    month: string;
-    count: number;
-    cost: number;
-  }>;
+/**
+ * Thống kê bảo trì theo ngày (từ backend)
+ * Backend trả về mảng này trực tiếp
+ */
+export interface MaintainStatisticDto {
+  date: string; // Format: YYYY-MM-DD
+  count: number;
+  cost: number;
 }
 
-/** Thống kê chi phí đăng phòng */
-export interface FeePostRoomStatistics {
-  totalFee: number;
-  totalPosts: number;
-  averageFeePerPost: number;
-  feeByMonth?: Array<{
-    month: string;
-    totalFee: number;
-    postCount: number;
-  }>;
+/**
+ * Thống kê phí đăng bài theo ngày (từ backend)
+ * Backend trả về mảng này trực tiếp
+ */
+export interface TransactionStatisticsDto {
+  date: string; // Format: YYYY-MM-DD
+  cost: number;
+  count: number;
 }
 
-/** Thống kê doanh thu */
-export interface RevenueStatistics {
-  totalRevenue: number;
-  totalContracts: number;
-  averageRevenuePerContract: number;
-  revenueByMonth?: Array<{
-    month: string;
-    revenue: number;
-    contractCount: number;
-  }>;
+/**
+ * Thống kê doanh thu theo ngày (từ backend)
+ * Backend trả về mảng này trực tiếp
+ */
+export interface RevenueStatisticsDto {
+  date: string; // Format: YYYY-MM-DD
+  revenue: number;
+  contractCount: number;
 }
+
+/**
+ * Type alias cho compatibility
+ */
+export type MaintenanceStatistics = MaintainStatisticDto[];
+export type FeePostRoomStatistics = TransactionStatisticsDto[];
+export type RevenueStatistics = RevenueStatisticsDto[];
+
+/**
+ * Parameters cho API có filter theo ngày
+ */
+export interface DateRangeParams {
+  startDate?: string; // Format: YYYY-MM-DD
+  endDate?: string;   // Format: YYYY-MM-DD
+}
+
+// ===== HELPER FUNCTIONS =====
+
+/**
+ * Validate landlord ID
+ */
+const validateLandlordId = (landlordId: string): boolean => {
+  if (!landlordId || landlordId.trim() === '') {
+    console.error('❌ [LandlordStats] ID chủ nhà không hợp lệ');
+    return false;
+  }
+  return true;
+};
+
+/**
+ * Validate date range (max 12 months)
+ */
+export const validateDateRange = (startDate?: string, endDate?: string): { valid: boolean; error?: string } => {
+  if (!startDate || !endDate) {
+    return { valid: true }; // Optional params
+  }
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return { valid: false, error: 'Định dạng ngày không hợp lệ. Sử dụng YYYY-MM-DD' };
+  }
+
+  if (end < start) {
+    return { valid: false, error: 'Ngày kết thúc phải sau ngày bắt đầu' };
+  }
+
+  // Calculate months difference
+  const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+
+  if (monthsDiff > 12) {
+    return { valid: false, error: 'Khoảng thời gian không được vượt quá 12 tháng' };
+  }
+
+  return { valid: true };
+};
+
+/**
+ * Format date to YYYY-MM-DD
+ */
+export const formatDateForAPI = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 // ===== API FUNCTIONS =====
 
@@ -51,44 +121,27 @@ export interface RevenueStatistics {
  * Lấy số lượng phòng đã đăng
  */
 export const getLandlordPostedRoomCount = async (landlordId: string): Promise<RoomCountResponse> => {
-  // Validate input
-  if (!landlordId || landlordId.trim() === '') {
-    console.error('ID chủ nhà không hợp lệ');
+  if (!validateLandlordId(landlordId)) {
     return { count: 0 };
   }
 
   try {
-    const data: any = await BaseApiClient.get(`/landlord/statistics/total-posted-rooms/${landlordId}`);
+    const data = await BaseApiClient.get<RoomCountResponse | number>(
+      `/landlord/statistics/total-posted-rooms/${landlordId}`
+    );
 
-    // Xử lý các trường hợp đặc biệt
-    if (data === null || data === undefined) {
-      console.warn('API trả về null/undefined, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-
-    if (typeof data === 'object' && Object.keys(data).length === 0) {
-      console.warn('API trả về object rỗng, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-
-    // Xử lý trường hợp API trả về trực tiếp số
     if (typeof data === 'number') {
       return { count: data };
     }
 
-    // Đảm bảo data là object và có field 'count'
-    if (typeof data !== 'object' || !('count' in data)) {
-      console.warn('Cấu trúc dữ liệu không hợp lệ hoặc thiếu field count, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-    if (typeof data.count !== 'number') {
-      console.warn('Field count không phải số, dùng giá trị mặc định');
-      return { count: 0 };
+    if (data && typeof data === 'object' && 'count' in data) {
+      return { count: data.count };
     }
 
-    return data;
+    console.warn('⚠️ [LandlordStats] Unexpected response format for posted rooms');
+    return { count: 0 };
   } catch (error) {
-    console.warn('Lỗi khi lấy số lượng phòng đã đăng, dùng giá trị mặc định:', error);
+    console.error('❌ [LandlordStats] Error fetching posted room count:', error);
     return { count: 0 };
   }
 };
@@ -97,44 +150,27 @@ export const getLandlordPostedRoomCount = async (landlordId: string): Promise<Ro
  * Lấy số lượng phòng đã cho thuê
  */
 export const getLandlordRentedRoomCount = async (landlordId: string): Promise<RoomCountResponse> => {
-  // Validate input
-  if (!landlordId || landlordId.trim() === '') {
-    console.error('ID chủ nhà không hợp lệ');
+  if (!validateLandlordId(landlordId)) {
     return { count: 0 };
   }
 
   try {
-    const data: any = await BaseApiClient.get(`/landlord/statistics/total-rented-rooms/${landlordId}`);
+    const data = await BaseApiClient.get<RoomCountResponse | number>(
+      `/landlord/statistics/total-rented-rooms/${landlordId}`
+    );
 
-    // Xử lý các trường hợp đặc biệt
-    if (data === null || data === undefined) {
-      console.warn('API trả về null/undefined, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-
-    if (typeof data === 'object' && Object.keys(data).length === 0) {
-      console.warn('API trả về object rỗng, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-
-    // Xử lý trường hợp API trả về trực tiếp số
     if (typeof data === 'number') {
       return { count: data };
     }
 
-    // Đảm bảo data là object và có field 'count'
-    if (typeof data !== 'object' || !('count' in data)) {
-      console.warn('Cấu trúc dữ liệu không hợp lệ hoặc thiếu field count, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-    if (typeof data.count !== 'number') {
-      console.warn('Field count không phải số, dùng giá trị mặc định');
-      return { count: 0 };
+    if (data && typeof data === 'object' && 'count' in data) {
+      return { count: data.count };
     }
 
-    return data;
+    console.warn('⚠️ [LandlordStats] Unexpected response format for rented rooms');
+    return { count: 0 };
   } catch (error) {
-    console.warn('Lỗi khi lấy số lượng phòng đã cho thuê, dùng giá trị mặc định:', error);
+    console.error('❌ [LandlordStats] Error fetching rented room count:', error);
     return { count: 0 };
   }
 };
@@ -143,44 +179,27 @@ export const getLandlordRentedRoomCount = async (landlordId: string): Promise<Ro
  * Lấy số lượng lượt xem phòng
  */
 export const getLandlordViewedRoomCount = async (landlordId: string): Promise<RoomCountResponse> => {
-  // Validate input
-  if (!landlordId || landlordId.trim() === '') {
-    console.error('ID chủ nhà không hợp lệ');
+  if (!validateLandlordId(landlordId)) {
     return { count: 0 };
   }
 
   try {
-    const data: any = await BaseApiClient.get(`/landlord/statistics/total-viewed-rooms/${landlordId}`);
+    const data = await BaseApiClient.get<RoomCountResponse | number>(
+      `/landlord/statistics/total-viewed-rooms/${landlordId}`
+    );
 
-    // Xử lý các trường hợp đặc biệt
-    if (data === null || data === undefined) {
-      console.warn('API trả về null/undefined, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-
-    if (typeof data === 'object' && Object.keys(data).length === 0) {
-      console.warn('API trả về object rỗng, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-
-    // Xử lý trường hợp API trả về trực tiếp số
     if (typeof data === 'number') {
       return { count: data };
     }
 
-    // Đảm bảo data là object và có field 'count'
-    if (typeof data !== 'object' || !('count' in data)) {
-      console.warn('Cấu trúc dữ liệu không hợp lệ hoặc thiếu field count, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-    if (typeof data.count !== 'number') {
-      console.warn('Field count không phải số, dùng giá trị mặc định');
-      return { count: 0 };
+    if (data && typeof data === 'object' && 'count' in data) {
+      return { count: data.count };
     }
 
-    return data;
+    console.warn('⚠️ [LandlordStats] Unexpected response format for viewed rooms');
+    return { count: 0 };
   } catch (error) {
-    console.warn('Lỗi khi lấy số lượng lượt xem phòng, dùng giá trị mặc định:', error);
+    console.error('❌ [LandlordStats] Error fetching viewed room count:', error);
     return { count: 0 };
   }
 };
@@ -189,275 +208,198 @@ export const getLandlordViewedRoomCount = async (landlordId: string): Promise<Ro
  * Lấy số lượng phòng được yêu thích
  */
 export const getLandlordFavoritedRoomCount = async (landlordId: string): Promise<RoomCountResponse> => {
-  // Validate input
-  if (!landlordId || landlordId.trim() === '') {
-    console.error('ID chủ nhà không hợp lệ');
+  if (!validateLandlordId(landlordId)) {
     return { count: 0 };
   }
 
   try {
-    const data: any = await BaseApiClient.get(`/landlord/statistics/total-favorited-rooms/${landlordId}`);
+    const data = await BaseApiClient.get<RoomCountResponse | number>(
+      `/landlord/statistics/total-favorited-rooms/${landlordId}`
+    );
 
-    // Xử lý các trường hợp đặc biệt
-    if (data === null || data === undefined) {
-      console.warn('API trả về null/undefined, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-
-    if (typeof data === 'object' && Object.keys(data).length === 0) {
-      console.warn('API trả về object rỗng, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-
-    // Xử lý trường hợp API trả về trực tiếp số
     if (typeof data === 'number') {
       return { count: data };
     }
 
-    // Đảm bảo data là object và có field 'count'
-    if (typeof data !== 'object' || !('count' in data)) {
-      console.warn('Cấu trúc dữ liệu không hợp lệ hoặc thiếu field count, dùng giá trị mặc định');
-      return { count: 0 };
-    }
-    if (typeof data.count !== 'number') {
-      console.warn('Field count không phải số, dùng giá trị mặc định');
-      return { count: 0 };
+    if (data && typeof data === 'object' && 'count' in data) {
+      return { count: data.count };
     }
 
-    return data;
+    console.warn('⚠️ [LandlordStats] Unexpected response format for favorited rooms');
+    return { count: 0 };
   } catch (error) {
-    console.warn('Lỗi khi lấy số lượng phòng được yêu thích, dùng giá trị mặc định:', error);
+    console.error('❌ [LandlordStats] Error fetching favorited room count:', error);
     return { count: 0 };
   }
 };
 
 /**
  * Lấy thống kê bảo trì phòng
+ * Backend trả về mảng MaintainStatisticDto[] trực tiếp
  */
 export const getLandlordMaintenanceStatistics = async (
   landlordId: string,
   startDate?: string,
   endDate?: string
 ): Promise<MaintenanceStatistics> => {
-  // Validate input
-  if (!landlordId || landlordId.trim() === '') {
-    console.error('ID chủ nhà không hợp lệ');
-    return {
-      totalMaintenances: 0,
-      pendingMaintenances: 0,
-      completedMaintenances: 0,
-      totalCost: 0,
-      averageCost: 0,
-    };
+  if (!validateLandlordId(landlordId)) {
+    return [];
+  }
+
+  // Validate date range
+  const validation = validateDateRange(startDate, endDate);
+  if (!validation.valid) {
+    console.error(`❌ [LandlordStats] ${validation.error}`);
+    return [];
   }
 
   try {
-    const params: Record<string, any> = {};
+    const params: Record<string, string> = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
 
-    const data: any = await BaseApiClient.get(`/landlord/statistics/maintenance-statistics/${landlordId}`, params);
+    const data = await BaseApiClient.get<MaintenanceStatistics>(
+      `/landlord/statistics/maintenance-statistics/${landlordId}`,
+      params
+    );
 
-    // Xử lý các trường hợp đặc biệt
-    if (data === null || data === undefined) {
-      console.warn('API trả về null/undefined, dùng giá trị mặc định');
-      return {
-        totalMaintenances: 0,
-        pendingMaintenances: 0,
-        completedMaintenances: 0,
-        totalCost: 0,
-        averageCost: 0,
-      };
+    // Backend trả về mảng trực tiếp
+    if (Array.isArray(data)) {
+      return data;
     }
 
-    if (typeof data === 'object' && Object.keys(data).length === 0) {
-      console.warn('API trả về object rỗng, dùng giá trị mặc định');
-      return {
-        totalMaintenances: 0,
-        pendingMaintenances: 0,
-        completedMaintenances: 0,
-        totalCost: 0,
-        averageCost: 0,
-      };
-    }
-
-    // Đảm bảo data là object và có field 'totalCost'
-    if (typeof data !== 'object' || !('totalCost' in data)) {
-      console.warn('Cấu trúc dữ liệu không hợp lệ hoặc thiếu field totalCost, dùng giá trị mặc định');
-      return {
-        totalMaintenances: 0,
-        pendingMaintenances: 0,
-        completedMaintenances: 0,
-        totalCost: 0,
-        averageCost: 0,
-      };
-    }
-    if (typeof data.totalCost !== 'number') {
-      console.warn('Field totalCost không phải số, dùng giá trị mặc định');
-      return {
-        totalMaintenances: 0,
-        pendingMaintenances: 0,
-        completedMaintenances: 0,
-        totalCost: 0,
-        averageCost: 0,
-      };
-    }
-
-    return data;
+    console.warn('⚠️ [LandlordStats] Invalid maintenance statistics response, expected array');
+    return [];
   } catch (error) {
-    console.warn('Lỗi khi lấy thống kê bảo trì phòng, dùng giá trị mặc định:', error);
-    return {
-      totalMaintenances: 0,
-      pendingMaintenances: 0,
-      completedMaintenances: 0,
-      totalCost: 0,
-      averageCost: 0,
-    };
+    console.error('❌ [LandlordStats] Error fetching maintenance statistics:', error);
+    return [];
   }
 };
 
 /**
  * Lấy thống kê chi phí đăng phòng
+ * Backend trả về mảng TransactionStatisticsDto[] trực tiếp
  */
 export const getLandlordFeePostRoomStatistics = async (
   landlordId: string,
   startDate?: string,
   endDate?: string
 ): Promise<FeePostRoomStatistics> => {
-  // Validate input
-  if (!landlordId || landlordId.trim() === '') {
-    console.error('ID chủ nhà không hợp lệ');
-    return {
-      totalFee: 0,
-      totalPosts: 0,
-      averageFeePerPost: 0,
-    };
+  if (!validateLandlordId(landlordId)) {
+    return [];
+  }
+
+  // Validate date range
+  const validation = validateDateRange(startDate, endDate);
+  if (!validation.valid) {
+    console.error(`❌ [LandlordStats] ${validation.error}`);
+    return [];
   }
 
   try {
-    const params: Record<string, any> = {};
+    const params: Record<string, string> = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
 
-    const data: any = await BaseApiClient.get(`/landlord/statistics/fee-post-room-statistics/${landlordId}`, params);
+    const data = await BaseApiClient.get<FeePostRoomStatistics>(
+      `/landlord/statistics/fee-post-room-statistics/${landlordId}`,
+      params
+    );
 
-    // Xử lý các trường hợp đặc biệt
-    if (data === null || data === undefined) {
-      console.warn('API trả về null/undefined, dùng giá trị mặc định');
-      return {
-        totalFee: 0,
-        totalPosts: 0,
-        averageFeePerPost: 0,
-      };
+    // Backend trả về mảng trực tiếp
+    if (Array.isArray(data)) {
+      return data;
     }
 
-    if (typeof data === 'object' && Object.keys(data).length === 0) {
-      console.warn('API trả về object rỗng, dùng giá trị mặc định');
-      return {
-        totalFee: 0,
-        totalPosts: 0,
-        averageFeePerPost: 0,
-      };
-    }
-
-    // Đảm bảo data là object và có field 'totalFee'
-    if (typeof data !== 'object' || !('totalFee' in data)) {
-      console.warn('Cấu trúc dữ liệu không hợp lệ hoặc thiếu field totalFee, dùng giá trị mặc định');
-      return {
-        totalFee: 0,
-        totalPosts: 0,
-        averageFeePerPost: 0,
-      };
-    }
-    if (typeof data.totalFee !== 'number') {
-      console.warn('Field totalFee không phải số, dùng giá trị mặc định');
-      return {
-        totalFee: 0,
-        totalPosts: 0,
-        averageFeePerPost: 0,
-      };
-    }
-
-    return data;
+    console.warn('⚠️ [LandlordStats] Invalid fee post room statistics response, expected array');
+    return [];
   } catch (error) {
-    console.warn('Lỗi khi lấy thống kê chi phí đăng phòng, dùng giá trị mặc định:', error);
-    return {
-      totalFee: 0,
-      totalPosts: 0,
-      averageFeePerPost: 0,
-    };
+    console.error('❌ [LandlordStats] Error fetching fee post room statistics:', error);
+    return [];
   }
 };
 
 /**
  * Lấy thống kê doanh thu
+ * Backend trả về mảng RevenueStatisticsDto[] trực tiếp
  */
 export const getLandlordRevenueStatistics = async (
   landlordId: string,
   startDate?: string,
   endDate?: string
 ): Promise<RevenueStatistics> => {
-  // Validate input
-  if (!landlordId || landlordId.trim() === '') {
-    console.error('ID chủ nhà không hợp lệ');
-    return {
-      totalRevenue: 0,
-      totalContracts: 0,
-      averageRevenuePerContract: 0,
-    };
+  if (!validateLandlordId(landlordId)) {
+    return [];
+  }
+
+  // Validate date range
+  const validation = validateDateRange(startDate, endDate);
+  if (!validation.valid) {
+    console.error(`❌ [LandlordStats] ${validation.error}`);
+    return [];
   }
 
   try {
-    const params: Record<string, any> = {};
+    const params: Record<string, string> = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
 
-    const data: any = await BaseApiClient.get(`/landlord/statistics/revenue-statistics/${landlordId}`, params);
+    const data = await BaseApiClient.get<RevenueStatistics>(
+      `/landlord/statistics/revenue-statistics/${landlordId}`,
+      params
+    );
 
-    // Xử lý các trường hợp đặc biệt
-    if (data === null || data === undefined) {
-      console.warn('API trả về null/undefined, dùng giá trị mặc định');
-      return {
-        totalRevenue: 0,
-        totalContracts: 0,
-        averageRevenuePerContract: 0,
-      };
+    // Backend trả về mảng trực tiếp
+    if (Array.isArray(data)) {
+      return data;
     }
 
-    if (typeof data === 'object' && Object.keys(data).length === 0) {
-      console.warn('API trả về object rỗng, dùng giá trị mặc định');
-      return {
-        totalRevenue: 0,
-        totalContracts: 0,
-        averageRevenuePerContract: 0,
-      };
-    }
-
-    // Đảm bảo data là object và có field 'totalRevenue'
-    if (typeof data !== 'object' || !('totalRevenue' in data)) {
-      console.warn('Cấu trúc dữ liệu không hợp lệ hoặc thiếu field totalRevenue, dùng giá trị mặc định');
-      return {
-        totalRevenue: 0,
-        totalContracts: 0,
-        averageRevenuePerContract: 0,
-      };
-    }
-    if (typeof data.totalRevenue !== 'number') {
-      console.warn('Field totalRevenue không phải số, dùng giá trị mặc định');
-      return {
-        totalRevenue: 0,
-        totalContracts: 0,
-        averageRevenuePerContract: 0,
-      };
-    }
-
-    return data;
+    console.warn('⚠️ [LandlordStats] Invalid revenue statistics response, expected array');
+    return [];
   } catch (error) {
-    console.warn('Lỗi khi lấy thống kê doanh thu, dùng giá trị mặc định:', error);
-    return {
-      totalRevenue: 0,
-      totalContracts: 0,
-      averageRevenuePerContract: 0,
-    };
+    console.error('❌ [LandlordStats] Error fetching revenue statistics:', error);
+    return [];
   }
+};
+
+// ===== BATCH OPERATIONS =====
+
+/**
+ * Lấy tất cả KPI counts cùng lúc
+ */
+export const getAllKPICounts = async (landlordId: string) => {
+  const [posted, rented, viewed, favorited] = await Promise.allSettled([
+    getLandlordPostedRoomCount(landlordId),
+    getLandlordRentedRoomCount(landlordId),
+    getLandlordViewedRoomCount(landlordId),
+    getLandlordFavoritedRoomCount(landlordId),
+  ]);
+
+  return {
+    postedRooms: posted.status === 'fulfilled' ? posted.value : { count: 0 },
+    rentedRooms: rented.status === 'fulfilled' ? rented.value : { count: 0 },
+    viewedRooms: viewed.status === 'fulfilled' ? viewed.value : { count: 0 },
+    favoritedRooms: favorited.status === 'fulfilled' ? favorited.value : { count: 0 },
+  };
+};
+
+/**
+ * Lấy tất cả statistics với date range
+ */
+export const getAllStatistics = async (
+  landlordId: string,
+  startDate?: string,
+  endDate?: string
+) => {
+  const [maintenance, feePostRoom, revenue] = await Promise.allSettled([
+    getLandlordMaintenanceStatistics(landlordId, startDate, endDate),
+    getLandlordFeePostRoomStatistics(landlordId, startDate, endDate),
+    getLandlordRevenueStatistics(landlordId, startDate, endDate),
+  ]);
+
+  return {
+    maintenance: maintenance.status === 'fulfilled' ? maintenance.value : [],
+    feePostRoom: feePostRoom.status === 'fulfilled' ? feePostRoom.value : [],
+    revenue: revenue.status === 'fulfilled' ? revenue.value : [],
+  };
 };

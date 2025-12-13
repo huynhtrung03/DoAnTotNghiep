@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -42,15 +42,25 @@ const PaymentWebView: React.FC = () => {
 
         if (confirmResult.success || confirmResult.status === 'success') {
           // console.log('PaymentWebView - Payment confirmed successfully');
-          Alert.alert('Thành công', 'Thanh toán đã được xử lý thành công!');
-          // Navigation back will trigger useFocusEffect in PaymentHistoryScreen to reload data
+          // Navigate to success screen (PaymentScreen shows success state)
+          (navigation as any).navigate('PaymentScreen');
         } else {
           console.error('PaymentWebView - Payment confirmation failed:', confirmResult);
-          Alert.alert('Lỗi', 'Thanh toán không được xác nhận. Vui lòng liên hệ hỗ trợ.');
+          // Navigate to failure screen
+          (navigation as any).navigate('PaymentFailure', {
+            reason: 'Xác nhận thanh toán thất bại',
+            message: 'Thanh toán không được xác nhận. Vui lòng liên hệ hỗ trợ.',
+            canRetry: true,
+          });
         }
       } catch (error: any) {
         console.error('PaymentWebView - Error confirming payment:', error);
-        Alert.alert('Lỗi', 'Có lỗi xảy ra khi xác nhận thanh toán. Vui lòng thử lại.');
+        // Navigate to failure screen
+        (navigation as any).navigate('PaymentFailure', {
+          reason: 'Lỗi xác nhận thanh toán',
+          message: error.message || 'Có lỗi xảy ra khi xác nhận thanh toán. Vui lòng thử lại.',
+          canRetry: true,
+        });
       } finally {
         setIsConfirming(false);
         // Delay navigation to allow user to see the alert
@@ -59,24 +69,30 @@ const PaymentWebView: React.FC = () => {
             navigation.goBack();
           } else {
             // If can't go back, navigate to a safe screen
-            navigation.navigate('LandlordTabs' as never);
+            (navigation as any).navigate('LandlordTabs');
           }
         }, 2000);
       }
     } else if (url.includes('vnp_ResponseCode') && !url.includes('vnp_ResponseCode=00') && !hasConfirmed) {
       // console.log('PaymentWebView - Payment failed');
       setHasConfirmed(true);
-      // Payment failed
-      Alert.alert('Thanh toán thất bại', 'Thanh toán không thành công. Vui lòng thử lại.');
+      // Payment failed - navigate to failure screen
+      (navigation as any).navigate('PaymentFailure', {
+        reason: 'Thanh toán thất bại',
+        message: 'Thanh toán không thành công. Vui lòng thử lại.',
+        canRetry: true,
+      });
       setTimeout(() => {
         if (navigation.canGoBack()) {
           navigation.goBack();
         } else {
-          navigation.navigate('LandlordTabs' as never);
+          (navigation as any).navigate('LandlordTabs');
         }
       }, 2000);
     }
-  };  if (!paymentUrl) {
+  };
+
+  if (!paymentUrl) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>

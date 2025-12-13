@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
 import Colors from '../../../../styles/colors';
 import DepositModal from './DepositModal';
 import PaymentList, { PaymentMethod } from '../../../../components/payment/PaymentList';
@@ -14,15 +16,12 @@ const AccountBalanceCard: React.FC<AccountBalanceCardProps> = ({
   balance,
   onDeposit,
 }) => {
+  const navigation = useNavigation();
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showPaymentList, setShowPaymentList] = useState(false);
+  const [hideBalance, setHideBalance] = useState(false);
 
   const formatCurrency = (amount: number) => {
-    if (amount >= 1000000) {
-      return (amount / 1000000).toFixed(1) + 'M₫';
-    } else if (amount >= 1000) {
-      return (amount / 1000).toFixed(0) + 'K₫';
-    }
     return amount.toLocaleString('vi-VN') + '₫';
   };
 
@@ -30,42 +29,67 @@ const AccountBalanceCard: React.FC<AccountBalanceCardProps> = ({
     setShowPaymentList(true);
   };
 
+  const handleZaloPayPress = () => {
+    setShowPaymentList(false);
+    // @ts-ignore - Navigate to ZaloPayScreen
+    navigation.navigate('ZaloPayScreen', {
+      onSuccess: () => {
+        // Refresh balance after successful payment
+        if (onDeposit) {
+          onDeposit(null);
+        }
+      }
+    });
+  };
+
   const handleSelectPaymentMethod = (method: PaymentMethod) => {
     if (method.id === 'vnpay') {
       setShowDepositModal(true);
-    } else {
-      // Handle other payment methods here
-      // console.log('Selected payment method:', method);
-      // You can add logic for other payment methods
     }
   };
 
   const handleDepositSuccess = () => {
     // Refresh balance or trigger callback
     if (onDeposit) {
-      onDeposit(null); // Pass null since we don't need payment method anymore
+      onDeposit(null);
     }
   };
 
   return (
     <>
-      <View style={styles.container}>
-        <View style={styles.balanceSection}>
-          <View style={styles.balanceHeader}>
-            <Ionicons name="wallet-outline" size={24} color={Colors.primary} />
-            <Text style={styles.balanceTitle}>Số dư tài khoản</Text>
-          </View>
-          <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
+      <LinearGradient
+        colors={[Colors.primary, '#16A34A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientCard}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={styles.balanceLabel}>Số dư tài khoản</Text>
+          <TouchableOpacity 
+            style={styles.eyeButton}
+            onPress={() => setHideBalance(!hideBalance)}
+          >
+            <Ionicons 
+              name={hideBalance ? 'eye-off' : 'eye'} 
+              size={20} 
+              color="#FFF" 
+            />
+          </TouchableOpacity>
         </View>
+
+        <Text style={styles.balanceAmount}>
+          {hideBalance ? '• • • • •' : formatCurrency(balance)}
+        </Text>
 
         <TouchableOpacity
           style={styles.depositButton}
           onPress={handleDepositPress}
+          activeOpacity={0.8}
         >
-          <Ionicons name="add-circle-outline" size={20} color="#FFF" />
+          <Ionicons name="add-circle" size={20} color={Colors.primary} />
           <Text style={styles.depositButtonText}>Nạp tiền</Text>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <DepositModal
         visible={showDepositModal}
@@ -77,59 +101,58 @@ const AccountBalanceCard: React.FC<AccountBalanceCardProps> = ({
         visible={showPaymentList}
         onClose={() => setShowPaymentList(false)}
         onSelectMethod={handleSelectPaymentMethod}
+        onZaloPayPress={handleZaloPayPress}
       />
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
+  gradientCard: {
     marginHorizontal: 16,
     marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    elevation: 2,
+    borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  balanceSection: {
-    flex: 1,
-  },
-  balanceHeader: {
+  cardHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  balanceTitle: {
+  balanceLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.textSecondary,
-    marginLeft: 8,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  eyeButton: {
+    padding: 4,
   },
   balanceAmount: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.primary,
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFF',
+    marginBottom: 20,
+    letterSpacing: 1,
   },
   depositButton: {
-    backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    paddingVertical: 14,
+    borderRadius: 12,
     gap: 8,
   },
   depositButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: Colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

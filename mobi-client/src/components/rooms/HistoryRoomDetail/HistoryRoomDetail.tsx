@@ -176,24 +176,35 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
       setLoading(true);
       setError(null);
       
-      const roomFromParams = route.params?.room;
-      if (roomFromParams) {
-        setRoom(roomFromParams);
-      } else {
-        try {
-          const data = await getRoomById(roomId);
-          if (data) {
-            setRoom(data);
-          } else {
-            setError('Không tìm thấy thông tin phòng');
-          }
-        } catch (apiError: any) {
-          console.warn('getRoomById API failed, using params data');
+      // Always fetch from API to ensure we have complete data including images
+      console.log('🏠 [HistoryRoomDetail] Loading room details for roomId:', roomId);
+      try {
+        const data = await getRoomById(roomId);
+        if (data) {
+          console.log('✅ [HistoryRoomDetail] Room data loaded:', { 
+            id: data.id, 
+            title: data.title, 
+            imagesCount: data.images?.length || 0 
+          });
+          setRoom(data);
+        } else {
+          console.warn('⚠️ [HistoryRoomDetail] getRoomById returned no data');
+          setError('Không tìm thấy thông tin phòng');
+        }
+      } catch (apiError: any) {
+        console.error('❌ [HistoryRoomDetail] getRoomById API failed:', apiError?.message);
+        
+        // Fallback: Use room data from params if available
+        const roomFromParams = route.params?.room;
+        if (roomFromParams && roomFromParams.images?.length > 0) {
+          console.warn('⚠️ [HistoryRoomDetail] Using room data from params');
+          setRoom(roomFromParams);
+        } else {
           setError('Không thể tải thông tin phòng từ API');
         }
       }
     } catch (err) {
-      console.error('Error loading room details:', err);
+      console.error('❌ [HistoryRoomDetail] Error loading room details:', err);
       setError('Có lỗi xảy ra khi tải thông tin phòng');
     } finally {
       setLoading(false);
@@ -315,6 +326,17 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
   }
 
   const images = room.images || [];
+  
+  // Log for debugging image rendering
+  console.log('📸 [HistoryRoomDetail] Rendering images:', {
+    totalImages: images.length,
+    images: images.map((img, idx) => ({
+      index: idx,
+      url: img.url,
+      fullUrl: `${URL_IMAGE}${img.url.startsWith('/') ? img.url.slice(1) : img.url}`
+    }))
+  });
+
   const fullAddress = `${room.address.street}, ${room.address.ward.name}, ${room.address.ward.district.name}, ${room.address.ward.district.province.name}`;
 
   return (
@@ -361,6 +383,12 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
                         source={{ uri: mediaUrl }}
                         style={styles.image}
                         resizeMode="cover"
+                        onError={(e) => {
+                          console.error('❌ [HistoryRoomDetail] Image load error for URL:', mediaUrl, e);
+                        }}
+                        onLoad={() => {
+                          console.log('✅ [HistoryRoomDetail] Image loaded successfully:', mediaUrl);
+                        }}
                       />
                     )}
 

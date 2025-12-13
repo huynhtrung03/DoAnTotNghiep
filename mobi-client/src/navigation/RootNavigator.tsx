@@ -28,6 +28,18 @@ import HistoryRoomDetail from '../components/rooms/HistoryRoomDetail/HistoryRoom
 // Import PaymentWebView
 import PaymentWebView from '../screens/landlord/paymenthistory/PaymentWebView';
 
+// Import AddRoom for Landlord
+import AddRoom from '../screens/landlord/ManageRooms/AddRoom';
+
+// Import ZaloPayScreen
+import ZaloPayScreen from '../screens/landlord/paymenthistory/components/ZaloPayScreen';
+
+// Import PaymentSuccess
+import PaymentSuccess from '../screens/condition/PaymentSuccess';
+
+// Import PaymentFailure
+import PaymentFailure from '../screens/condition/PaymentFailure';
+
 const Stack = createNativeStackNavigator();
 
 type RouteType = 'Auth/Login' | 'UserApp' | 'LandlordApp';
@@ -201,6 +213,44 @@ export default function RootNavigator() {
             options={{ 
               headerShown: true,
               title: 'Thanh toán',
+              headerBackTitle: 'Quay lại',
+              headerStyle: {
+                backgroundColor: '#fff',
+              },
+              headerTintColor: '#111827',
+              headerTitleStyle: {
+                fontWeight: '700',
+              },
+            }} 
+          />
+          <Stack.Screen 
+            name="ZaloPayScreen" 
+            component={ZaloPayScreen}
+            options={{ 
+              headerShown: false,
+            }} 
+          />
+          <Stack.Screen 
+            name="PaymentSuccess" 
+            component={PaymentSuccess}
+            options={{ 
+              headerShown: false,
+              gestureEnabled: false, // Prevent swiping back easily to avoid confusion
+            }} 
+          />
+          <Stack.Screen 
+            name="PaymentFailure" 
+            component={PaymentFailure}
+            options={{ 
+              headerShown: false,
+            }} 
+          />
+          <Stack.Screen 
+            name="AddRoom" 
+            component={AddRoom}
+            options={{ 
+              headerShown: true,
+              title: 'Thêm phòng mới',
               headerBackTitle: 'Quay lại',
               headerStyle: {
                 backgroundColor: '#fff',

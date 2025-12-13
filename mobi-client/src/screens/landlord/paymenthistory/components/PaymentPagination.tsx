@@ -22,97 +22,51 @@ const PaymentPagination: React.FC<PaymentPaginationProps> = ({
     return null;
   }
 
-  const getVisiblePages = () => {
-    const delta = 2;
-    const range = [];
-    const rangeWithDots = [];
-
-    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
-      range.push(i);
-    }
-
-    if (currentPage - delta > 2) {
-      rangeWithDots.push(1, '...');
-    } else {
-      rangeWithDots.push(1);
-    }
-
-    rangeWithDots.push(...range);
-
-    if (currentPage + delta < totalPages - 1) {
-      rangeWithDots.push('...', totalPages);
-    } else if (totalPages > 1) {
-      rangeWithDots.push(totalPages);
-    }
-
-    return rangeWithDots;
-  };
-
-  const visiblePages = getVisiblePages();
+  const hasNext = currentPage < totalPages;
+  const hasPrev = currentPage > 1;
 
   return (
     <View style={styles.container}>
-      <View style={styles.paginationInfo}>
+      <View style={styles.infoContainer}>
         <Text style={styles.infoText}>
-          Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalRecords)} của {totalRecords} giao dịch
+          Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalRecords)} / {totalRecords}
         </Text>
       </View>
 
-      <View style={styles.paginationControls}>
-        {/* Previous Button */}
+      <View style={styles.controls}>
         <TouchableOpacity
-          style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
-          onPress={() => currentPage > 1 && onChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          style={[styles.button, !hasPrev && styles.buttonDisabled]}
+          onPress={() => hasPrev && onChange(currentPage - 1)}
+          disabled={!hasPrev}
         >
           <Ionicons
-            name="chevron-back-outline"
-            size={16}
-            color={currentPage === 1 ? Colors.textTertiary : Colors.primary}
+            name="chevron-back"
+            size={20}
+            color={hasPrev ? Colors.primary : Colors.textTertiary}
           />
-          <Text style={[styles.pageButtonText, currentPage === 1 && styles.pageButtonTextDisabled]}>
+          <Text style={[styles.buttonText, !hasPrev && styles.buttonTextDisabled]}>
             Trước
           </Text>
         </TouchableOpacity>
 
-        {/* Page Numbers */}
-        <View style={styles.pageNumbers}>
-          {visiblePages.map((page, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.pageNumber,
-                typeof page === 'number' && page === currentPage && styles.pageNumberActive,
-              ]}
-              onPress={() => typeof page === 'number' && onChange(page)}
-              disabled={page === '...'}
-            >
-              <Text
-                style={[
-                  styles.pageNumberText,
-                  typeof page === 'number' && page === currentPage && styles.pageNumberTextActive,
-                  page === '...' && styles.pageNumberDots,
-                ]}
-              >
-                {page}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.pageInfo}>
+          <Text style={styles.pageText}>
+            Trang <Text style={styles.pageNumber}>{currentPage}</Text> / {totalPages}
+          </Text>
         </View>
 
-        {/* Next Button */}
         <TouchableOpacity
-          style={[styles.pageButton, currentPage === totalPages && styles.pageButtonDisabled]}
-          onPress={() => currentPage < totalPages && onChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          style={[styles.button, !hasNext && styles.buttonDisabled]}
+          onPress={() => hasNext && onChange(currentPage + 1)}
+          disabled={!hasNext}
         >
-          <Text style={[styles.pageButtonText, currentPage === totalPages && styles.pageButtonTextDisabled]}>
-            Sau
+          <Text style={[styles.buttonText, !hasNext && styles.buttonTextDisabled]}>
+            Tiếp
           </Text>
           <Ionicons
-            name="chevron-forward-outline"
-            size={16}
-            color={currentPage === totalPages ? Colors.textTertiary : Colors.primary}
+            name="chevron-forward"
+            size={20}
+            color={hasNext ? Colors.primary : Colors.textTertiary}
           />
         </TouchableOpacity>
       </View>
@@ -122,75 +76,60 @@ const PaymentPagination: React.FC<PaymentPaginationProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
   },
-  paginationInfo: {
+  infoContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   infoText: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.textSecondary,
   },
-  paginationControls: {
+  controls: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: 16,
   },
-  pageButton: {
+  button: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: Colors.backgroundLight,
     borderWidth: 1,
     borderColor: Colors.primary,
-    backgroundColor: Colors.backgroundLight,
-    gap: 4,
+    gap: 6,
+    minWidth: 100,
+    justifyContent: 'center',
   },
-  pageButtonDisabled: {
-    borderColor: Colors.border,
+  buttonDisabled: {
     backgroundColor: Colors.background,
+    borderColor: Colors.border,
   },
-  pageButtonText: {
-    fontSize: 12,
+  buttonText: {
+    fontSize: 15,
+    fontWeight: '600',
     color: Colors.primary,
-    fontWeight: '500',
   },
-  pageButtonTextDisabled: {
+  buttonTextDisabled: {
     color: Colors.textTertiary,
   },
-  pageNumbers: {
-    flexDirection: 'row',
+  pageInfo: {
+    flex: 1,
     alignItems: 'center',
-    gap: 4,
+  },
+  pageText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
   },
   pageNumber: {
-    minWidth: 36,
-    height: 36,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.backgroundLight,
-  },
-  pageNumberActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary,
-  },
-  pageNumberText: {
-    fontSize: 12,
-    color: Colors.textPrimary,
-    fontWeight: '500',
-  },
-  pageNumberTextActive: {
-    color: Colors.textWhite,
-    fontWeight: 'bold',
-  },
-  pageNumberDots: {
-    color: Colors.textTertiary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.primary,
   },
 });
 

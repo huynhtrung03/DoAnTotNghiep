@@ -684,6 +684,44 @@ public class RoomService {
         }
 
         @Transactional(readOnly = true)
+        public PaginationRoomInUserResponseDto getAllRoomByLandlordIdPaginatedWithImages(UUID userId, int page, int size) {
+                // Ensure page is at least 1 (1-based)
+                if (page < 1)
+                        page = 1;
+                Pageable pageable = PageRequest.of(page - 1, size);
+
+                Page<Room> roomPage = roomJpaRepository.findAllRoomByLandlordWithImages(userId, pageable);
+
+                List<RoomInUserResponseDto> roomDtos = roomPage.getContent().stream()
+                                .map(room -> RoomInUserResponseDto.builder()
+                                                .id(room.getId())
+                                                .title(room.getTitle())
+                                                .description(room.getDescription())
+                                                .priceMonth(room.getPrice_month())
+                                                .area(room.getArea())
+                                                .maxPeople(room.getMaxPeople())
+                                                .postStartDate(room.getPost_start_date())
+                                                .address(convertAddress(room.getAddress()))
+                                                .images(convertImages(room.getImages()))
+                                                .conveniences(convertConveniences(room.getConvenients()))
+                                                .landlord(convertLandlord(room.getUser()))
+                                                .favoriteCount(0)
+                                                .viewCount(room.getViewCount())
+                                                .build())
+                                .collect(Collectors.toList());
+
+                return PaginationRoomInUserResponseDto.builder()
+                                .data(roomDtos)
+                                .pageNumber(roomPage.getNumber())
+                                .pageSize(roomPage.getSize())
+                                .totalRecords(roomPage.getTotalElements())
+                                .totalPages(roomPage.getTotalPages())
+                                .hasNext(roomPage.hasNext())
+                                .hasPrevious(roomPage.hasPrevious())
+                                .build();
+        }
+
+        @Transactional(readOnly = true)
         public PaginationRoomAdminResponseDto getAllRoomByAdminPaginated(int page, int size, String sortField,
                         String sortOrder) {
                 String sortBy = (sortField != null && !sortField.isBlank()) ? sortField : "title";
