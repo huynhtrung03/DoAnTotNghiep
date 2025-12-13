@@ -367,10 +367,61 @@ export const useSearchLocation = () => {
       const actualMinLng = Math.min(minLng, maxLng);
       const actualMaxLng = Math.max(minLng, maxLng);
       
+      // Tính kích thước khu vực (đơn vị: độ)
+      // 1 độ latitude ≈ 111km
+      // 1 độ longitude ≈ 111km * cos(latitude)
+      const latDiff = actualMaxLat - actualMinLat;
+      const lngDiff = actualMaxLng - actualMinLng;
+      const centerLat = (actualMinLat + actualMaxLat) / 2;
+      
+      // Tính khoảng cách thực tế (km)
+      const latDistanceKm = latDiff * 111;
+      const lngDistanceKm = lngDiff * 111 * Math.cos(centerLat * Math.PI / 180);
+      
+      // Giới hạn tối đa: 111km x 111km
+      const MAX_DISTANCE_KM = 111;
+      
+      if (__DEV__) {
+        console.log(`📏 Kích thước khu vực: ${latDistanceKm.toFixed(1)}km x ${lngDistanceKm.toFixed(1)}km`);
+      }
+      
+      // Nếu khu vực quá lớn, thu nhỏ về kích thước tối đa
+      let finalMinLat = actualMinLat;
+      let finalMaxLat = actualMaxLat;
+      let finalMinLng = actualMinLng;
+      let finalMaxLng = actualMaxLng;
+      
+      if (latDistanceKm > MAX_DISTANCE_KM || lngDistanceKm > MAX_DISTANCE_KM) {
+        if (__DEV__) {
+          console.log(`⚠️ Khu vực quá lớn! Thu nhỏ về ${MAX_DISTANCE_KM}km x ${MAX_DISTANCE_KM}km`);
+        }
+        
+        // Thu nhỏ về kích thước tối đa, giữ nguyên tâm
+        const maxLatDiff = MAX_DISTANCE_KM / 111;
+        const maxLngDiff = MAX_DISTANCE_KM / (111 * Math.cos(centerLat * Math.PI / 180));
+        
+        if (latDistanceKm > MAX_DISTANCE_KM) {
+          finalMinLat = centerLat - maxLatDiff / 2;
+          finalMaxLat = centerLat + maxLatDiff / 2;
+        }
+        
+        if (lngDistanceKm > MAX_DISTANCE_KM) {
+          const centerLng = (actualMinLng + actualMaxLng) / 2;
+          finalMinLng = centerLng - maxLngDiff / 2;
+          finalMaxLng = centerLng + maxLngDiff / 2;
+        }
+        
+        // Hiển thị thông báo cho user
+        Alert.alert(
+          'Khu vực quá lớn',
+          `Khu vực bản đồ hiện tại (${latDistanceKm.toFixed(0)}km x ${lngDistanceKm.toFixed(0)}km) vượt quá giới hạn ${MAX_DISTANCE_KM}km.\n\nĐã thu nhỏ khu vực tìm kiếm. Vui lòng zoom in để xem chi tiết hơn.`,
+          [{ text: 'OK' }]
+        );
+      }
   
       
       //  Gọi API với tham số đúng theo backend: (minLat, minLng, maxLat, maxLng)
-      const data = await getRoomsInBounds(actualMinLat, actualMinLng, actualMaxLat, actualMaxLng);
+      const data = await getRoomsInBounds(finalMinLat, finalMinLng, finalMaxLat, finalMaxLng);
       
       if (__DEV__) {
         //console.log(' API Response:', data);
