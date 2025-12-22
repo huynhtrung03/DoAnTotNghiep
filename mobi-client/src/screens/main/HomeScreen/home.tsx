@@ -887,7 +887,17 @@ export default function HomeScreen() {
               loading={loading && !refreshing}
             />
 
-            {/* REMOVED NormalRoomsList here because it duplicates the 'All Rooms' list below */}
+            {/* Normal Rooms List - 5 phòng thường đầu tiên */}
+            <NormalRoomsList
+              rooms={normalRooms}
+              onRoomPress={handleRoomPress}
+              onFavoriteToggle={handleFavoriteToggle}
+              favoriteIds={Array.from(favoriteRoomIds)}
+              onSeeAllPress={() => {
+                // Scroll to "Tất cả phòng trọ" section (already below)
+                console.log('See all normal rooms');
+              }}
+            />
           </>
         }
       />

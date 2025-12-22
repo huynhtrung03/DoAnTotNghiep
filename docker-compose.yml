@@ -1,0 +1,89 @@
+services:
+  # --- 1. APP SERVICE ---
+  app:
+    image: tinhsoma/backend-app:v3.2  # ← Updated với domain mới
+    container_name: backend-app
+    restart: always
+    ports:
+      - '80:3333' 
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      # Thêm dòng này nếu App cần gọi sang Python
+      python-gemini:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/ants_ktc?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root_password
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      # Nếu App cần gọi API Python, cấu hình thêm URL này:
+      # PYTHON_SERVICE_URL: http://python-gemini:5000
+
+  # --- 2. MYSQL SERVICE ---
+  db:
+    image: mysql:latest
+    container_name: mysqldb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: ants_ktc
+    ports:
+      - '3070:3306'
+    volumes:
+      - db_data:/var/lib/mysql  # Đã sửa lỗi căn lề (indentation)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # --- 3. REDIS SERVICE ---
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - '6379:6379'
+
+  # --- 4. PYTHON GEMINI SERVICE ---
+  python-gemini:
+    image: tinhsoma/python-gemini:v3.1  # ← Updated port 5000 + disable debug
+    container_name: python-gemini
+    restart: always
+    ports:
+      - '5000:5000'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # ⚠️ THAY YOUR_GEMINI_API_KEY bằng key thật
+      - API_KEY=AIzaSyAgNT_LvUElwL_wQNnKCRjJMesBJxE88Lg
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=root_password
+      - DB_NAME=ants_ktc
+
+  # --- 5. NEXT.JS CLIENT SERVICE ---
+  next-app-client:
+    image: tinhsoma/next-app-client:v3  # ← Updated với URL_PPYTHON fix
+    container_name: next-app-client
+    restart: always
+    ports:
+      - '3000:3000'
+    depends_on:
+      - app
+      - python-gemini
+    environment:
+      # API URLs
+      - NEXT_PUBLIC_API_URL=http://178.128.112.116:80
+      - NEXT_PUBLIC_PYTHON_API_URL=http://178.128.112.116:5000
+      # NextAuth config
+      - AUTH_SECRET=awQIoWccaOMoQ+rPAS4xYCNjfA1VOVdPp2aTpXkt4EY=
+      - NEXTAUTH_URL=http://178.128.112.116:3000
+
+volumes:
+  db_data:

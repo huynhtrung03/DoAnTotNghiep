@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Copy code và requirements
 COPY . /app
-COPY .env /app/.env
+# KHÔNG copy .env vào image (bảo mật)
+# .env sẽ được inject qua docker-compose
 
 # Cài đặt các package cần thiết
 RUN pip install --upgrade pip && \

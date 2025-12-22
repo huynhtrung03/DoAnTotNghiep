@@ -309,6 +309,11 @@ def get_rooms():
         print(f"[ERROR] Database connection failed: {e}")
         return [], None
 
+# Health check endpoint
+@app.route('/', methods=['GET'])
+def health():
+    return jsonify({"status": "ok", "message": "Python Gemini API is running"}), 200
+
 # API chatbot - dùng prompt chi tiết, dữ liệu thô
 @app.route('/ai_chatbot', methods=['POST'])
 def ai_chatbot():
@@ -377,8 +382,22 @@ def ai_chatbot():
         resp.raise_for_status()
         result = resp.json()
         reply = result["candidates"][0]["content"]["parts"][0]["text"]
+    except requests.exceptions.Timeout:
+        print(f"[ERROR] API timeout - took more than 15 seconds")
+        reply = "API Gemini timeout. Please try again."
+    except requests.exceptions.HTTPError as e:
+        print(f"[ERROR] HTTP Error {e.response.status_code}: {e}")
+        if e.response.status_code == 401:
+            reply = "API key is invalid or expired."
+        elif e.response.status_code == 429:
+            reply = "Rate limit exceeded. Please try again later."
+        else:
+            reply = f"API error: {e}"
     except Exception as e:
-        reply = f"Lỗi khi gọi API: {str(e)}"
+        print(f"[ERROR] Exception in ai_chatbot: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        reply = f"Error: {str(e)}"
 
     return jsonify({"reply": reply})
 
@@ -459,4 +478,4 @@ def ai_approval():
 
 # API search giữ nguyên
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)

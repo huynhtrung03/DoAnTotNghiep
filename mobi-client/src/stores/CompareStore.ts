@@ -1,11 +1,9 @@
 import { RoomDetail } from '../types/types';
-// import { RoomInUser } from '../types/types';
-
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface ItemRoom {
-    // room: RoomInUser;
     room: RoomDetail;
 }
 
@@ -19,13 +17,22 @@ interface CompareStore {
 export const useCompareStore = create<CompareStore>()(
     devtools(
         persist(
-            (set: (partial: CompareStore | Partial<CompareStore> | ((state: CompareStore) => CompareStore | Partial<CompareStore>)) => void) => ({
+            (set) => ({
                 items: [],
-                addItem: (item: ItemRoom) => set((state: CompareStore) => ({ items: [...state.items, item] })),
+                addItem: (item: ItemRoom) => set((state: CompareStore) => {
+                    // Prevent duplicates
+                    if (state.items.some(i => i.room.id === item.room.id)) {
+                        return state;
+                    }
+                    return { items: [...state.items, item] };
+                }),
                 removeItem: (key: string) => set((state: CompareStore) => ({ items: state.items.filter((item: ItemRoom) => item.room.id !== key) })),
                 clearItems: () => set({ items: [] }),
             }),
-            { name: 'compare-store' }
+            { 
+                name: 'compare-storage',
+                storage: createJSONStorage(() => AsyncStorage),
+            }
         )
     )
 );
