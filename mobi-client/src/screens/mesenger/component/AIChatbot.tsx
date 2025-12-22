@@ -21,10 +21,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '../../../colors/colors';
-import { API_URL } from '../../../services/Constant';
 import { StyleSheet } from 'react-native';
 
-const AI_API_URL = `${API_URL}/ai_chatbot`;
+// Python Gemini API endpoint (NOT Spring Boot)
+const AI_API_URL = "http://178.128.112.116:5000/ai_chatbot";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -118,6 +118,8 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
       });
 
       if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`HTTP ${res.status}: ${errorText}`);
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
@@ -125,7 +127,8 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
       setHistory([...newHistory, { role: "assistant", text: data.reply }]);
     } catch (err) {
       console.error("Chat error:", err);
-      Alert.alert('Lỗi', 'Không thể kết nối với AI Assistant. Vui lòng thử lại sau.');
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      Alert.alert('Lỗi', `Không thể kết nối với AI Assistant: ${errorMessage}`);
       setHistory([
         ...newHistory,
         {

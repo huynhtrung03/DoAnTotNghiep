@@ -183,38 +183,43 @@ export default function MessengerScreen() {
   }, [currentUserId]);
 
   /**
-   * Fetch online status for all users - only when userList changes
+   * Fetch online status for all users
+   */
+  const fetchUsersStatus = async () => {
+    if (userList.length === 0) return;
+
+    const userIds = userList
+      .filter(u => u.id !== 'ai-assistant')
+      .map(u => u.id);
+
+    if (userIds.length === 0) return;
+
+    try {
+      const statusMap = await getUsersStatus(userIds);
+      console.log('📋 [MessengerScreen] Users status fetched:', statusMap);
+
+      // Update userList with online status
+      setUserList(prevUsers =>
+        prevUsers.map(user => {
+          if (user.id === 'ai-assistant') {
+            return { ...user, isOnline: true }; // AI always online
+          }
+          return {
+            ...user,
+            isOnline: statusMap[user.id] ?? false,
+          };
+        })
+      );
+    } catch (error) {
+      console.warn('⚠️ [MessengerScreen] Error fetching users status:', error);
+    }
+  };
+
+  /**
+   * Auto-fetch online status - only when userList changes
    */
   useEffect(() => {
     if (userList.length === 0) return;
-
-    const fetchUsersStatus = async () => {
-      const userIds = userList
-        .filter(u => u.id !== 'ai-assistant')
-        .map(u => u.id);
-
-      if (userIds.length === 0) return;
-
-      try {
-        const statusMap = await getUsersStatus(userIds);
-        console.log('📋 [MessengerScreen] Users status fetched:', statusMap);
-
-        // Update userList with online status (filtered users will auto-update from this)
-        setUserList(prevUsers =>
-          prevUsers.map(user => {
-            if (user.id === 'ai-assistant') {
-              return { ...user, isOnline: true }; // AI always online
-            }
-            return {
-              ...user,
-              isOnline: statusMap[user.id] ?? false,
-            };
-          })
-        );
-      } catch (error) {
-        console.warn('⚠️ [MessengerScreen] Error fetching users status:', error);
-      }
-    };
 
     fetchUsersStatus();
 
@@ -254,9 +259,14 @@ export default function MessengerScreen() {
     return [aiUser, ...result];
   }, [userList, searchQuery]);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    // Real-time listener will auto-update, just close the refresh indicator
+    console.log('🔄 [MessengerScreen] Manual refresh triggered');
+    
+    // Fetch latest user online status
+    await fetchUsersStatus();
+    
+    // Real-time listener will auto-update conversations
     setTimeout(() => setRefreshing(false), 500);
   };
 
