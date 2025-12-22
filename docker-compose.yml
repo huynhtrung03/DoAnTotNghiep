@@ -85,5 +85,15 @@ services:
       - AUTH_SECRET=awQIoWccaOMoQ+rPAS4xYCNjfA1VOVdPp2aTpXkt4EY=
       - NEXTAUTH_URL=http://178.128.112.116:3000
 
+  # --- 6. ADMIN DASHBOARD SERVICE ---
+  app-ktc:
+    image: tinhsoma/app-ktc:v1
+    container_name: app-ktc
+    restart: always
+    ports:
+      - '8080:80'
+    depends_on:
+      - app
+
 volumes:
   db_data:

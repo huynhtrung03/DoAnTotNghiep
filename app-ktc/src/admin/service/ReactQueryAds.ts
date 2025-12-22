@@ -47,7 +47,7 @@ export interface PageResponse<T> {
   last: boolean;
 }
 
-const API_BASE_URL = "http://localhost:3333/api/ads";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3333/api'}/ads`;
 
 // API functions
 const adsApi = {
