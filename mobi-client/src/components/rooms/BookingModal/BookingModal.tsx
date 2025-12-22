@@ -194,7 +194,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             {/* Header */}
             <View style={styles.header}>
               <Ionicons name="calendar" size={24} color="#1976D2" />
-              <Text style={styles.title}>Book Room</Text>
+              <Text style={styles.title}>Đặt phòng</Text>
               <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color="#757575" />
               </TouchableOpacity>
@@ -208,7 +208,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
               <View style={styles.roomInfoCard}>
                 <Text style={styles.roomTitle}>{roomTitle}</Text>
                 <Text style={styles.roomPrice}>
-                  {priceMonth?.toLocaleString('vi-VN')} VND/month
+                  {priceMonth?.toLocaleString('vi-VN')} VNĐ/tháng
                 </Text>
               </View>
 
@@ -216,19 +216,19 @@ const BookingModal: React.FC<BookingModalProps> = ({
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Ionicons name="calendar-outline" size={20} color="#1976D2" />
-                  <Text style={styles.sectionTitle}>Rental Period</Text>
+                  <Text style={styles.sectionTitle}>Thời gian thuê</Text>
                 </View>
 
                 <View style={styles.periodCard}>
                   <View style={styles.periodRow}>
-                    <Text style={styles.periodLabel}>Start Date:</Text>
+                    <Text style={styles.periodLabel}>Ngày bắt đầu:</Text>
                     <Text style={styles.periodValue}>
-                      {startDate.toLocaleDateString('vi-VN')} (Today)
+                      {startDate.toLocaleDateString('vi-VN')} (Hôm nay)
                     </Text>
                   </View>
 
                   <View style={styles.periodRow}>
-                    <Text style={styles.periodLabel}>End Date:</Text>
+                    <Text style={styles.periodLabel}>Ngày kết thúc:</Text>
                     <Text style={styles.periodValue}>
                       {endDate.toLocaleDateString('vi-VN')}
                     </Text>
@@ -238,7 +238,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
               {/* Rental Duration Select */}
               <View style={styles.section}>
-                <Text style={styles.label}>Rental Duration (Months) *</Text>
+                <Text style={styles.label}>Thời gian thuê (Tháng) *</Text>
                 <View style={styles.selectContainer}>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => (
                     <TouchableOpacity
@@ -255,7 +255,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                           rentalMonths === month && styles.selectOptionTextSelected,
                         ]}
                       >
-                        {month} {month === 1 ? 'Month' : 'Months'}
+                        {month} {'Tháng'}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -267,29 +267,29 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 <View style={styles.costCard}>
                   <View style={styles.costHeader}>
                     <Ionicons name="calculator" size={20} color="#10B981" />
-                    <Text style={styles.costTitle}>Total Cost</Text>
+                    <Text style={styles.costTitle}>Tổng chi phí</Text>
                   </View>
 
                   <View style={styles.costRow}>
-                    <Text style={styles.costLabel}>{rentalMonths} months ×</Text>
+                    <Text style={styles.costLabel}>{rentalMonths} tháng ×</Text>
                     <Text style={styles.costValue}>
-                      {priceMonth.toLocaleString('vi-VN')} VND/month
+                      {priceMonth.toLocaleString('vi-VN')} VNĐ/tháng
                     </Text>
                   </View>
 
                   <View style={styles.costDivider} />
 
                   <View style={styles.totalCostRow}>
-                    <Text style={styles.totalCostLabel}>Total:</Text>
+                    <Text style={styles.totalCostLabel}>Tổng cộng:</Text>
                     <Text style={styles.totalCostValue}>
-                      {calculateTotal().toLocaleString('vi-VN')} VND
+                      {calculateTotal().toLocaleString('vi-VN')} VNĐ
                     </Text>
                   </View>
 
                   <View style={styles.depositRow}>
-                    <Text style={styles.depositLabel}>Deposit (1 month):</Text>
+                    <Text style={styles.depositLabel}>Tiền cọc (1 tháng):</Text>
                     <Text style={styles.depositValue}>
-                      {calculateDeposit().toLocaleString('vi-VN')} VND
+                      {calculateDeposit().toLocaleString('vi-VN')} VNĐ
                     </Text>
                   </View>
                 </View>
@@ -297,12 +297,12 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
               {/* Number of Tenants */}
               <View style={styles.section}>
-                <Text style={styles.label}>Number of Tenants *</Text>
+                <Text style={styles.label}>Số lượng người ở *</Text>
                 <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter number of tenants"
-                    placeholderTextColor="#BDBDBD"
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Nhập số lượng người"
+                      placeholderTextColor="#BDBDBD"
                     value={tenantCount.toString()}
                     onChangeText={(text) => {
                       const num = parseInt(text);
@@ -313,17 +313,17 @@ const BookingModal: React.FC<BookingModalProps> = ({
                     keyboardType="number-pad"
                     maxLength={2}
                   />
-                  <Text style={styles.inputSuffix}>people</Text>
+                  <Text style={styles.inputSuffix}>người</Text>
                 </View>
-                <Text style={styles.hint}>Maximum: {maxPeople} people</Text>
+                <Text style={styles.hint}>Tối đa: {maxPeople} người</Text>
               </View>
 
               {/* Note */}
               <View style={styles.section}>
-                <Text style={styles.label}>Note (Optional)</Text>
+                <Text style={styles.label}>Ghi chú (Tùy chọn)</Text>
                 <TextInput
                   style={styles.textArea}
-                  placeholder="Add a note for the landlord..."
+                  placeholder="Thêm ghi chú cho chủ nhà..."
                   placeholderTextColor="#BDBDBD"
                   value={note}
                   onChangeText={setNote}
@@ -340,7 +340,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 style={[styles.button, styles.cancelButton]}
                 onPress={handleClose}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Hủy</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -355,12 +355,12 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 {loading ? (
                   <>
                     <ActivityIndicator size="small" color="#FFF" />
-                    <Text style={styles.submitButtonText}>Processing...</Text>
+                    <Text style={styles.submitButtonText}>Đang xử lý...</Text>
                   </>
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
-                    <Text style={styles.submitButtonText}>Confirm Booking</Text>
+                    <Text style={styles.submitButtonText}>Xác nhận đặt phòng</Text>
                   </>
                 )}
               </TouchableOpacity>

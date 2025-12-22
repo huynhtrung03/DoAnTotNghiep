@@ -43,6 +43,9 @@ import PaymentSuccess from '../screens/condition/PaymentSuccess';
 // Import PaymentFailure
 import PaymentFailure from '../screens/condition/PaymentFailure';
 
+// Import FullRoomVipScreen
+import FullRoomVipScreen from '../screens/main/HomeScreen/FullRoomVipScreen';
+
 const Stack = createNativeStackNavigator();
 
 type RouteType = 'Auth/Login' | 'UserApp' | 'LandlordApp';
@@ -170,6 +173,18 @@ export default function RootNavigator() {
                 fontWeight: '700',
               },
             }} 
+          />
+
+          {/* Full VIP Rooms Screen */}
+          <Stack.Screen 
+            name="FullRoomVipScreen" 
+            component={FullRoomVipScreen}
+            options={({ navigation }) => ({ 
+              headerShown: false, // Custom header trong component
+              presentation: 'card', // Standard push animation
+              // Hide tab bar on this screen
+              tabBarStyle: { display: 'none' },
+            })} 
           />
 
           <Stack.Screen 

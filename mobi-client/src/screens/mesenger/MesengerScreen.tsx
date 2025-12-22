@@ -35,7 +35,6 @@ import styles from './MesengerScreen.styles';
 export default function MessengerScreen() {
   const navigation = useNavigation<any>();
   const [userList, setUserList] = useState<ChatUser[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<ChatUser[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -183,18 +182,6 @@ export default function MessengerScreen() {
     };
   }, [currentUserId]);
 
-  useEffect(() => {
-    // Filter users based on search query
-    if (searchQuery.trim()) {
-      const filtered = userList.filter((user) =>
-        user.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredUsers(filtered);
-    } else {
-      setFilteredUsers(userList);
-    }
-  }, [searchQuery, userList]);
-
   /**
    * Fetch online status for all users - only when userList changes
    */
@@ -237,19 +224,35 @@ export default function MessengerScreen() {
     return () => clearInterval(statusInterval);
   }, [userList.length]); // Only depend on userList length to avoid infinite loops
 
-  // Add AI assistant to the beginning of filtered users
+  // Combine AI user and filtered users
   const usersWithAI = React.useMemo(() => {
     const aiUser: ChatUser = {
       id: 'ai-assistant',
       name: 'Ants AI Assistant',
-      avatar: '', // MessCard sẽ xử lý đặc biệt cho ai-assistant
+      avatar: '',
       lastMessageText: 'Tôi có thể giúp bạn tìm phòng trọ phù hợp',
       lastMessageTime: new Date(),
       unreadCount: 0,
-      isOnline: true, // AI always online
+      isOnline: true,
     };
-    return [aiUser, ...filteredUsers];
-  }, [filteredUsers]);
+
+    let result = userList;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(user => 
+        user.name?.toLowerCase().includes(query)
+      );
+      
+      // Also filter AI user name
+      if (!aiUser.name?.toLowerCase().includes(query)) {
+        return result;
+      }
+    }
+
+    return [aiUser, ...result];
+  }, [userList, searchQuery]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -324,7 +327,7 @@ export default function MessengerScreen() {
           <Ionicons name="search" size={20} color={Colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm tin nhắn..."
+            placeholder="Tìm kiếm theo tên người dùng..."
             placeholderTextColor={Colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}

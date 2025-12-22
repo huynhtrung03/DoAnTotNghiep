@@ -563,7 +563,8 @@ export default function ChatScreen() {
                         : 'Ngoại tuyến'}
                 </Text>
               </View>
-            </View>          <View style={styles.headerActions}>
+            </View>          
+            <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerButton}>
               <Ionicons name="call-outline" size={22} color={Colors.primary} />
             </TouchableOpacity>

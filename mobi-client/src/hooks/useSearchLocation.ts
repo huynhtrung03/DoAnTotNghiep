@@ -321,8 +321,13 @@ export const useSearchLocation = () => {
           
           currentMapCenterRef.current = { latitude, longitude };
           
+          // ✨ Detect city ngay khi lấy được location
+          const detectedCity = detectCity(latitude, longitude);
+          setCurrentCity(detectedCity);
+          
           if (__DEV__) {
             //console.log(' Vị trí hiện tại:', { latitude, longitude });
+            console.log('🏙️ Phát hiện thành phố:', detectedCity || 'Không xác định');
           }
         } else {
           Alert.alert(

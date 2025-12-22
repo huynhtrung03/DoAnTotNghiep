@@ -263,7 +263,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 150, 
     right: 20,
-    zIndex: 9999,
+    zIndex: 300, // Above map button, below filtered results
+    elevation: 12, // For Android
   },
 
   // FAB Shadow Container - cho pulse animation

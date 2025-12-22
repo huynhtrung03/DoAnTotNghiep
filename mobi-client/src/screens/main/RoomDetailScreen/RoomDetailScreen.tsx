@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import RoomCartDetail from '../../../components/rooms/RoomDetail/components/RoomCartDetail';
+import RoomCartDetail from '../../../components/rooms/RoomDetail/RoomCartDetail';
 import Colors from '../../../colors/colors';
 import { useFavoriteStore } from '../../../stores/FavoriteStore';
 import { getAllFavoriteIds } from '../../../services/FavoriteService';

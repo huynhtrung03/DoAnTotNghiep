@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, SafeAreaView } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, SafeAreaView, Dimensions, Platform, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCompareStore } from '../../stores/CompareStore';
 import { useNavigation } from '@react-navigation/native';
@@ -8,10 +8,47 @@ import { formatPrice } from '../../utils/format';
 import { URL_IMAGE } from '../../services/Constant';
 import BookingButton from '../../components/rooms/BookingModal/BookingButton';
 
+const { width } = Dimensions.get('window');
+
+// Colors palette update
+const THEME = {
+  primary: '#667EEA',
+  background: '#F9FAFB',
+  card: '#FFFFFF',
+  textMain: '#1F2937',
+  textSub: '#6B7280',
+  border: '#E5E7EB',
+  highlight: '#EEF2FF',
+  success: '#10B981',
+  error: '#EF4444',
+  orange: '#F59E0B',
+};
+
+const CONVENIENCE_MAP: Record<string, string> = {
+  'furnished': 'Nội thất',
+  'washing_machine': 'Máy giặt',
+  'no_curfew': 'Giờ giấc tự do',
+  'mezzanine': 'Gác lửng',
+  'fridge': 'Tủ lạnh',
+  'kitchen_shelf': 'Kệ bếp',
+  'aircon': 'Máy lạnh',
+  'private_entry': 'Lối đi riêng',
+  'elevator': 'Thang máy',
+  'security_24h': 'An ninh 24h',
+  'garage': 'Nhà xe',
+};
+
+// Helper to determine better value
+// type: 'min' (lower better), 'max' (higher better)
+const getBetterIndex = (val1: number | undefined, val2: number | undefined, type: 'min' | 'max') => {
+  if (val1 === undefined || val2 === undefined || val1 === val2) return -1;
+  if (type === 'min') return val1 < val2 ? 0 : 1;
+  return val1 > val2 ? 0 : 1;
+};
 
 export default function CompareRoomsScreen() {
   const { items, clearItems } = useCompareStore();
-  const navigation = useNavigation<any>(); // Thêm <any> để tránh lỗi type
+  const navigation = useNavigation<any>();
 
   const handleBack = () => {
     navigation.goBack();
@@ -22,12 +59,73 @@ export default function CompareRoomsScreen() {
     navigation.goBack();
   };
 
+  // Helper to extract convenience names safely
+  const convenienceList = useMemo(() => {
+    if (items.length < 2) return [];
+    
+    const set1 = new Set(items[0].room.convenients?.map(c => c.name) || []);
+    const set2 = new Set(items[1].room.convenients?.map(c => c.name) || []);
+    
+    // Combine unique amenities
+    return Array.from(new Set([...set1, ...set2])).sort();
+  }, [items]);
+
+  const getTranslatedConvenience = (key: string) => {
+    return CONVENIENCE_MAP[key] || key;
+  };
+
+  // Analysis Logic
+  const analysis = useMemo(() => {
+    if (items.length < 2) return null;
+    const r1 = items[0].room;
+    const r2 = items[1].room;
+
+    const priceBetter = getBetterIndex(r1.priceMonth, r2.priceMonth, 'min');
+    const areaBetter = getBetterIndex(r1.area, r2.area, 'max');
+    const conv1Count = r1.convenients?.length || 0;
+    const conv2Count = r2.convenients?.length || 0;
+    const convBetter = getBetterIndex(conv1Count, conv2Count, 'max');
+    const elecBetter = getBetterIndex(r1.elecPrice, r2.elecPrice, 'min');
+    const waterBetter = getBetterIndex(r1.waterPrice, r2.waterPrice, 'min');
+    
+    // Calculate size (Length * Width)
+    const size1 = (r1.roomLength || 0) * (r1.roomWidth || 0);
+    const size2 = (r2.roomLength || 0) * (r2.roomWidth || 0);
+    const sizeBetter = getBetterIndex(size1, size2, 'max');
+
+    return {
+        priceBetter,
+        areaBetter,
+        convBetter,
+        elecBetter,
+        waterBetter,
+        sizeBetter,
+        r1Advantages: [
+            priceBetter === 0 && 'Giá thuê thấp hơn',
+            areaBetter === 0 && 'Diện tích lớn hơn',
+            sizeBetter === 0 && 'Kích thước lớn hơn',
+            convBetter === 0 && 'Nhiều tiện nghi hơn',
+            elecBetter === 0 && 'Giá điện rẻ hơn',
+            waterBetter === 0 && 'Giá nước rẻ hơn'
+        ].filter(Boolean),
+        r2Advantages: [
+            priceBetter === 1 && 'Giá thuê thấp hơn',
+            areaBetter === 1 && 'Diện tích lớn hơn',
+            sizeBetter === 1 && 'Kích thước lớn hơn',
+            convBetter === 1 && 'Nhiều tiện nghi hơn',
+            elecBetter === 1 && 'Giá điện rẻ hơn',
+            waterBetter === 1 && 'Giá nước rẻ hơn'
+        ].filter(Boolean)
+    };
+  }, [items]);
+
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.card} />
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={THEME.textMain} />
         </Pressable>
         <Text style={styles.headerTitle}>So sánh phòng</Text>
         <Pressable onPress={handleClearAll} style={styles.clearButton}>
@@ -35,214 +133,209 @@ export default function CompareRoomsScreen() {
         </Pressable>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         {items.length === 2 ? (
-          <View style={styles.compareContainer}>
-            {/* So sánh 2 phòng */}
-            {/* <View style={styles.roomsRow}>
-              {items.map((item, index) => (
-                <View key={item.room.id} style={styles.roomColumn}>
-                  <Image 
-                    source={{ uri: item.room.images?.[0]?.url || 'https://via.placeholder.com/200x150' }} 
-                    style={styles.roomImage}
-                  />
-                  <Text style={styles.roomTitle} numberOfLines={2}>
-                    {item.room.title}
-                  </Text>
-                </View>
-              ))}
-            </View> */}
-            <View style={styles.roomsRow}>
-  {items.map((item, index) => (
-    <View key={item.room.id} style={styles.roomColumn}>
-      <Image 
-        source={{ 
-          uri: item.room.images?.[0]?.url 
-            ? `${URL_IMAGE}${item.room.images[0].url.startsWith('/') ? item.room.images[0].url.slice(1) : item.room.images[0].url}`
-            : 'https://via.placeholder.com/200x150' 
-        }} 
-        style={styles.roomImage}
-      />
-      <Text style={styles.roomTitle} numberOfLines={2}>
-        {item.room.title}
-      </Text>
-    </View>
-  ))}
-</View>
-
-            {/* Bảng so sánh */}
-
-<View style={styles.compareTable}>
-  {/* <View style={styles.bookingSection}>
-    <Text style={styles.bookingSectionTitle}>Đặt phòng ngay</Text>
-    <View style={styles.bookingButtons}>
-      {items.map((item, index) => (
-        <Pressable 
-          key={`booking-${item.room.id}`}
-          style={styles.bookingButton}
-          onPress={() => {
-            // Navigate to booking với roomId
-            navigation.navigate('BookingScreen', { roomId: item.room.id });
-          }}
-        >
-          <Ionicons name="calendar-outline" size={16} color="#FFFFFF" />
-          <Text style={styles.bookingButtonText}>Đặt ngay</Text>
-        </Pressable>
-      ))}
-    </View>
-  </View> */}
-  <View style={styles.bookingSection}>
-  {/* <Text style={styles.bookingSectionTitle}>Đặt phòng ngay</Text> */}
-  <View style={styles.bookingButtons}>
-    {items.map((item, index) => (
-      <BookingButton 
-        key={`booking-${item.room.id}`}
-        room={item.room}
-      />
-    ))}
-  </View>
-</View>
-  <CompareRow 
-    label="Giá thuê"
-    values={[
-      formatPrice(items[0].room.priceMonth || 0),
-      formatPrice(items[1].room.priceMonth || 0)
-    ]}
-    highlight={(items[0].room.priceMonth || 0) !== (items[1].room.priceMonth || 0)}
-  />
-  <CompareRow 
-    label="Diện tích"
-    values={[
-      `${items[0].room.area || 0} m²`,
-      `${items[1].room.area || 0} m²`
-    ]}
-    highlight={(items[0].room.area || 0) !== (items[1].room.area || 0)}
-  />
-  <CompareRow 
-    label="Kích thước"
-    values={[
-      `Dài: ${items[0].room.roomLength ?? '-'}m, Rộng: ${items[0].room.roomWidth ?? '-'}m`,
-      `Dài: ${items[1].room.roomLength ?? '-'}m, Rộng: ${items[1].room.roomWidth ?? '-'}m`
-    ]}
-    highlight={
-      (items[0].room.roomLength !== items[1].room.roomLength) ||
-      (items[0].room.roomWidth !== items[1].room.roomWidth)
-    }
-  />
-  <CompareRow 
-    label="Số người tối đa"
-    values={[
-      `${items[0].room.maxPeople ?? '-'}`,
-      `${items[1].room.maxPeople ?? '-'}`
-    ]}
-    highlight={items[0].room.maxPeople !== items[1].room.maxPeople}
-  />
-  <CompareRow 
-    label="Giá điện"
-    values={[
-      items[0].room.elecPrice ? `${items[0].room.elecPrice.toLocaleString('vi-VN')}đ/kWh` : 'Theo hóa đơn',
-      items[1].room.elecPrice ? `${items[1].room.elecPrice.toLocaleString('vi-VN')}đ/kWh` : 'Theo hóa đơn'
-    ]}
-    highlight={items[0].room.elecPrice !== items[1].room.elecPrice}
-  />
-  <CompareRow 
-    label="Giá nước"
-    values={[
-      items[0].room.waterPrice ? `${items[0].room.waterPrice.toLocaleString('vi-VN')}đ/m³` : 'Theo hóa đơn',
-      items[1].room.waterPrice ? `${items[1].room.waterPrice.toLocaleString('vi-VN')}đ/m³` : 'Theo hóa đơn'
-    ]}
-    highlight={items[0].room.waterPrice !== items[1].room.waterPrice}
-  />
-  <CompareRow 
-    label="Địa chỉ"
-    values={[
-      [
-        items[0].room.address?.street,
-        items[0].room.address?.ward?.name,
-        items[0].room.address?.ward?.district?.name,
-        items[0].room.address?.ward?.district?.province?.name,
-      ].filter(Boolean).join(', '),
-      [
-        items[1].room.address?.street,
-        items[1].room.address?.ward?.name,
-        items[1].room.address?.ward?.district?.name,
-        items[1].room.address?.ward?.district?.province?.name,
-      ].filter(Boolean).join(', ')
-    ]}
-    highlight={
-      [
-        items[0].room.address?.street,
-        items[0].room.address?.ward?.name,
-        items[0].room.address?.ward?.district?.name,
-        items[0].room.address?.ward?.district?.province?.name,
-      ].filter(Boolean).join(', ') !==
-      [
-        items[1].room.address?.street,
-        items[1].room.address?.ward?.name,
-        items[1].room.address?.ward?.district?.name,
-        items[1].room.address?.ward?.district?.province?.name,
-      ].filter(Boolean).join(', ')
-    }
-  />
-  <CompareRow 
-    label="Mô tả"
-    values={[
-      items[0].room.description || 'Không có',
-      items[1].room.description || 'Không có'
-    ]}
-    highlight={items[0].room.description !== items[1].room.description}
-  />
-</View>
-
-<View style={{ marginBottom: 24}}>
-  <Text style={{fontWeight: 'bold', fontSize: 16, marginBottom: 8}}>Tiện nghi & Dịch vụ</Text>
-  {Array.from(new Set([
-    ...(items[0].room.convenients?.map(c => c.name) || []),
-    ...(items[1].room.convenients?.map(c => c.name) || [])
-  ])).map((name, idx) => (
-    <View key={idx} style={{flexDirection: 'row', alignItems: 'center', marginBottom: 6}}>
-      <Text style={{flex: 1, color: '#374151'}}>{name}</Text>
-      <Ionicons
-        name={items[0].room.convenients?.some(c => c.name === name) ? 'checkmark-circle' : 'close-circle'}
-        size={18}
-        color={items[0].room.convenients?.some(c => c.name === name) ? '#10B981' : '#F87171'}
-        style={{marginHorizontal: 8}}
-      />
-      <Ionicons
-        name={items[1].room.convenients?.some(c => c.name === name) ? 'checkmark-circle' : 'close-circle'}
-        size={18}
-        color={items[1].room.convenients?.some(c => c.name === name) ? '#10B981' : '#F87171'}
-      />
-    </View>
-  ))}
-</View>
-
-            {/* Action Buttons */}
-            <View style={styles.actionButtons}>
-              {items.map((item, index) => (
-                <Pressable 
-                  key={item.room.id} 
-                  style={styles.actionButton}
-                  onPress={() => {
-                    // Navigate to room detail
-                    navigation.navigate('RoomDetail', { roomId: item.room.id });
-                  }}
-                >
-                  <Text style={styles.actionButtonText}>Xem chi tiết</Text>
-                  <Ionicons name="arrow-forward" size={16} color={Colors.textWhite} />
-                </Pressable>
-              ))}
+          <View style={styles.compareWrapper}>
+            
+            {/* 1. ROOM IMAGES & TITLES HEADER - Fixed Top Rows */}
+            <View style={styles.desktopRow}>
+              {/* Left Column Label Space */}
+              <View style={styles.labelColumnPlaceholder} />
+              
+              {/* Room 1 */}
+              <View style={styles.roomHeaderCol}>
+                <Image 
+                  source={{ 
+                    uri: items[0].room.images?.[0]?.url 
+                      ? `${URL_IMAGE}${items[0].room.images[0].url.startsWith('/') ? items[0].room.images[0].url.slice(1) : items[0].room.images[0].url}`
+                      : 'https://via.placeholder.com/200x150' 
+                  }} 
+                  style={styles.roomImage}
+                />
+                <Text style={styles.roomTitle} numberOfLines={2}>
+                  {items[0].room.title}
+                </Text>
+              </View>
+              
+              {/* Room 2 */}
+              <View style={styles.roomHeaderCol}>
+                <Image 
+                  source={{ 
+                    uri: items[1].room.images?.[0]?.url 
+                      ? `${URL_IMAGE}${items[1].room.images[0].url.startsWith('/') ? items[1].room.images[0].url.slice(1) : items[1].room.images[0].url}`
+                      : 'https://via.placeholder.com/200x150' 
+                  }} 
+                  style={styles.roomImage}
+                />
+                <Text style={styles.roomTitle} numberOfLines={2}>
+                  {items[1].room.title}
+                </Text>
+              </View>
             </View>
+
+            {/* 2. BOOKING BUTTONS ROW */}
+            <View style={styles.desktopRow}>
+               <View style={styles.labelColumn}><Text style={styles.rowLabel}>Hành động</Text></View>
+               <View style={styles.valueCol}>
+                  <BookingButton room={items[0].room} />
+               </View>
+               <View style={styles.valueCol}>
+                  <BookingButton room={items[1].room} />
+               </View>
+            </View>
+
+            {/* SYSTEM ANALYTICS */}
+            {analysis && (
+              <View style={styles.systemReviewContainer}>
+                <View style={styles.systemReviewHeader}>
+                  <Ionicons name="analytics" size={20} color={THEME.primary} />
+                  <Text style={styles.systemReviewTitle}>Đánh giá từ hệ thống</Text>
+                </View>
+                
+                <View style={styles.desktopRow}>
+                    <View style={styles.labelColumnPlaceholder} />
+                    <View style={styles.analysisCol}>
+                        {analysis.r1Advantages.length > 0 ? (
+                            analysis.r1Advantages.map((adv: any, i) => (
+                                <View key={i} style={styles.advTag}>
+                                    <Ionicons name="thumbs-up" size={12} color={THEME.success} style={{marginRight: 4}} />
+                                    <Text style={styles.advText}>{adv}</Text>
+                                </View>
+                            ))
+                        ) : (
+                           <Text style={styles.neutralText}>--</Text>
+                        )}
+                    </View>
+                    <View style={styles.analysisCol}>
+                         {analysis.r2Advantages.length > 0 ? (
+                            analysis.r2Advantages.map((adv: any, i) => (
+                                <View key={i} style={styles.advTag}>
+                                    <Ionicons name="thumbs-up" size={12} color={THEME.success} style={{marginRight: 4}} />
+                                    <Text style={styles.advText}>{adv}</Text>
+                                </View>
+                            ))
+                        ) : (
+                           <Text style={styles.neutralText}>--</Text>
+                        )}
+                    </View>
+                </View>
+              </View>
+            )}
+
+            {/* 3. COMPARISON DETAILS */}
+            <View style={styles.sectionDivider} />
+
+            {/* Helper Component for Rows */}
+            <CompareRow 
+              label="Giá thuê" 
+              value1={formatPrice(items[0].room.priceMonth || 0)}
+              value2={formatPrice(items[1].room.priceMonth || 0)}
+              betterIndex={analysis?.priceBetter}
+              highlight
+            />
+            <CompareRow 
+              label="Diện tích" 
+              value1={`${items[0].room.area || 0} m²`}
+              value2={`${items[1].room.area || 0} m²`}
+              betterIndex={analysis?.areaBetter}
+              highlight
+            />
+             <CompareRow 
+              label="Kích thước" 
+              value1={`${items[0].room.roomLength ?? '-'}m x ${items[0].room.roomWidth ?? '-'}m`}
+              value2={`${items[1].room.roomLength ?? '-'}m x ${items[1].room.roomWidth ?? '-'}m`}
+              betterIndex={analysis?.sizeBetter}
+              highlight
+            />
+            <CompareRow 
+              label="Số người" 
+              value1={`${items[0].room.maxPeople ?? '-'} người`}
+              value2={`${items[1].room.maxPeople ?? '-'} người`}
+            />
+            <CompareRow 
+              label="Giá điện" 
+              value1={items[0].room.elecPrice ? `${items[0].room.elecPrice.toLocaleString('vi-VN')}đ/kWh` : 'Theo hóa đơn'}
+              value2={items[1].room.elecPrice ? `${items[1].room.elecPrice.toLocaleString('vi-VN')}đ/kWh` : 'Theo hóa đơn'}
+              betterIndex={analysis?.elecBetter}
+              highlight
+            />
+            <CompareRow 
+              label="Giá nước" 
+              value1={items[0].room.waterPrice ? `${items[0].room.waterPrice.toLocaleString('vi-VN')}đ/m³` : 'Theo hóa đơn'}
+              value2={items[1].room.waterPrice ? `${items[1].room.waterPrice.toLocaleString('vi-VN')}đ/m³` : 'Theo hóa đơn'}
+              betterIndex={analysis?.waterBetter}
+              highlight
+            />
+            <CompareRow 
+              label="Địa chỉ" 
+              value1={`${items[0].room.address?.street}, ${items[0].room.address?.ward?.name}`}
+              value2={`${items[1].room.address?.street}, ${items[1].room.address?.ward?.name}`}
+              isLongText
+            />
+
+            {/* 4. UTILITIES / AMENITIES */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Tiện nghi & Dịch vụ</Text>
+            </View>
+            
+            {convenienceList.map((name, idx) => {
+              const has1 = items[0].room.convenients?.some(c => c.name === name);
+              const has2 = items[1].room.convenients?.some(c => c.name === name);
+              
+              return (
+                <View key={idx} style={[styles.desktopRow, styles.rowBorder]}>
+                  <View style={styles.labelColumn}>
+                    <Text style={styles.rowLabel}>{getTranslatedConvenience(name)}</Text>
+                  </View>
+                  <View style={styles.valueColCenter}>
+                     <Ionicons 
+                        name={has1 ? 'checkmark-circle' : 'close-circle-outline'} 
+                        size={22} 
+                        color={has1 ? THEME.success : THEME.textSub} 
+                     />
+                  </View>
+                  <View style={styles.valueColCenter}>
+                      <Ionicons 
+                        name={has2 ? 'checkmark-circle' : 'close-circle-outline'} 
+                        size={22} 
+                        color={has2 ? THEME.success : THEME.textSub} 
+                     />
+                  </View>
+                </View>
+              );
+            })}
+
+             {/* 5. VIEW DETAIL BUTTONS */}
+             <View style={[styles.desktopRow, {marginTop: 20}]}>
+               <View style={styles.labelColumnPlaceholder} />
+               <View style={styles.valueCol}>
+                  <Pressable 
+                    onPress={() => navigation.navigate('RoomDetail', { roomId: items[0].room.id })}
+                    style={styles.detailButton}
+                  >
+                    <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+                  </Pressable>
+               </View>
+               <View style={styles.valueCol}>
+                  <Pressable 
+                    onPress={() => navigation.navigate('RoomDetail', { roomId: items[1].room.id })}
+                    style={styles.detailButton}
+                  >
+                    <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+                  </Pressable>
+               </View>
+            </View>
+
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="home-outline" size={64} color={Colors.textSecondary} />
+            <Ionicons name="git-compare-outline" size={64} color={THEME.textSub} style={{ opacity: 0.5 }} />
             <Text style={styles.emptyTitle}>Chưa đủ phòng để so sánh</Text>
             <Text style={styles.emptySubtitle}>
               Vui lòng chọn 2 phòng để bắt đầu so sánh
             </Text>
             <Pressable onPress={handleBack} style={styles.backToHomeButton}>
-              <Text style={styles.backToHomeButtonText}>Quay lại trang chủ</Text>
+              <Text style={styles.backToHomeButtonText}>Quay lại danh sách</Text>
             </Pressable>
           </View>
         )}
@@ -251,68 +344,41 @@ export default function CompareRoomsScreen() {
   );
 }
 
-const CompareRow = ({ 
-  label, 
-  values, 
-  highlight = false 
-}: { 
-  label: string; 
-  values: string[];
-  highlight?: boolean;
-}) => (
-  <View style={[styles.compareRow, highlight && styles.compareRowHighlight]}>
-    <Text style={styles.compareLabel}>{label}</Text>
-    <View style={styles.compareValues}>
-      {values.map((value, index) => (
-        <View key={index} style={styles.compareValueContainer}>
-          <Text style={[
-            styles.compareValue,
-            highlight && styles.compareValueHighlight
-          ]}>
-            {value}
-          </Text>
-        </View>
-      ))}
+// Sub-component for a comparison row
+const CompareRow = ({ label, value1, value2, highlight, isLongText, betterIndex }: any) => {
+  const isDiff = value1 !== value2;
+  const rowStyle = [styles.desktopRow, styles.rowBorder, highlight && isDiff && styles.diffRow];
+  
+  return (
+    <View style={rowStyle}>
+      <View style={styles.labelColumn}>
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
+      <View style={styles.valueCol}>
+        <Text style={[
+          styles.valueText, 
+          betterIndex === 0 ? styles.betterValue : null
+        ]}>
+            {value1}
+        </Text>
+      </View>
+      <View style={styles.valueCol}>
+        <Text style={[
+          styles.valueText, 
+          betterIndex === 1 ? styles.betterValue : null
+        ]}>
+            {value2}
+        </Text>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.backgroundLight,
-  },
-  bookingSection: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  bookingSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  bookingButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  bookingButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF9800', // Màu cam cho nút đặt phòng
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
-  },
-  bookingButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    backgroundColor: THEME.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
     flexDirection: 'row',
@@ -320,141 +386,215 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.backgroundLight,
+    backgroundColor: THEME.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: THEME.border,
   },
-  backButton: {
-    padding: 8,
-  },
+  backButton: { padding: 8 },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.textPrimary,
+    color: THEME.textMain,
   },
-  clearButton: {
-    padding: 8,
-  },
+  clearButton: { padding: 8 },
   clearButtonText: {
-    color: Colors.primary,
+    color: THEME.primary,
     fontSize: 14,
     fontWeight: '600',
   },
   content: {
     flex: 1,
-    padding: 16,
   },
-  compareContainer: {
-    flex: 1,
+  contentContainer: {
+    paddingBottom: 40,
   },
-  roomsRow: {
+  compareWrapper: {
+    backgroundColor: THEME.card,
+    margin: 10,
+    borderRadius: 12,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  desktopRow: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 24,
+    width: '100%',
+    alignItems: 'stretch', // Ensure columns stretch to match height
   },
-  roomColumn: {
-    flex: 1,
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border, // Very light divider
+    paddingVertical: 12,
+  },
+  diffRow: {
+    backgroundColor: '#F3F4F6',
+  },
+  labelColumn: {
+    width: '26%', // Fixed width for labels
+    justifyContent: 'center',
+    paddingRight: 8,
+  },
+  labelColumnPlaceholder: {
+    width: '26%',
+  },
+  rowLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: THEME.textSub,
+  },
+  valueCol: {
+    width: '37%', // Remaining space split by 2 (approx 74%)
+    paddingHorizontal: 4,
+    justifyContent: 'center',
+  },
+  valueColCenter: {
+    width: '37%',
+    paddingHorizontal: 4,
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  roomHeaderCol: {
+    width: '37%',
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    paddingBottom: 16,
   },
   roomImage: {
     width: '100%',
-    height: 120,
-    borderRadius: 12,
+    aspectRatio: 4/3,
+    borderRadius: 8,
     marginBottom: 8,
+    backgroundColor: '#E5E7EB',
   },
   roomTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
+    fontWeight: '700',
+    color: THEME.textMain,
     textAlign: 'center',
+    lineHeight: 20,
   },
-  compareTable: {
-    backgroundColor: Colors.backgroundLight,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+  valueText: {
+    fontSize: 14,
+    color: THEME.textMain,
+    lineHeight: 20,
   },
-  compareRow: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  boldText: {
+    fontWeight: '700',
+    // color: THEME.primary, // Removed as per request
   },
-  compareRowHighlight: {
-    backgroundColor: 'rgba(74, 144, 226, 0.1)',
-    borderRadius: 8,
-    marginVertical: 2,
+  sectionDivider: {
+    height: 12,
+  },
+  sectionHeader: {
+    marginTop: 20,
+    marginBottom: 10,
+    paddingVertical: 8,
+    backgroundColor: '#F9FAFB',
     paddingHorizontal: 8,
+    borderRadius: 6,
   },
-  compareLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: THEME.textMain,
   },
-  compareValues: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  compareValueContainer: {
-    flex: 1,
-  },
-  compareValue: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  compareValueHighlight: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
+  detailButton: {
+    borderWidth: 1,
+    borderColor: THEME.primary,
+    borderRadius: 8,
+    paddingVertical: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
   },
-  actionButtonText: {
-    color: Colors.textWhite,
-    fontSize: 14,
+  detailButtonText: {
+    color: THEME.primary,
     fontWeight: '600',
+    fontSize: 13,
   },
+  // Empty State
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 64,
+    paddingTop: 80,
+    paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginTop: 16,
-    marginBottom: 8,
+    color: THEME.textMain,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    marginTop: 8,
+    color: THEME.textSub,
     textAlign: 'center',
     marginBottom: 24,
   },
   backToHomeButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: THEME.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   backToHomeButtonText: {
-    color: Colors.textWhite,
-    fontSize: 14,
+    color: 'white',
     fontWeight: '600',
   },
+  systemReviewContainer: {
+    marginVertical: 12,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  systemReviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6,
+  },
+  systemReviewTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.primary,
+  },
+  analysisCol: {
+    width: '37%', // Must match valueCol
+    paddingHorizontal: 4,
+    marginLeft: 2, // Fine tune alignment
+  },
+  advTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    marginBottom: 4,
+    alignSelf: 'flex-start',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  advText: {
+    fontSize: 10,
+    color: THEME.textMain,
+    fontWeight: '500',
+  },
+  neutralText: {
+    fontSize: 12,
+    color: THEME.textSub,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  betterValue: {
+    color: THEME.success,
+    fontWeight: '700',
+  }
 });

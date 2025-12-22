@@ -1,5 +1,5 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import Colors, { withOpacity } from '../../../../colors/colors';
+import Colors, { withOpacity } from '../../../colors/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -7,6 +7,9 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',
+  },
+  scrollView: {
+    flex: 1,
   },
   
   // ==================== LOADING & ERROR ====================
@@ -609,7 +612,7 @@ export const styles = StyleSheet.create({
 
   // ==================== BOTTOM PADDING ====================
   bottomPadding: {
-    height: 40,
+    height: 120,
   },
 
   // ==================== OLD STYLES (for compatibility) ====================

@@ -355,7 +355,7 @@ export const paymentNotification = async (
 };
 
 // GET Notifications
-export const getNotificationsForUser = async (userId: string) => {
+export const getNotificationsForUser = async (userId: string | number) => {
   try {
     const querySnapshot = await firestore()
       .collection("notifications")

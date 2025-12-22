@@ -62,6 +62,27 @@ const getRelativeTime = (dateString: string) => {
   return `${Math.floor(diffInSeconds / 31536000)} năm trước`;
 };
 
+
+const CONVENIENCE_MAP: Record<string, string> = {
+  'furnished': 'Nội thất',
+  'washing_machine': 'Máy giặt',
+  'no_curfew': 'Giờ giấc tự do',
+  'mezzanine': 'Gác lửng',
+  'fridge': 'Tủ lạnh',
+  'kitchen_shelf': 'Kệ bếp',
+  'aircon': 'Máy lạnh',
+  'private_entry': 'Lối đi riêng',
+  'elevator': 'Thang máy',
+  'security_24h': 'An ninh 24h',
+  'garage': 'Nhà xe',
+};
+
+const getConvenienceDisplayName = (name: string): string => {
+  // Normalize key: lowercase and trim
+  const key = name.toLowerCase().trim();
+  return CONVENIENCE_MAP[key] || name;
+};
+
 // Spec Card Component với thiết kế mới
 const SpecCard = ({
   icon,
@@ -806,7 +827,7 @@ export default function HistoryRoomDetail({}: HistoryRoomDetailProps) {
             {room.convenients.map((convenient, index) => (
               <FeatureItem
                 key={convenient.id}
-                text={convenient.name}
+                text={getConvenienceDisplayName(convenient.name)}
                 delay={index * 50}
               />
             ))}
