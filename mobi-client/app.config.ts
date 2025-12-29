@@ -65,7 +65,11 @@ export default (): ExpoConfig => ({
     // googleServicesFile: './GoogleService-Info.plist', // Bỏ comment nếu làm cho iOS
     "infoPlist": {
       "ITSAppUsesNonExemptEncryption": false,
-      "UIBackgroundModes": ["remote-notification"] // Cần thiết cho iOS nếu sau này dùng
+      "UIBackgroundModes": ["remote-notification"], // Cần thiết cho iOS nếu sau này dùng
+      // Cho phép truy cập HTTP (không khuyến nghị cho production)
+      "NSAppTransportSecurity": {
+        "NSAllowsArbitraryLoads": true
+      }
     }
   },
 
@@ -74,6 +78,9 @@ export default (): ExpoConfig => ({
     jsEngine: 'hermes',
     // Đảm bảo file này đã nằm đúng vị trí (cùng cấp với app.config.ts hoặc trong thư mục android/app)
     googleServicesFile: './google-services.json', 
+    // Cho phép truy cập HTTP (không khuyến nghị cho production)
+    // @ts-ignore - usesCleartextTraffic is valid but not in type definition yet
+    usesCleartextTraffic: true,
     adaptiveIcon: {
       foregroundImage: './assets/images/logo-ant.png',
       backgroundColor: '#ffffff',

@@ -1,6 +1,49 @@
-# Node
+# Dependencies
 node_modules/
-**/node_modules/
+.pnp
+.pnp.js
 
-# Env
+# Testing
+coverage/
+
+# Production
+build/
+dist/
+*.apk
+*.aab
+*.ipa
+
+# Misc
+.DS_Store
+*.pem
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
 .env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# EAS
+.easignore

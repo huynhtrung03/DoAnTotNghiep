@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '../../../../colors/colors';
-import { confirmPayment } from '../../../../services/PaymentServive';
+import { confirmPayment } from '../../../../services/PaymentService';
 import styles from './PaymentResultScreen.style';
 
 type PaymentResultRouteProp = RouteProp<
@@ -92,10 +92,7 @@ export default function PaymentResultScreen() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
+    return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
   };
 
   const formatDate = (dateString: string) => {

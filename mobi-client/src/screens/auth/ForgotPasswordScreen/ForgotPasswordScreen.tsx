@@ -59,7 +59,7 @@ export default function ForgotPasswordScreen() {
             setEmail(text);
             setError('');
           }}
-          placeholder="example@email.com"
+          placeholder="nguyenvana@gmail.com"
           keyboardType="email-address"
           autoCapitalize="none"
           icon="mail"
