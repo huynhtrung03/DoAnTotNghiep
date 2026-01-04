@@ -15,8 +15,7 @@ FROM amazoncorretto:21.0.8
 WORKDIR /app
 # Copy file jar đã build từ stage build sang stage chạy, đổi tên thành app.jar.
 COPY --from=build /app/build/libs/*.jar app.jar
-# Copy file .env vào thư mục /app trong container.
-COPY .env /app/.env
+# Environment variables are provided via docker-compose at runtime
 # Mở port 3333 để ứng dụng lắng nghe (thường là port của Spring Boot 8080).
 EXPOSE 3333
 # Thiết lập lệnh khởi chạy ứng dụng khi container start.
