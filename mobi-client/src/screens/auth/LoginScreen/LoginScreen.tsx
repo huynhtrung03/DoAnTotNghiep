@@ -111,7 +111,7 @@
 //               label="Email hoặc Số điện thoại"
 //               value={value}
 //               onChangeText={onChange}
-//               placeholder="example@email.com"
+//               placeholder="nguyenvana@gmail.com"
 //               keyboardType="email-address"
 //               autoCapitalize="none"
 //               icon="person"
@@ -296,7 +296,7 @@ export default function LoginScreen() {
               label="Email hoặc Số điện thoại"
               value={value}
               onChangeText={onChange}
-              placeholder="example@email.com"
+              placeholder="nguyenvana@gmail.com"
               keyboardType="email-address"
               autoCapitalize="none"
               icon="person"

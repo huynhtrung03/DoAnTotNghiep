@@ -87,7 +87,7 @@ export default function RegisterScreen() {
               label="Email"
               value={value}
               onChangeText={onChange}
-              placeholder="example@email.com"
+              placeholder="nguyenvana@gmail.com"
               keyboardType="email-address"
               autoCapitalize="none"
               icon="mail"

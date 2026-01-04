@@ -4,7 +4,7 @@ import { WebView } from 'react-native-webview';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../../colors/colors';
-import { confirmPayment } from '../../../services/PaymentServive';
+import { confirmPayment } from '../../../services/PaymentService';
 
 interface RouteParams {
   paymentUrl: string;

@@ -161,10 +161,17 @@ DANH SÁCH FILE ĐÃ TẢI:
     full_prompt = f"{prompt}\n\n{room_info}\n\nHãy duyệt phòng này dựa trên thông tin và hình ảnh/video đã tải. Trả về ĐÚNG định dạng JSON yêu cầu, không có markdown, không có text thừa."
 
     API_KEY = os.getenv("API_KEY")
-    MODEL = "gemini-2.0-flash"
-    URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
+    
+    # Danh sách các model để thử (theo thứ tự ưu tiên) - Giống chatbot
+    # Tất cả đều hỗ trợ vision tasks (ảnh/video)
+    models_to_try = [
+        "gemini-2.5-flash",          # ⭐ Mới nhất, tốt nhất cho vision (June 2025)
+        "gemini-flash-latest",       # Auto-update to latest flash version
+        "gemini-2.0-flash",          # Stable backup (Jan 2025)
+        "gemini-2.0-flash-lite",     # Nhanh, nhẹ cho approval nhanh
+    ]
 
-    # Tạo payload với ảnh/video đã tải
+    # Tạo payload với ảnh/video đã tải (dùng chung cho tất cả models)
     payload_parts = [{"text": full_prompt}]
     
     # Thêm các file ảnh vào payload (chỉ ảnh, video cần xử lý khác)
@@ -186,66 +193,94 @@ DANH SÁCH FILE ĐÃ TẢI:
     payload = {"contents": [{"parts": payload_parts}]}
     headers = {"Content-Type": "application/json"}
     
+    # Sử dụng try-finally để đảm bảo cleanup files
     try:
-        print(f"[DEBUG] Đang gửi request tới Gemini AI với {len(downloaded_files)} files...")
-        resp = requests.post(URL, headers=headers, data=json.dumps(payload), timeout=20)
+        # Thử các model theo thứ tự
+        last_error = None
+        for MODEL in models_to_try:
+            try:
+                URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
+                print(f"[DEBUG] Trying approval with model: {MODEL} ({len(downloaded_files)} images)")
+                
+                resp = requests.post(URL, headers=headers, data=json.dumps(payload), timeout=20)
+                
+                # Kiểm tra lỗi 429 (Rate Limit) - thử model tiếp theo
+                if resp.status_code == 429:
+                    print(f"[WARNING] Rate limit exceeded for {MODEL}, trying next model...")
+                    last_error = "Rate limit exceeded"
+                    time.sleep(1)  # Đợi 1 giây trước khi thử model khác
+                    continue
+                
+                # Kiểm tra lỗi 404 (Model not found) - thử model tiếp theo
+                if resp.status_code == 404:
+                    print(f"[WARNING] Model {MODEL} not found, trying next model...")
+                    last_error = f"Model {MODEL} not available"
+                    continue
+                
+                resp.raise_for_status()
+                result = resp.json()
+                text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+                
+                # Parse JSON response
+                try:
+                    # Loại bỏ markdown formatting
+                    if '```json' in text:
+                        text = text.split('```json')[1].split('```')[0].strip()
+                    elif '```' in text:
+                        text = text.split('```')[1].split('```')[0].strip()
+                    
+                    # Loại bỏ text thừa trước và sau JSON
+                    json_start = text.find('{')
+                    json_end = text.rfind('}') + 1
+                    if json_start >= 0 and json_end > json_start:
+                        text = text[json_start:json_end]
+                    
+                    approval_result = json.loads(text)
+                    
+                    # Validate JSON structure
+                    if not isinstance(approval_result, dict):
+                        raise ValueError("Response is not a dict")
+                    if 'status' not in approval_result or 'content' not in approval_result:
+                        raise ValueError("Missing required fields")
+                    if not isinstance(approval_result['content'], list):
+                        raise ValueError("Content must be a list")
+                    
+                    print(f"[SUCCESS] Approval completed with {MODEL}")
+                    return approval_result
+                    
+                except Exception as e:
+                    print(f"[ERROR] Failed to parse response from {MODEL}: {e}")
+                    print(f"[DEBUG] Raw response: {text[:200]}...")
+                    last_error = f"Parse error: {str(e)}"
+                    continue
+                    
+            except requests.exceptions.HTTPError as e:
+                print(f"[ERROR] HTTP Error with {MODEL}: {e}")
+                last_error = str(e)
+                continue
+            except Exception as e:
+                print(f"[ERROR] Error with {MODEL}: {e}")
+                last_error = str(e)
+                continue
         
-        # Kiểm tra lỗi 429 (Too Many Requests)
-        if resp.status_code == 429:
-            print(f"[WARNING] Rate limit exceeded (429), returning status 0...")
-            return {"status": 0, "content": ["Too many requests - Rate limit exceeded"]}
+        # Nếu tất cả model đều thất bại
+        print(f"[FATAL] All approval models failed. Last error: {last_error}")
         
-        resp.raise_for_status()
-        result = resp.json()
-        text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
-        
-        # Parse JSON response
-        try:
-            # Loại bỏ markdown formatting
-            if '```json' in text:
-                text = text.split('```json')[1].split('```')[0].strip()
-            elif '```' in text:
-                text = text.split('```')[1].split('```')[0].strip()
-            
-            # Loại bỏ text thừa trước và sau JSON
-            json_start = text.find('{')
-            json_end = text.rfind('}') + 1
-            if json_start >= 0 and json_end > json_start:
-                text = text[json_start:json_end]
-            
-            approval_result = json.loads(text)
-            
-            # Validate JSON structure
-            if not isinstance(approval_result, dict):
-                raise ValueError("Response is not a dict")
-            if 'status' not in approval_result or 'content' not in approval_result:
-                raise ValueError("Missing required fields")
-            if not isinstance(approval_result['content'], list):
-                raise ValueError("Content must be a list")
-            
-            return approval_result
-            
-        except Exception as e:
-            print(f"[ERROR] Failed to parse AI response: {e}")
-            print(f"[DEBUG] Raw response: {text}")
+        # Trả về status 0 nếu là rate limit, status 2 nếu lỗi khác
+        if "rate limit" in str(last_error).lower() or "429" in str(last_error):
             return {
-                "status": 2, 
-                "content": [f"Lỗi parse JSON: {str(e)}", f"Raw response: {text[:200]}..."]
+                "status": 0, 
+                "content": ["Rate limit exceeded - Please try again in a few minutes"]
             }
-            
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 429:
-            print(f"[WARNING] Rate limit exceeded (429), returning status 0...")
-            return {"status": 0, "content": ["Too many requests - Rate limit exceeded"]}
         else:
-            print(f"[ERROR] HTTP Error: {e}")
-            return {"status": 2, "content": [f"Lỗi HTTP: {str(e)}"]}
-    except Exception as e:
-        print(f"[ERROR] AI API call failed: {e}")
-        return {"status": 2, "content": [f"Lỗi gọi API: {str(e)}"]}
+            return {
+                "status": 2,
+                "content": [f"Lỗi duyệt phòng: {last_error}"]
+            }
+    
     finally:
-        # Xóa các file đã tải sau khi xử lý
-        print(f"[DEBUG] Đang xóa {len(downloaded_files)} files đã tải...")
+        # Luôn cleanup files dù success hay fail
+        print(f"[DEBUG] Cleaning up {len(downloaded_files)} downloaded files...")
         cleanup_media_files(downloaded_files)
 
 
@@ -309,11 +344,6 @@ def get_rooms():
         print(f"[ERROR] Database connection failed: {e}")
         return [], None
 
-# Health check endpoint
-@app.route('/', methods=['GET'])
-def health():
-    return jsonify({"status": "ok", "message": "Python Gemini API is running"}), 200
-
 # API chatbot - dùng prompt chi tiết, dữ liệu thô
 @app.route('/ai_chatbot', methods=['POST'])
 def ai_chatbot():
@@ -322,17 +352,40 @@ def ai_chatbot():
 
     # Lấy dữ liệu phòng từ MySQL
     result, columns = get_rooms()
+    
+    # Kiểm tra nếu database trống hoặc lỗi
+    if not result or columns is None:
+        return jsonify({
+            "reply": "I'm sorry, I'm currently unable to access room information. Please try again later or contact our support at 0388953628."
+        })
 
     # Chuyển dữ liệu SQL thành văn bản thô
     rooms_text = ""
+    import uuid
     for row in result:
-        info = {col: str(val) if val not in [None, 'None'] else 'Chưa cập nhật' for col, val in zip(columns, row)}
-        import uuid
-        room_id = info.get('room_id', '')
-        if isinstance(row[0], bytes) and len(row[0]) == 16:
-            room_id_str = str(uuid.UUID(bytes=row[0]))
+        # Debug: In ra type của room_id
+        print(f"[DEBUG] row[0] type: {type(row[0])}, value: {row[0]}")
+        
+        # Xử lý UUID từ SQL (row[0] là room_id)
+        # MySQL connector có thể trả về bytes hoặc bytearray
+        if isinstance(row[0], (bytes, bytearray)) and len(row[0]) == 16:
+            # UUID được lưu dưới dạng BINARY(16) trong MySQL
+            # Convert bytearray sang bytes nếu cần
+            uuid_bytes = bytes(row[0]) if isinstance(row[0], bytearray) else row[0]
+            room_id_str = str(uuid.UUID(bytes=uuid_bytes))
+            print(f"[DEBUG] Converted UUID: {room_id_str}")
+        elif isinstance(row[0], str):
+            # UUID đã là string
+            room_id_str = row[0]
+            print(f"[DEBUG] UUID already string: {room_id_str}")
         else:
-            room_id_str = str(room_id)
+            # Fallback: convert sang string (sẽ gây lỗi)
+            room_id_str = str(row[0])
+            print(f"[WARNING] UUID fallback conversion: {room_id_str}")
+        
+        # Tạo dict info SAU KHI xử lý UUID để tránh str() convert bytes thành "bytearray(...)"
+        info = {col: str(val) if val not in [None, 'None'] else 'Chưa cập nhật' for col, val in zip(columns, row)}
+        
         link = f"http://localhost:3000/detail/{room_id_str}"
         rooms_text += f"- Title: {info.get('title','')}\n"
         rooms_text += f"  Address: {info.get('full_address','')}\n"
@@ -346,7 +399,7 @@ def ai_chatbot():
     if not history or 'Bạn là Ants' not in str(history[0]):
         initial_prompt = (
             "Bạn là Ants, trợ lý ảo cho website Ants chuyên về phòng trọ cho thuê, \n"
-            "- Luôn trả lời bằng tiếng Anh.\n\n"
+            # "- Luôn trả lời bằng tiếng Anh.\n\n"
             "Nhiệm vụ của bạn:\n"
             "- Giới thiệu và tư vấn về các lựa chọn cho thuê dựa trên dữ liệu có sẵn.\n"
             "- Giải thích rõ ràng giá cả, tiện nghi, vị trí, điều kiện cho thuê và quy trình đặt phòng.\n"
@@ -355,18 +408,41 @@ def ai_chatbot():
             "- Nếu thông tin không có sẵn, trả lời: "
             "I'm sorry, currently I do not have information about suitable rooms for rent. "
             "Please visit our website or contact our hotline 0388953628 for more details.\n"
+            "Cách tìm phòng xung quanh vị trí của người dùng: 1.Chọn Xem bản đồ trên trang chủ 2.Cho phép truy cập vị trí 3.Kick chuột trên map để tìm phòng gần vị trí đó\n"
             "- Không trả lời các câu hỏi không liên quan đến dịch vụ cho thuê, nhà ở hoặc dịch vụ của Ants.\n"
             "- Quy trình đặt phòng: 1. Tìm kiếm phòng phù hợp 2. Xem chi tiết phòng 3. Chọn đặt phòng 4. Theo dõi trạng thái thuê ở trang lịch sử thuê 5. Đặt cọc qua chuyển khoản là đã hoàn thành thuê phòng.\n"
-            "- Always include a clickable link to the room in Markdown format: 🔗 [View room details]({link})\n\n"
+            "- Always include a clickable link to the room in Markdown format: [View room details]({link}). DO NOT use any emojis (especially 🔗) before or after the link.\n"
+            "- DO NOT use emojis in your responses.\n\n"
             f"Available room data:\n{rooms_text}"
         )
         history = [{'role': 'user', 'text': initial_prompt}] + history
 
-    # Chuẩn bị payload gửi API Gemini
-    API_KEY = os.getenv("API_KEY")
-    MODEL = "gemini-2.0-flash"
-    URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
-
+    # Danh sách các model để thử (theo thứ tự ưu tiên)
+    # Dựa trên API response từ https://generativelanguage.googleapis.com/v1beta/models
+    models_to_try = [
+        "gemini-2.5-flash",          # ⭐ Mới nhất, mạnh nhất (June 2025)
+        "gemini-flash-latest",       # Auto-update to latest flash version
+        "gemini-2.0-flash-lite",     # Nhẹ, nhanh, tiết kiệm quota
+        "gemini-2.0-flash",          # Stable backup (Jan 2025)
+        "gemini-pro-latest",         # Pro version nếu cần
+    ]
+    
+    # Lấy tất cả API keys có sẵn (hỗ trợ rotation)
+    api_keys = []
+    for i in range(1, 11):  # Hỗ trợ tối đa 10 keys (API_KEY, API_KEY_2, API_KEY_3, ...)
+        key_name = "API_KEY" if i == 1 else f"API_KEY_{i}"
+        key_value = os.getenv(key_name)
+        if key_value:
+            api_keys.append(key_value)
+    
+    if not api_keys:
+        print("[FATAL] No API keys found in .env file")
+        return jsonify({
+            "reply": "Server configuration error: No API keys available. Please contact support at 0388953628."
+        })
+    
+    print(f"[DEBUG] Found {len(api_keys)} API key(s) available")
+    
     parts = []
     for turn in history:
         if turn['role'] == 'user':
@@ -377,28 +453,57 @@ def ai_chatbot():
     payload = {"contents": [{"parts": parts}]}
     headers = {"Content-Type": "application/json"}
 
-    try:
-        resp = requests.post(URL, headers=headers, data=json.dumps(payload), timeout=15)
-        resp.raise_for_status()
-        result = resp.json()
-        reply = result["candidates"][0]["content"]["parts"][0]["text"]
-    except requests.exceptions.Timeout:
-        print(f"[ERROR] API timeout - took more than 15 seconds")
-        reply = "API Gemini timeout. Please try again."
-    except requests.exceptions.HTTPError as e:
-        print(f"[ERROR] HTTP Error {e.response.status_code}: {e}")
-        if e.response.status_code == 401:
-            reply = "API key is invalid or expired."
-        elif e.response.status_code == 429:
-            reply = "Rate limit exceeded. Please try again later."
-        else:
-            reply = f"API error: {e}"
-    except Exception as e:
-        print(f"[ERROR] Exception in ai_chatbot: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        reply = f"Error: {str(e)}"
-
+    # Thử kết hợp: mỗi API key với mỗi model
+    last_error = None
+    for key_idx, API_KEY in enumerate(api_keys, 1):
+        print(f"[DEBUG] Trying with API key #{key_idx}")
+        
+        for MODEL in models_to_try:
+            try:
+                URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
+                print(f"[DEBUG] Trying model: {MODEL} (key #{key_idx})")
+                
+                resp = requests.post(URL, headers=headers, data=json.dumps(payload), timeout=15)
+                
+                # Kiểm tra lỗi 429 (Rate Limit)
+                if resp.status_code == 429:
+                    print(f"[WARNING] Rate limit exceeded for {MODEL} (key #{key_idx})")
+                    last_error = "Rate limit exceeded. Please try again in a few moments."
+                    time.sleep(0.5)
+                    continue
+                
+                # Kiểm tra lỗi 404 (Model not found)
+                if resp.status_code == 404:
+                    print(f"[WARNING] Model {MODEL} not found (key #{key_idx})")
+                    last_error = f"Model {MODEL} not available"
+                    continue
+                
+                resp.raise_for_status()
+                result = resp.json()
+                reply = result["candidates"][0]["content"]["parts"][0]["text"]
+                print(f"[SUCCESS] Got response from {MODEL} using key #{key_idx}")
+                return jsonify({"reply": reply})
+                
+            except requests.exceptions.HTTPError as e:
+                print(f"[ERROR] HTTP Error with {MODEL} (key #{key_idx}): {e}")
+                last_error = str(e)
+                continue
+            except Exception as e:
+                print(f"[ERROR] Error with {MODEL} (key #{key_idx}): {e}")
+                last_error = str(e)
+                continue
+        
+        # Delay giữa các keys để tránh spam
+        if key_idx < len(api_keys):
+            time.sleep(1)
+    
+    # Nếu tất cả model đều thất bại
+    print(f"[FATAL] All models failed. Last error: {last_error}")
+    reply = (
+        "I apologize, but I'm currently experiencing technical difficulties. "
+        "Please try again in a few moments or contact our support team at 0388953628 for immediate assistance."
+    )
+    
     return jsonify({"reply": reply})
 
 # API duyệt phòng - nhận interface và trả về JSON kết quả
@@ -476,6 +581,16 @@ def ai_approval():
             "content": [f"Lỗi server: {str(e)}"]
         }), 500
 
+# Health check endpoint for Docker
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint để Docker monitoring"""
+    return jsonify({
+        "status": "healthy",
+        "service": "api_gemini",
+        "timestamp": datetime.datetime.now().isoformat()
+    }), 200
+
 # API search giữ nguyên
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=True)

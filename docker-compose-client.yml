@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  next-app-client:
+    image: tinhsoma/next-app-client:latest
+    container_name: next-app-client
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # API URLs (Trỏ về Backend Server IP: 188.166.222.86)
+      - NEXT_PUBLIC_API_URL=http://188.166.222.86:3333
+      - NEXT_PUBLIC_PYTHON_API_URL=http://188.166.222.86:5000
+      # NextAuth config
+      - AUTH_SECRET=j6GU45ll5tLNHkufx0bZniSf48utGxMncZIMcFoPtcE=
+      # Client URL (sẽ được override khi deploy hoặc dùng IP client: 165.22.251.145)
+      - NEXTAUTH_URL=${NEXTAUTH_URL}

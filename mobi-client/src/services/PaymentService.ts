@@ -173,6 +173,11 @@ export interface PaymentConfirmationResponse {
   status?: string;
   message?: string;
   data?: any;
+  amount?: number;
+  transactionCode?: string;
+  transactionDate?: string;
+  description?: string;
+  bankCode?: string;
 }
 
 /**

@@ -65,9 +65,9 @@ export const useAuthStore = create<AuthState>()(
                 { type: '@AUTH/LOGIN/SUCCESS' }
               );
               if (!response.roles.includes('Administrators')) {
-                set({ access_token: undefined, refresh_token: undefined, loggedInUser: undefined, error: "You do not have permission to access admin area." });
+                set({ access_token: undefined, refresh_token: undefined, loggedInUser: undefined, error: "Bạn không có quyền truy cập khu vực quản trị." });
                 navigate('/login');
-                return Promise.reject("You do not have permission to access admin area.");
+                return Promise.reject("Bạn không có quyền truy cập khu vực quản trị.");
               } else {
                 navigate('/admin');
               }

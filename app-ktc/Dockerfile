@@ -15,7 +15,7 @@ RUN npm install -g pnpm && pnpm install --frozen-lockfile
 COPY . .
 
 # Build arguments for API URL (can be overridden during build)
-ARG VITE_API_URL=http://178.128.112.116:80
+ARG VITE_API_URL=http://143.198.93.197:3333
 ENV VITE_API_URL=${VITE_API_URL}
 
 # Build the app

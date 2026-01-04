@@ -1,0 +1,91 @@
+version: "3.8"
+
+services:
+  # --- GEMINI API SERVICE ---
+  api_gemini:
+    image: tinhsoma/gemini:v1 # Sử dụng image từ Docker Hub
+    container_name: api_gemini
+    restart: always
+    ports:
+      - "5000:5000"
+
+    # Nếu cần connect với MySQL từ docker-compose khác, uncomment:
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+
+    environment:
+      # API Keys - Thay thế bằng API keys thực tế của bạn
+      API_KEY: "AIzaSyBNa2gR4gLPmrBIFeUvGqs6e8KfUYw7LZ0"
+      API_KEY_2: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" # Optional: Thêm key phụ
+      API_KEY_3: "AIzaSyYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY" # Optional: Thêm key phụ
+
+      # Database Configuration - Thay thế bằng thông tin database thực tế
+      DB_HOST: "host.docker.internal" # Hoặc IP của MySQL server
+      DB_PORT: "3306"
+      DB_NAME: "ants_ktc"
+      DB_USER: "root"
+      DB_PASSWORD: "root_password" # ⚠️ Thay bằng password thực
+
+      # Flask Configuration
+      FLASK_ENV: "production"
+      FLASK_DEBUG: "0"
+
+    # Không cần load .env nữa vì đã hardcode
+    # env_file:
+    #   - .env
+
+    volumes:
+      # Mount images directory để lưu file tạm
+      - images_data:/app/api_gemini/images
+      # Mount prompt file nếu cần update mà không rebuild
+      - ./promt_approval.md:/app/promt_approval.md:ro
+
+    # Health check
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:5000/health')",
+        ]
+      timeout: 10s
+      retries: 3
+      interval: 30s
+      start_period: 10s
+
+# Volumes
+volumes:
+  images_data:
+# Network (optional - nếu cần kết nối với các service khác)
+# networks:
+#   default:
+#     external: true
+#     name: your_shared_network_name
+
+# ================================================================
+# OPTIONAL: Nếu muốn chạy MySQL trong cùng docker-compose này
+# ================================================================
+# Uncomment phần dưới đây:
+#
+# services:
+#   db:
+#     image: mysql:latest
+#     container_name: mysql_gemini
+#     restart: always
+#     environment:
+#       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root_password}
+#       MYSQL_DATABASE: ${DB_NAME:-ants_ktc}
+#     ports:
+#       - "3306:3306"
+#     volumes:
+#       - db_data:/var/lib/mysql
+#     healthcheck:
+#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#       timeout: 20s
+#       retries: 10
+#
+# volumes:
+#   db_data:
+#   images_data:

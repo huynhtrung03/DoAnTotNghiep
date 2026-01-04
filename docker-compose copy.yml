@@ -1,8 +1,8 @@
 services:
   # --- 1. APP SERVICE ---
   app:
-    image: tinhsoma/backend-app:latest # ← Updated via CI/CD
-    container_name: backend-app
+    image: tinhsoma/backend:v1 # ← Updated với domain mới
+    container_name: backend
     restart: always
     ports:
       - "3333:3333"
@@ -10,9 +10,6 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
-      # Thêm dòng này nếu App cần gọi sang Python
-      python-gemini:
         condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/ants_ktc?useSSL=false&allowPublicKeyRetrieval=true
@@ -47,35 +44,6 @@ services:
     restart: always
     ports:
       - "6379:6379"
-
-  # --- 4. PYTHON GEMINI SERVICE ---
-  python-gemini:
-    image: tinhsoma/python-gemini:latest # ← Updated via CI/CD
-    container_name: python-gemini
-    restart: always
-    ports:
-      - "5000:5000"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      # ⚠️ THAY YOUR_GEMINI_API_KEY bằng key thật
-      - API_KEY=AIzaSyDkGX0IOmHfReZZkcbyDHN6156H5pSLIDk
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=root_password
-      - DB_NAME=ants_ktc
-
-  # --- 6. ADMIN DASHBOARD SERVICE ---
-  app-ktc:
-    image: tinhsoma/app-ktc:latest
-    container_name: app-ktc
-    restart: always
-    ports:
-      - "8080:80"
-    depends_on:
-      - app
 
 volumes:
   db_data:

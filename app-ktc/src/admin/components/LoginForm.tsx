@@ -15,11 +15,11 @@ interface ILoginInputs {
 }
 const schema = yup
   .object({
-    username: yup.string().required("Please enter phone number or email"),
+    username: yup.string().required("Vui lòng nhập số điện thoại hoặc email"),
     password: yup
       .string()
-      .min(6, "Password must be at least 6 characters.")
-      .required("Please enter your password."),
+      .min(6, "Mật khẩu phải có ít nhất 6 ký tự.")
+      .required("Vui lòng nhập mật khẩu."),
   })
   .required();
 
@@ -28,7 +28,7 @@ export default function LoginForm() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   const navigate = useNavigate();
-  const { login, loggedInUser } = useAuthStore((state) => state);
+  const { login, loggedInUser, loading } = useAuthStore((state) => state);
 
   useEffect(() => {
     if (loggedInUser) {
@@ -45,33 +45,91 @@ export default function LoginForm() {
     resolver: yupResolver(schema),
   });
 
-  // Handle Login form submission
+  // Xử lý submit form đăng nhập
   const onLoginSubmit: SubmitHandler<ILoginInputs> = async (data) => {
     setLoginGeneralErrorMessage("");
+    
     try {
       await login({
         username: data.username,
         password: data.password,
         navigate,
       });
+      
       // Luôn lấy error mới nhất từ store sau khi login
       const latestError = useAuthStore.getState().error;
+      
       if (latestError) {
-        setLoginGeneralErrorMessage(
-          typeof latestError === "string"
-            ? latestError
-            : latestError?.response?.data?.errors ||
-                "You do not have permission to access admin area."
-        );
+        // Phân loại và hiển thị lỗi cụ thể
+        let errorMessage = "Đã xảy ra lỗi. Vui lòng thử lại.";
+        
+        if (typeof latestError === "string") {
+          errorMessage = latestError;
+        } else if (latestError?.response) {
+          // Lỗi từ server với response
+          const status = latestError.response.status;
+          
+          // Parse server message - xử lý cả string và array
+          let serverMessage = latestError.response.data?.message || 
+                             latestError.response.data?.error;
+          
+          // Nếu errors là mảng, lấy phần tử đầu tiên
+          if (latestError.response.data?.errors) {
+            const errors = latestError.response.data.errors;
+            serverMessage = Array.isArray(errors) ? errors[0] : errors;
+          }
+          
+          switch (status) {
+            case 400:
+              errorMessage = serverMessage || "Tên đăng nhập hoặc mật khẩu không hợp lệ.";
+              break;
+            case 401:
+              errorMessage = serverMessage || "Sai tên đăng nhập hoặc mật khẩu.";
+              break;
+            case 403:
+              errorMessage = serverMessage || "Bạn không có quyền truy cập khu vực quản trị.";
+              break;
+            case 404:
+              errorMessage = serverMessage || "Không tìm thấy người dùng.";
+              break;
+            case 500:
+              // Kiểm tra xem có phải lỗi authentication không (backend trả nhầm 500)
+              if (serverMessage && (
+                serverMessage.toLowerCase().includes('invalid') ||
+                serverMessage.toLowerCase().includes('password') ||
+                serverMessage.toLowerCase().includes('username')
+              )) {
+                errorMessage = "Sai tên đăng nhập hoặc mật khẩu.";
+              } else {
+                errorMessage = serverMessage || "Lỗi máy chủ. Vui lòng thử lại sau.";
+              }
+              console.error("Chi tiết lỗi server:", latestError.response.data);
+              break;
+            default:
+              errorMessage = serverMessage || `Lỗi: ${status}`;
+          }
+        } else if (latestError?.request) {
+          // Request đã được gửi nhưng không nhận được response
+          errorMessage = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet.";
+        } else if (latestError?.message) {
+          // Lỗi khác (setup request, etc.)
+          errorMessage = latestError.message;
+        }
+        
+        setLoginGeneralErrorMessage(errorMessage);
+        console.error("Lỗi đăng nhập:", latestError);
       } else {
+        // Đăng nhập thành công
         setLoginGeneralErrorMessage("");
         reset();
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      // Catch lỗi từ Promise.reject trong store
+      console.error("Lỗi catch đăng nhập:", err);
       setLoginGeneralErrorMessage(
         typeof err === "string"
           ? err
-          : "You do not have permission to access admin area."
+          : "Đăng nhập thất bại. Vui lòng thử lại."
       );
     }
   };
@@ -81,7 +139,7 @@ export default function LoginForm() {
         {/* Identifier Input (Phone Number or Email) */}
         <div className="mb-4">
           <label htmlFor="loginIdentifier" className="sr-only">
-            User Name
+            Tên đăng nhập
           </label>
           <input
             type="text"
@@ -89,7 +147,7 @@ export default function LoginForm() {
             className={`w-full p-3 border ${
               errors.username ? "border-red-500" : "border-gray-300"
             } rounded-md focus:outline-none focus:ring-2 focus:ring-white text-white`}
-            placeholder="Phone number or Email"
+            placeholder="Số điện thoại hoặc Email"
             {...register("username")}
           />
           {errors.username && (
@@ -103,7 +161,7 @@ export default function LoginForm() {
         {/* Password Input */}
         <div className="mb-6">
           <label htmlFor="loginPassword" className="sr-only">
-            Password
+            Mật khẩu
           </label>
           <div className="relative">
             <input
@@ -113,7 +171,7 @@ export default function LoginForm() {
               className={`w-full p-3 border ${
                 errors.password ? "border-red-500" : "border-gray-300"
               } rounded-md focus:outline-none focus:ring-2 focus:ring-white text-white pr-10`}
-              placeholder="Password"
+              placeholder="Mật khẩu"
               {...register("password")}
             />
             <span
@@ -141,12 +199,17 @@ export default function LoginForm() {
           </div>
         )}
 
-        {/* Login Button */}
+        {/* Nút Đăng nhập */}
         <button
           type="submit"
-          className="w-full py-3 text-lg font-semibold text-black transition duration-300 bg-gray-200 rounded-md hover:bg-gray-400"
+          disabled={loading}
+          className={`w-full py-3 text-lg font-semibold text-black transition duration-300 rounded-md ${
+            loading 
+              ? 'bg-gray-300 cursor-not-allowed opacity-70' 
+              : 'bg-gray-200 hover:bg-gray-400'
+          }`}
         >
-          Log in
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
       </form>
 
@@ -156,20 +219,20 @@ export default function LoginForm() {
           to="/auth/forgot-password"
           className="text-sm text-gray-200 hover:underline"
         >
-          Forgot your password?
+          Quên mật khẩu?
         </Link>
       </div>
       <div className="mt-8 text-xs text-center text-gray-400">
         <p>
-          By logging in, you agree to our{" "}
+          Bằng việc đăng nhập, bạn đồng ý với{" "}
           <Link to="/terms" className="text-white hover:underline">
-            terms of service
+            điều khoản dịch vụ
           </Link>{" "}
-          as well as{" "}
+          cũng như{" "}
           <Link to="/privacy" className="text-white hover:underline">
-            privacy policy
+            chính sách bảo mật
           </Link>{" "}
-          of ours
+          của chúng tôi
         </p>
       </div>
     </div>

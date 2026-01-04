@@ -22,9 +22,10 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '../../../colors/colors';
 import { StyleSheet } from 'react-native';
+import { URL_PPYTHON } from '../../../services/Constant';
 
 // Python Gemini API endpoint (NOT Spring Boot)
-const AI_API_URL = "http://178.128.112.116:5000/ai_chatbot";
+const AI_API_URL = `${URL_PPYTHON}/ai_chatbot`;
 
 interface Message {
   role: 'user' | 'assistant';
@@ -110,6 +111,8 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
     setLoading(true);
     setShowTyping(true);
 
+    console.log('🤖 [AIChatbot] Calling AI API:', AI_API_URL);
+    
     try {
       const res = await fetch(AI_API_URL, {
         method: "POST",

@@ -617,21 +617,6 @@ const ZaloPayScreen: React.FC<ZaloPayScreenProps> = ({ onSuccess }) => {
               </Text>
             </View>
 
-            {/* Loading State */}
-            {loading && (
-              <View style={styles.loadingOverlay}>
-                <View style={styles.loadingContent}>
-                  <ActivityIndicator size="large" color="#2E7D32" />
-                  <Text style={styles.loadingText}>{getLoadingMessage()}</Text>
-                  <Text style={styles.loadingSubtext}>
-                    {paymentState === PaymentState.WAITING_PAYMENT
-                      ? 'Đang chờ xác nhận từ ZaloPay'
-                      : 'Vui lòng đợi trong giây lát'}
-                  </Text>
-                </View>
-              </View>
-            )}
-
             {/* Amount Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
@@ -755,6 +740,21 @@ const ZaloPayScreen: React.FC<ZaloPayScreenProps> = ({ onSuccess }) => {
               Được bảo mật bởi Zalo Pay - Ứng dụng Zalo
             </Text>
         </ScrollView>
+
+        {/* Loading State - Moved outside ScrollView */}
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color="#2E7D32" />
+              <Text style={styles.loadingText}>{getLoadingMessage()}</Text>
+              <Text style={styles.loadingSubtext}>
+                {paymentState === PaymentState.WAITING_PAYMENT
+                  ? 'Đang chờ xác nhận từ ZaloPay'
+                  : 'Vui lòng đợi trong giây lát'}
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );

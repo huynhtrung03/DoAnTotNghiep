@@ -27,8 +27,8 @@ RUN npm install -g pnpm
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+# Install ALL dependencies (bao gồm typescript cho next.config.ts)
+RUN pnpm install --frozen-lockfile
 
 # Copy built app từ builder
 COPY --from=builder /app/.next ./.next
