@@ -157,10 +157,11 @@ jobs:
           target: "/root/doantotnghiep"
 
       - name: Deploy Frontend via SSH
+        env:
+          NEXTAUTH_URL: http://${{ secrets.CLIENT_HOST_IP }}:3000
         uses: appleboy/ssh-action@v1.0.3
         with:
-          env:
-            NEXTAUTH_URL: http://${{ secrets.CLIENT_HOST_IP }}:3000
+          envs: NEXTAUTH_URL
           host: ${{ secrets.CLIENT_HOST_IP }}
           username: ${{ secrets.CLIENT_HOST_USER }}
           key: ${{ secrets.CLIENT_SSH_PRIVATE_KEY }}
