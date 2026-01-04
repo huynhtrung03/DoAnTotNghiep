@@ -21,14 +21,14 @@ public class UserPresenceService {
     public void setUserChatActive(UUID userId) {
         UserPresence presence = presenceRepository.findByUserId(userId)
                 .orElse(new UserPresence());
-        
+
         if (presence.getId() == null) {
             presence.setUserId(userId);
         }
 
         presence.setStatus(UserPresence.PresenceStatus.ONLINE);
         presence.setLastSeen(LocalDateTime.now());
-        
+
         presenceRepository.save(presence);
     }
 
@@ -59,7 +59,7 @@ public class UserPresenceService {
     // 4. Lấy trạng thái của 1 user (để hiện chấm xanh)
     public boolean isUserOnline(UUID userId) {
         Optional<UserPresence> presence = presenceRepository.findByUserId(userId);
-        return presence.isPresent() 
+        return presence.isPresent()
                 && presence.get().getStatus() == UserPresence.PresenceStatus.ONLINE
                 && presence.get().getLastSeen().isAfter(LocalDateTime.now().minusMinutes(2)); // Timeout 2 phút
     }
@@ -67,13 +67,13 @@ public class UserPresenceService {
     // 5. Lấy trạng thái của danh sách nhiều user (để hiện trong list chat)
     public List<Map<String, Object>> getUsersPresenceStatus(List<UUID> userIds) {
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         for (UUID userId : userIds) {
             Optional<UserPresence> presence = presenceRepository.findByUserId(userId);
             Map<String, Object> statusMap = new HashMap<>();
-            
+
             statusMap.put("userId", userId);
-            
+
             if (presence.isPresent() && isUserOnline(userId)) {
                 statusMap.put("isOnline", true);
                 statusMap.put("lastSeen", presence.get().getLastSeen());
@@ -83,21 +83,21 @@ public class UserPresenceService {
                 statusMap.put("lastSeen", presence.map(UserPresence::getLastSeen).orElse(null));
                 statusMap.put("status", "OFFLINE");
             }
-            
+
             result.add(statusMap);
         }
-        
+
         return result;
     }
 
-    // 6. Dọn dẹp user treo (Chạy mỗi phút)
-    @Scheduled(fixedRate = 60000) 
-    public void cleanupStaleConnections() {
-        // Mark offline user nào không heartbeat trong 2 phút
-        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(2);
-        int updated = presenceRepository.markStaleSessionsOffline(cutoff);
-        if (updated > 0) {
-            System.out.println("Auto set OFFLINE for " + updated + " inactive users.");
-        }
-    }
+    // DISABLED: Online/offline feature not needed for rental app
+    // @Scheduled(fixedRate = 60000)
+    // public void cleanupStaleConnections() {
+    // // Mark offline user nào không heartbeat trong 2 phút
+    // LocalDateTime cutoff = LocalDateTime.now().minusMinutes(2);
+    // int updated = presenceRepository.markStaleSessionsOffline(cutoff);
+    // if (updated > 0) {
+    // System.out.println("Auto set OFFLINE for " + updated + " inactive users.");
+    // }
+    // }
 }

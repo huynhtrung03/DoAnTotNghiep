@@ -89,23 +89,6 @@ export default function UserInfoCard({ id }: { id: string }) {
   const isFavorited = favoriteRoomIds.has(id);
 
   const currentPostUrl = `http://localhost:3000/detail/${id}`;
-  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
-
-  useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const res = await fetch(`${API_URL}/online-users`);
-        const data = await res.json();
-        setOnlineUsers(data);
-      } catch (e) {
-        console.error("Error fetching online users:", e);
-        setOnlineUsers([]);
-      }
-    }
-    fetchUsers();
-    const interval = setInterval(fetchUsers, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Scroll handler for sticky behavior
   useEffect(() => {
@@ -535,7 +518,7 @@ export default function UserInfoCard({ id }: { id: string }) {
       });
   };
 
-  const isOnline = onlineUsers.includes(landlord.id);
+
 
   return (
     <div
@@ -565,18 +548,7 @@ export default function UserInfoCard({ id }: { id: string }) {
                   className="object-cover border-4 shadow-xl rounded-2xl border-white/30 backdrop-blur-sm"
                   priority
                 />
-                {/* Online status indicator */}
-                <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1.5 shadow-lg">
-                  <div
-                    className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                      isOnline
-                        ? "bg-gradient-to-r from-green-400 to-emerald-500"
-                        : "bg-gradient-to-r from-gray-400 to-gray-500"
-                    }`}
-                  >
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  </div>
-                </div>
+
               </div>
             </div>
 
@@ -588,25 +560,8 @@ export default function UserInfoCard({ id }: { id: string }) {
                 <FaCrown className="w-4 h-4 text-yellow-300" />
               </div>
 
-              <div
-                className={`flex items-center gap-2 justify-center px-3 py-1 rounded-full backdrop-blur-sm ${
-                  isOnline
-                    ? "bg-green-400/20 border border-green-300/30"
-                    : "bg-white/10 border border-white/20"
-                }`}
-              >
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    isOnline ? "bg-green-300 animate-pulse" : "bg-gray-300"
-                  }`}
-                ></div>
-                <p
-                  className={`text-xs font-medium ${
-                    isOnline ? "text-green-100" : "text-white/80"
-                  }`}
-                >
-                  {isOnline ? "Online now" : "Offline"}
-                </p>
+              <div className="flex items-center gap-2 justify-center px-3 py-1 rounded-full backdrop-blur-sm bg-white/10 border border-white/20">
+                <p className="text-xs font-medium text-white/80">Landlord</p>
               </div>
             </div>
           </div>

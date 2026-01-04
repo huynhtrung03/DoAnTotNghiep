@@ -26,11 +26,11 @@ public class ChatHandler extends TextWebSocketHandler {
     @Autowired
     private MessagesService messagesService;
 
-    // REST API: Lấy danh sách userId đang online
-    @GetMapping("/api/online-users")
-    public java.util.Set<String> getOnlineUsers() {
-        return userSessions.keySet();
-    }
+    // DISABLED: Online/offline feature not needed for rental app
+    // @GetMapping("/api/online-users")
+    // public java.util.Set<String> getOnlineUsers() {
+    // return userSessions.keySet();
+    // }
 
     private final ConcurrentHashMap<String, WebSocketSession> userSessions = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
