@@ -10,6 +10,7 @@ on:
       - "app-ktc/**"
       - "docker-compose.yml"
       - "docker-compose-client.yml"
+      - ".github/workflows/**"
 
 jobs:
   changes:
