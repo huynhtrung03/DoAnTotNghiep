@@ -20,8 +20,15 @@ services:
       SPRING_DATASOURCE_PASSWORD: root_password
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
-      # Nếu App cần gọi API Python, cấu hình thêm URL này:
-      # PYTHON_SERVICE_URL: http://python-gemini:5000
+      # These values will be loaded from .env file on server
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      HERE_API_KEY: ${HERE_API_KEY}
+      GOONG_API_KEY: ${GOONG_API_KEY}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
 
   # --- 2. MYSQL SERVICE ---
   db:
