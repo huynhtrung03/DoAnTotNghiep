@@ -23,7 +23,7 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       # Firebase credentials path (mounted from server)
-      firebase.credentials.path: /app/firebase-service-account.json
+      firebase.credentials.path: file:/app/firebase-service-account.json
       # These values will be loaded from .env file on server
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
