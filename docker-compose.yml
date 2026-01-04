@@ -15,6 +15,8 @@ services:
       python-gemini:
         condition: service_started
     environment:
+      # Load external config file
+      SPRING_CONFIG_LOCATION: file:/app/config/application.properties
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/ants_ktc?useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root_password
@@ -33,6 +35,7 @@ services:
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
     volumes:
       - ./firebase-service-account.json:/app/firebase-service-account.json:ro
+      - ./application.properties:/app/config/application.properties:ro
 
   # --- 2. MYSQL SERVICE ---
   db:
