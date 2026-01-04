@@ -170,5 +170,5 @@ jobs:
             cd /root/doantotnghiep
             mv docker-compose-client.yml docker-compose.yml
             export NEXTAUTH_URL=$NEXTAUTH_URL
-            docker compose pull
-            docker compose up -d
+            docker-compose pull
+            docker-compose up -d
