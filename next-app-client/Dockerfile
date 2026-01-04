@@ -13,6 +13,13 @@ RUN npm install -g pnpm && \
 # Copy source code
 COPY . .
 
+# Argument for build
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_PYTHON_API_URL
+# Set ENV to persists during build (Next.js needs ENV or ARG to inline)
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_PYTHON_API_URL=$NEXT_PUBLIC_PYTHON_API_URL
+
 # Build Next.js app
 RUN pnpm build
 
