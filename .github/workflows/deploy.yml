@@ -112,7 +112,7 @@ jobs:
 
   # --- DEPLOY BACKEND SERVICES ---
   deploy-backend:
-    needs: [build-backend-app, build-python-gemini, build-app-ktc]
+    needs: [changes, build-backend-app, build-python-gemini, build-app-ktc]
     # Run deploy-backend if any BACKEND related changes occurred or always if you prefer
     if: ${{ always() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.python == 'true' || needs.changes.outputs.ktc == 'true') }}
     runs-on: ubuntu-latest
@@ -141,7 +141,7 @@ jobs:
 
   # --- DEPLOY FRONTEND CLIENT ---
   deploy-frontend:
-    needs: [build-next-client]
+    needs: [changes, build-next-client]
     if: ${{ always() && needs.changes.outputs.next == 'true' }}
     runs-on: ubuntu-latest
     steps:
