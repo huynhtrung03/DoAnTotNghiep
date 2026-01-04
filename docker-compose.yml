@@ -20,6 +20,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: root_password
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
+      # Firebase credentials path (mounted from server)
+      firebase.credentials.path: /app/firebase-service-account.json
       # These values will be loaded from .env file on server
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
@@ -29,6 +31,8 @@ services:
       HERE_API_KEY: ${HERE_API_KEY}
       GOONG_API_KEY: ${GOONG_API_KEY}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+    volumes:
+      - ./firebase-service-account.json:/app/firebase-service-account.json:ro
 
   # --- 2. MYSQL SERVICE ---
   db:
