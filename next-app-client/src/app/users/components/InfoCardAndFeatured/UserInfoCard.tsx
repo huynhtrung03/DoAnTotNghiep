@@ -88,7 +88,7 @@ export default function UserInfoCard({ id }: { id: string }) {
   const { favoriteRoomIds } = useFavoriteStore();
   const isFavorited = favoriteRoomIds.has(id);
 
-  const currentPostUrl = `http://localhost:3000/detail/${id}`;
+  const currentPostUrl = typeof window !== 'undefined' ? `${window.location.origin}/detail/${id}` : `/detail/${id}`;
 
   // Scroll handler for sticky behavior
   useEffect(() => {

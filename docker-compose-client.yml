@@ -13,4 +13,4 @@ services:
       # NextAuth config
       - AUTH_SECRET=j6GU45ll5tLNHkufx0bZniSf48utGxMncZIMcFoPtcE=
       # Client URL (sẽ được override khi deploy hoặc dùng IP client: 165.22.251.145)
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_URL=http://165.22.251.145:3000
