@@ -5,15 +5,9 @@ services:
     restart: always
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      # API URLs (Trỏ về Backend Server IP: 188.166.222.86)
-      - NEXT_PUBLIC_API_URL=http://188.166.222.86:3333
-      - NEXT_PUBLIC_PYTHON_API_URL=http://188.166.222.86:5000
-      # NextAuth config
-      - AUTH_SECRET=j6GU45ll5tLNHkufx0bZniSf48utGxMncZIMcFoPtcE=
-      # Client URL
-      # - NEXTAUTH_URL=http://165.22.251.145:3000
-      - NEXTAUTH_URL=http://68.183.183.145:3000
       # Node.js memory limit (4GB for 8GB RAM system)
       - NODE_OPTIONS=--max-old-space-size=4096
     # Memory limits to prevent server crash (optimized for 8GB RAM)

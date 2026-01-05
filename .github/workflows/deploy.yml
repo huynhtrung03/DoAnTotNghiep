@@ -72,26 +72,41 @@ jobs:
           push: true
           tags: tinhsoma/python-gemini:latest
 
+  # Build Next.js on SERVER (to use .env file from server)
   build-next-client:
     needs: changes
     if: ${{ needs.changes.outputs.next == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+
+      - name: Copy source code to client server
+        uses: appleboy/scp-action@v0.1.7
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v5
+          host: ${{ secrets.CLIENT_HOST_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "next-app-client"
+          target: "/root/doantotnghiep"
+          overwrite: true
+
+      - name: Build Docker image on server
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          context: ./next-app-client
-          push: true
-          tags: tinhsoma/next-app-client:latest
-          build-args: |
-            NEXT_PUBLIC_API_URL=http://${{ secrets.HOST_IP }}:3333
-            NEXT_PUBLIC_PYTHON_API_URL=http://${{ secrets.HOST_IP }}:5000
+          host: ${{ secrets.CLIENT_HOST_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/doantotnghiep/next-app-client
+            # Copy .env file vào thư mục build
+            cp /root/doantotnghiep/.env .env.production
+            # Build Docker image
+            docker build -t tinhsoma/next-app-client:latest \
+              --build-arg NEXT_PUBLIC_API_URL=http://${{ secrets.HOST_IP }}:3333 \
+              --build-arg NEXT_PUBLIC_PYTHON_API_URL=http://${{ secrets.HOST_IP }}:5000 \
+              .
+            # Clean up
+            rm -f .env.production
 
   build-app-ktc:
     needs: changes
@@ -160,18 +175,13 @@ jobs:
           target: "/root/doantotnghiep"
 
       - name: Deploy Frontend via SSH
-        env:
-          NEXTAUTH_URL: http://${{ secrets.CLIENT_HOST_IP }}:3000
         uses: appleboy/ssh-action@v1.0.3
         with:
-          envs: NEXTAUTH_URL
           host: ${{ secrets.CLIENT_HOST_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/doantotnghiep
             mv docker-compose-client.yml docker-compose.yml
-            export NEXTAUTH_URL=$NEXTAUTH_URL
-            docker-compose pull
-            # docker-compose up -d
-            docker-compose up -d
+            # Không cần pull vì đã build local
+            docker-compose up -d --force-recreate
