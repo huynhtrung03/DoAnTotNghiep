@@ -21,7 +21,6 @@ import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '../../../../colors/colors';
 import { confirmPayment } from '../../../../services/PaymentService';
-import { confirmPayment } from '../../../../services/PaymentService';
 import styles from './PaymentResultScreen.style';
 
 type PaymentResultRouteProp = RouteProp<

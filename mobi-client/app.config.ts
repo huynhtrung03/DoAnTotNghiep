@@ -63,19 +63,14 @@ export default (): ExpoConfig => ({
     jsEngine: 'hermes',
     bundleIdentifier: 'com.namaesieunhangao.mobiclient',
     // googleServicesFile: './GoogleService-Info.plist', // Bỏ comment nếu làm cho iOS
-    "infoPlist": {
-      "ITSAppUsesNonExemptEncryption": false,
-      "UIBackgroundModes": ["remote-notification"], // Cần thiết cho iOS nếu sau này dùng
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+      UIBackgroundModes: ['remote-notification'], // Cần thiết cho iOS nếu sau này dùng
       // Cho phép truy cập HTTP (không khuyến nghị cho production)
-      "NSAppTransportSecurity": {
-        "NSAllowsArbitraryLoads": true
-      }
-      "UIBackgroundModes": ["remote-notification"], // Cần thiết cho iOS nếu sau này dùng
-      // Cho phép truy cập HTTP (không khuyến nghị cho production)
-      "NSAppTransportSecurity": {
-        "NSAllowsArbitraryLoads": true
-      }
-    }
+      NSAppTransportSecurity: {
+        NSAllowsArbitraryLoads: true,
+      },
+    },
   },
 
   android: {
@@ -86,16 +81,13 @@ export default (): ExpoConfig => ({
     // Cho phép truy cập HTTP (không khuyến nghị cho production)
     // @ts-ignore - usesCleartextTraffic is valid but not in type definition yet
     usesCleartextTraffic: true,
-    // Cho phép truy cập HTTP (không khuyến nghị cho production)
-    // @ts-ignore - usesCleartextTraffic is valid but not in type definition yet
-    usesCleartextTraffic: true,
     adaptiveIcon: {
       foregroundImage: './assets/images/logo-ant.png',
       backgroundColor: '#ffffff',
     },
     permissions: [
-      "android.permission.RECORD_AUDIO",
-      "android.permission.POST_NOTIFICATIONS" // Thêm quyền này tường minh
+      'android.permission.RECORD_AUDIO',
+      'android.permission.POST_NOTIFICATIONS', // Thêm quyền này tường minh
     ],
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,

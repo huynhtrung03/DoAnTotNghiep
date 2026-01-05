@@ -6,7 +6,7 @@ import RoomCard from "../rooms/RoomCard";
 import { BiChevronLeft, BiChevronRight } from "react-icons/bi";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getRoomNormalWithLocation,
   getRoomNormalUser,
@@ -42,13 +42,22 @@ export default function LocationAwareNormalRooms({
   const hasGuestData = !!(guestRooms && location); // Context data from guest search
   const hasUserData = !!(userRooms && location); // Context data from user search
 
+  // Track if we've already reset the URL to prevent infinite loop
+  const hasResetUrl = useRef(false);
+
   // Reset URL pagination when switching to location-based data
+  // Only reset once to prevent infinite loop
   useEffect(() => {
-    if ((hasGuestData || hasUserData) && currentPage !== 0) {
+    if ((hasGuestData || hasUserData) && currentPage !== 0 && !hasResetUrl.current) {
+      hasResetUrl.current = true;
       // Reset URL to page 0 when location data is available but URL shows different page
       const currentParams = new URLSearchParams(window.location.search);
       currentParams.set("pageNormal", "0");
       router.push(`?${currentParams.toString()}`, { scroll: false });
+    }
+    // Reset the flag when location data is cleared
+    if (!hasGuestData && !hasUserData) {
+      hasResetUrl.current = false;
     }
   }, [hasGuestData, hasUserData, currentPage, router]);
 
@@ -118,8 +127,8 @@ export default function LocationAwareNormalRooms({
         ? guestRooms.normalRooms
         : initialNormalRooms
       : hasUserData
-      ? userRooms.normalRooms
-      : initialNormalRooms);
+        ? userRooms.normalRooms
+        : initialNormalRooms);
 
   // Calculate effective current page - always 0 when using location data
   const effectiveCurrentPage = hasGuestData || hasUserData ? 0 : currentPage;
@@ -187,9 +196,8 @@ export default function LocationAwareNormalRooms({
 
         <div
           id="normal-rooms-list"
-          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-4 w-full transition-opacity duration-300 ${
-            isLoadingPage ? "opacity-30 pointer-events-none" : "opacity-100"
-          }`}
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-4 w-full transition-opacity duration-300 ${isLoadingPage ? "opacity-30 pointer-events-none" : "opacity-100"
+            }`}
         >
           {normalRooms.data
             .filter(
@@ -220,14 +228,13 @@ export default function LocationAwareNormalRooms({
           <button
             onClick={() => handleNormalPagination(Math.max(0, displayPage - 1))}
             disabled={displayPage === 0 || isLoadingPage}
-            className={`group flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
-              displayPage === 0 || isLoadingPage
-                ? "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30"
-            }`}
+            className={`group flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${displayPage === 0 || isLoadingPage
+              ? "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30"
+              }`}
           >
             {isLoadingPage &&
-            optimisticPage === Math.max(0, displayPage - 1) ? (
+              optimisticPage === Math.max(0, displayPage - 1) ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <BiChevronLeft
@@ -261,15 +268,14 @@ export default function LocationAwareNormalRooms({
             disabled={
               displayPage + 1 >= (normalRooms.totalPages || 1) || isLoadingPage
             }
-            className={`group flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
-              displayPage + 1 >= (normalRooms.totalPages || 1) || isLoadingPage
-                ? "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30"
-            }`}
+            className={`group flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${displayPage + 1 >= (normalRooms.totalPages || 1) || isLoadingPage
+              ? "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30"
+              }`}
           >
             <span className="hidden sm:inline font-medium">Next</span>
             {isLoadingPage &&
-            optimisticPage ===
+              optimisticPage ===
               Math.min((normalRooms.totalPages || 1) - 1, displayPage + 1) ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (

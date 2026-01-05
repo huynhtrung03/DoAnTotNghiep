@@ -4,7 +4,7 @@ import { useLocationContext } from "@/context/LocationContext";
 import { getRoomVipUser, getRoomVipWithLocation } from "@/services/RoomService";
 import { PaginatedResponse, RoomInUser } from "@/types/types";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { BiChevronLeft, BiChevronRight } from "react-icons/bi";
 import { HiSparkles } from "react-icons/hi";
 import RoomVipCard from "../rooms/RoomVipCard";
@@ -62,12 +62,19 @@ export default function RentalRoomsWithLocation({
   };
 
   // Location state
+  const hasResetUrl = useRef(false);
 
   // Reset URL pagination when switching to location-based data
+  // Only reset once to prevent infinite loop
   useEffect(() => {
-    if (isUsingLocationData && page !== undefined && page !== 0) {
+    if (isUsingLocationData && page !== undefined && page !== 0 && !hasResetUrl.current) {
+      hasResetUrl.current = true;
       // Reset URL to page 0 when location data is available but URL shows different page
       router.push("?page=0", { scroll: false });
+    }
+    // Reset the flag when location data is cleared
+    if (!isUsingLocationData) {
+      hasResetUrl.current = false;
     }
   }, [isUsingLocationData, page, router]);
 
@@ -81,8 +88,8 @@ export default function RentalRoomsWithLocation({
         ? guestRooms.vipRooms
         : initialVipRooms
       : userRooms && location
-      ? userRooms.vipRooms
-      : initialVipRooms);
+        ? userRooms.vipRooms
+        : initialVipRooms);
 
   // Calculate effective current page - always 0 when using location data
   const effectivePage = isUsingLocationData ? 0 : page || 0;
@@ -95,8 +102,8 @@ export default function RentalRoomsWithLocation({
       ? guestRooms.normalRooms
       : initialNormalRooms
     : userRooms && location
-    ? userRooms.normalRooms
-    : initialNormalRooms;
+      ? userRooms.normalRooms
+      : initialNormalRooms;
 
   // Room counts for debugging if needed
   // console.log("- VIP rooms count:", vipRooms?.data?.length || 0);
@@ -154,9 +161,8 @@ export default function RentalRoomsWithLocation({
           page: newPage,
           size: 4,
           userId,
-          apiURL: `/rooms/allroom-vip?page=${newPage}&size=4${
-            userId ? `&userId=${userId}` : ""
-          }`,
+          apiURL: `/rooms/allroom-vip?page=${newPage}&size=4${userId ? `&userId=${userId}` : ""
+            }`,
         });
 
         newVipRooms = await getRoomVipUser(newPage, 4, userId);
@@ -326,11 +332,10 @@ export default function RentalRoomsWithLocation({
               )}
 
               <div
-                className={`contents transition-opacity duration-300 ${
-                  isLoadingPage
-                    ? "opacity-30 pointer-events-none"
-                    : "opacity-100"
-                }`}
+                className={`contents transition-opacity duration-300 ${isLoadingPage
+                  ? "opacity-30 pointer-events-none"
+                  : "opacity-100"
+                  }`}
               >
                 {vipRooms?.data
                   .filter(
@@ -363,14 +368,13 @@ export default function RentalRoomsWithLocation({
                       handleVipPagination(Math.max(0, displayPage - 1))
                     }
                     disabled={displayPage === 0 || isLoadingPage}
-                    className={`group flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
-                      displayPage === 0 || isLoadingPage
-                        ? "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30"
-                    }`}
+                    className={`group flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${displayPage === 0 || isLoadingPage
+                      ? "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30"
+                      }`}
                   >
                     {isLoadingPage &&
-                    optimisticPage === Math.max(0, displayPage - 1) ? (
+                      optimisticPage === Math.max(0, displayPage - 1) ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <BiChevronLeft
@@ -401,15 +405,14 @@ export default function RentalRoomsWithLocation({
                     disabled={
                       displayPage + 1 >= vipRooms.totalPages || isLoadingPage
                     }
-                    className={`group flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
-                      displayPage + 1 >= vipRooms.totalPages || isLoadingPage
-                        ? "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30"
-                    }`}
+                    className={`group flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${displayPage + 1 >= vipRooms.totalPages || isLoadingPage
+                      ? "bg-gradient-to-r from-gray-200 to-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30"
+                      }`}
                   >
                     <span className="hidden sm:inline">Next</span>
                     {isLoadingPage &&
-                    optimisticPage ===
+                      optimisticPage ===
                       Math.min(vipRooms.totalPages - 1, displayPage + 1) ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (

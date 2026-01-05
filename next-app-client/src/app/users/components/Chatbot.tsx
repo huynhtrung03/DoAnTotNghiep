@@ -174,11 +174,10 @@ export default function Chatbot() {
       {/* Floating Button */}
       <button
         onClick={() => setOpen(true)}
-        className={`fixed bottom-8 right-6 z-50 rounded-full w-16 h-16 bg-gradient-to-br bg-white shadow-xl flex items-center justify-center hover:scale-105 hover:shadow-2xl transition-transform duration-300 border-4 border-white/60 ${
-          open
-            ? "scale-0 opacity-0 pointer-events-none"
-            : "scale-100 opacity-100"
-        }`}
+        className={`fixed bottom-8 right-6 z-50 rounded-full w-16 h-16 bg-gradient-to-br bg-white shadow-xl flex items-center justify-center hover:scale-105 hover:shadow-2xl transition-transform duration-300 border-4 border-white/60 ${open
+          ? "scale-0 opacity-0 pointer-events-none"
+          : "scale-100 opacity-100"
+          }`}
         aria-label="Open Ants AI Assistant"
       >
         <Image
@@ -193,11 +192,10 @@ export default function Chatbot() {
       {/* Chat Modal */}
       {anim && (
         <div
-          className={`fixed bottom-28 right-8 z-50 bg-white border border-gray-200 rounded-xl shadow-2xl max-w-sm w-full h-[520px] flex flex-col transition-all duration-300 ${
-            open
-              ? "scale-100 opacity-100"
-              : "scale-90 opacity-0 pointer-events-none"
-          }`}
+          className={`fixed bottom-28 right-8 z-50 bg-white border border-gray-200 rounded-xl shadow-2xl max-w-sm w-full h-[520px] flex flex-col transition-all duration-300 ${open
+            ? "scale-100 opacity-100"
+            : "scale-90 opacity-0 pointer-events-none"
+            }`}
         >
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 bg-blue-600 text-white rounded-t-xl flex justify-between items-center">
@@ -227,9 +225,8 @@ export default function Chatbot() {
             {history.map((msg: any, idx: number) => (
               <div
                 key={idx}
-                className={`flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
               >
                 {/* Assistant Avatar */}
                 {msg.role === "assistant" && (
@@ -248,11 +245,10 @@ export default function Chatbot() {
 
                 {/* Message Bubble */}
                 <div
-                  className={`inline-block rounded-2xl px-4 py-3 max-w-[85%] shadow-sm ${
-                    msg.role === "user"
-                      ? "bg-blue-600 text-white rounded-br-md"
-                      : "bg-white text-gray-800 border border-gray-200 rounded-bl-md"
-                  } text-sm leading-relaxed`}
+                  className={`inline-block rounded-2xl px-4 py-3 max-w-[85%] shadow-sm ${msg.role === "user"
+                    ? "bg-blue-600 text-white rounded-br-md"
+                    : "bg-white text-gray-800 border border-gray-200 rounded-bl-md"
+                    } text-sm leading-relaxed`}
                 >
                   {msg.role === "assistant" ? (
                     <MessageContent text={msg.text} />
@@ -324,7 +320,7 @@ export default function Chatbot() {
             </div>
             <div className="text-xs text-gray-500 mt-2 text-center">
               <p>
-                💡 Questions about rental rooms, prices, locations, or
+                Questions about rental rooms, prices, locations, or
                 amenities?
               </p>
             </div>

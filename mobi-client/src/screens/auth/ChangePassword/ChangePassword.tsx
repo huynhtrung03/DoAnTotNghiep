@@ -117,26 +117,8 @@ export default function ChangePasswordScreen() {
       
       Alert.alert('Lỗi', errorMessage);
       console.error('Error changing password:', error);
-      
-      // Xử lý các loại lỗi cụ thể
-      let errorMessage = 'Không thể đổi mật khẩu. Vui lòng thử lại sau.';
-      
-      if (error?.message) {
-        const msg = error.message.toLowerCase();
-        
-        // Kiểm tra các lỗi phổ biến
-        if (msg.includes('invalid') || msg.includes('incorrect') || msg.includes('wrong')) {
-          errorMessage = 'Mật khẩu hiện tại không đúng.';
-        } else if (msg.includes('network') || msg.includes('connect')) {
-          errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet.';
-        } else if (msg.includes('unauthorized') || msg.includes('401')) {
-          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
-        } else if (msg.includes('500')) {
-          errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
+
+
       
       Alert.alert('Lỗi', errorMessage);
     } finally {

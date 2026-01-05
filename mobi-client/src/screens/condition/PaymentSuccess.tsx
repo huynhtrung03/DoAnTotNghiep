@@ -35,40 +35,7 @@ const PaymentSuccess = () => {
   // Safe access to params with defaults
   const params = (route.params as PaymentSuccessParams) || {};
   
-  // Helper function to format currency
-  const formatCurrency = (value: string | number | undefined): string => {
-    if (!value) return '0VND';
-    
-    // If value is already a formatted string with currency symbol, return as is
-    if (typeof value === 'string' && (value.includes('đ') || value.includes('VND'))) {
-      return value;
-    }
-    
-    // Convert to number if string
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    
-    // Format with thousand separators
-    return new Intl.NumberFormat('vi-VN').format(numValue) + 'VND';
-  };
-  
-  const amount = formatCurrency(params.amount);
-  // Helper function to format currency
-  const formatCurrency = (value: string | number | undefined): string => {
-    if (!value) return '0VND';
-    
-    // If value is already a formatted string with currency symbol, return as is
-    if (typeof value === 'string' && (value.includes('đ') || value.includes('VND'))) {
-      return value;
-    }
-    
-    // Convert to number if string
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    
-    // Format with thousand separators
-    return new Intl.NumberFormat('vi-VN').format(numValue) + 'VND';
-  };
-  
-  const amount = formatCurrency(params.amount);
+  const amount = params.amount || '0 đ';
   const transactionId = params.transactionId || '---';
   const time = params.time || new Date().toLocaleString('vi-VN');
   const paymentMethod = params.paymentMethod || 'ZaloPay';

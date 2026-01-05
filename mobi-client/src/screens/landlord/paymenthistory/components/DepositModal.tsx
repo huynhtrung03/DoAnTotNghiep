@@ -15,7 +15,6 @@ import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '../../../../colors/colors';
 import { createPayment } from '../../../../services/PaymentService';
-import { createPayment } from '../../../../services/PaymentService';
 import NotificationService from '../../../../services/NotificationServiceMobi';
 
 interface DepositModalProps {
