@@ -126,7 +126,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST_IP }}
-          username: ${{ secrets.HOST_USER }}
+          username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "docker-compose.yml"
           target: "/root/doantotnghiep"
@@ -135,7 +135,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST_IP }}
-          username: ${{ secrets.HOST_USER }}
+          username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/doantotnghiep
@@ -154,8 +154,8 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.CLIENT_HOST_IP }}
-          username: ${{ secrets.CLIENT_HOST_USER }}
-          key: ${{ secrets.CLIENT_SSH_PRIVATE_KEY }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "docker-compose-client.yml"
           target: "/root/doantotnghiep"
 
@@ -166,8 +166,8 @@ jobs:
         with:
           envs: NEXTAUTH_URL
           host: ${{ secrets.CLIENT_HOST_IP }}
-          username: ${{ secrets.CLIENT_HOST_USER }}
-          key: ${{ secrets.CLIENT_SSH_PRIVATE_KEY }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/doantotnghiep
             mv docker-compose-client.yml docker-compose.yml

@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   next-app-client:
     image: tinhsoma/next-app-client:latest
@@ -12,5 +11,15 @@ services:
       - NEXT_PUBLIC_PYTHON_API_URL=http://188.166.222.86:5000
       # NextAuth config
       - AUTH_SECRET=j6GU45ll5tLNHkufx0bZniSf48utGxMncZIMcFoPtcE=
-      # Client URL (sẽ được override khi deploy hoặc dùng IP client: 165.22.251.145)
-      - NEXTAUTH_URL=http://165.22.251.145:3000
+      # Client URL
+      # - NEXTAUTH_URL=http://165.22.251.145:3000
+      - NEXTAUTH_URL=http://68.183.183.145:3000
+      # Node.js memory limit (4GB for 8GB RAM system)
+      - NODE_OPTIONS=--max-old-space-size=4096
+    # Memory limits to prevent server crash (optimized for 8GB RAM)
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 1G
