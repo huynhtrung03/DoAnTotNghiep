@@ -581,6 +581,16 @@ def ai_approval():
             "content": [f"Lỗi server: {str(e)}"]
         }), 500
 
+# Health check endpoint for Docker
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint để Docker monitoring"""
+    return jsonify({
+        "status": "healthy",
+        "service": "api_gemini",
+        "timestamp": datetime.datetime.now().isoformat()
+    }), 200
+
 # API search giữ nguyên
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

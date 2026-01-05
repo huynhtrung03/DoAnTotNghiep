@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    reactStrictMode: true,
-    // output: 'export',
-    // target: 'serverless', // add this line
-    images: {
+  reactStrictMode: true,
+  output: "standalone",
+  staticPageGenerationTimeout: 180,
+  // target: 'serverless', // add this line
+  images: {
     // domains: ["antimatter.vn", "cdn.luatminhkhue.vn"],
     remotePatterns: [
       {

@@ -6,10 +6,10 @@ on:
     paths:
       - "spring-ants-ktc/**"
       - "api_gemini/**"
-      - "next-app-client/**"
+
       - "app-ktc/**"
       - "docker-compose.yml"
-      - "docker-compose-client.yml"
+
       - ".github/workflows/**"
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       python: ${{ steps.filter.outputs.python }}
-      next: ${{ steps.filter.outputs.next }}
+
       ktc: ${{ steps.filter.outputs.ktc }}
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +30,7 @@ jobs:
               - 'spring-ants-ktc/**'
             python:
               - 'api_gemini/**'
-            next:
-              - 'next-app-client/**'
+
             ktc:
               - 'app-ktc/**'
 
@@ -164,13 +163,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy docker-compose to client server
+      # Tạo file .env từ secret để copy lên server (cho runtime variables)
+      - name: Create .env file for production
+        run: |
+          echo "${{ secrets.NEXT_CLIENT_ENV }}" > .env
+
+      - name: Copy docker-compose and .env to client server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.CLIENT_HOST_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose-client.yml"
+          source: "docker-compose-client.yml,.env"
           target: "/root/doantotnghiep"
 
       - name: Deploy Frontend via SSH

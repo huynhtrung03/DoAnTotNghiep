@@ -4,6 +4,8 @@ import Image from "next/image";
 import { getCsrfToken } from "next-auth/react";
 import { Suspense } from "react";
 
+export const dynamic = "force-dynamic"; // Fix build timeout on Render by skipping static generation
+
 export default async function LoginPage() {
   const csrfToken = await getCsrfToken();
   return (
