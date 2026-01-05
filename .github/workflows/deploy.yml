@@ -96,6 +96,7 @@ jobs:
           host: ${{ secrets.CLIENT_HOST_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 30m
           script: |
             cd /root/doantotnghiep/next-app-client
             # Copy .env file vào thư mục build
