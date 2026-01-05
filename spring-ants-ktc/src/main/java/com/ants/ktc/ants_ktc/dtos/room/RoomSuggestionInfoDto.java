@@ -24,4 +24,5 @@ public class RoomSuggestionInfoDto {
     private String landlordPhone;
     private Double distanceKm; // Khoảng cách tới phòng (km)
 
+    private Double matchPercentage;
 }
