@@ -119,6 +119,16 @@ export async function updatePassword(
 
     // Backend endpoint: PATCH /auth/change-password
     // Request body: { userId, password (current), newPassword }
+    
+    if (!userId) {
+      console.error('Khong tim thay userId:', userData);
+      throw new Error('Khong tim thay thong tin nguoi dung');
+    }
+    
+    console.log('Update password - User ID:', userId);
+
+    // Backend endpoint: PATCH /auth/change-password
+    // Request body: { userId, password (current), newPassword }
     const requestBody = {
       userId: userId,
       password: request.currentPassword,
@@ -130,7 +140,17 @@ export async function updatePassword(
       password: '***', 
       newPassword: '***' 
     });
+      password: request.currentPassword,
+      newPassword: request.newPassword,
+    };
+    
+    console.log('Update password - Request body:', { 
+      userId: userId, 
+      password: '***', 
+      newPassword: '***' 
+    });
 
+    return await BaseApiClient.patch<UpdatePasswordResponse>('/auth/change-password', requestBody);
     return await BaseApiClient.patch<UpdatePasswordResponse>('/auth/change-password', requestBody);
   } catch (error) {
     console.error('Loi cap nhat mat khau:', error);

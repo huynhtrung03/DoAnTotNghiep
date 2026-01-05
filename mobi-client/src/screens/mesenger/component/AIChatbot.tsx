@@ -23,8 +23,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '../../../colors/colors';
 import { StyleSheet } from 'react-native';
 import { URL_PPYTHON } from '../../../services/Constant';
+import { URL_PPYTHON } from '../../../services/Constant';
 
 // Python Gemini API endpoint (NOT Spring Boot)
+const AI_API_URL = `${URL_PPYTHON}/ai_chatbot`;
 const AI_API_URL = `${URL_PPYTHON}/ai_chatbot`;
 
 interface Message {
@@ -110,6 +112,9 @@ export default function AIChatbot({ visible, onClose }: AIChatbotProps) {
     setInput("");
     setLoading(true);
     setShowTyping(true);
+
+    console.log('🤖 [AIChatbot] Calling AI API:', AI_API_URL);
+    
 
     console.log('🤖 [AIChatbot] Calling AI API:', AI_API_URL);
     

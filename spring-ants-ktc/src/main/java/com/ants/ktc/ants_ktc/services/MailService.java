@@ -90,6 +90,71 @@ public class MailService {
     }
   }
 
+  // @Async
+  // public void sendRoomSuggestionEmail(String to, String userName,
+  // List<RoomSuggestionInfoDto> suggestedRooms) {
+  // if (suggestedRooms == null || suggestedRooms.isEmpty()) {
+  // return;
+  // }
+
+  // StringBuilder roomsHtml = new StringBuilder();
+  // for (RoomSuggestionInfoDto room : suggestedRooms) {
+  // // Tạo chuỗi hiển thị khoảng cách
+  // String distanceInfo = "";
+  // if (room.getDistanceKm() != null) {
+  // distanceInfo = String.format(
+  // "<span style='background: #e8f5e8; color: #2e7d2e; padding: 4px 8px;
+  // border-radius: 4px; font-size: 12px; font-weight: bold;'>🚗 %.1f km</span>",
+  // room.getDistanceKm());
+  // }
+
+  // roomsHtml.append(String.format(
+  // """
+  // <div style='border: 1px solid #ddd; border-radius: 8px; padding: 16px;
+  // margin: 16px 0; background: #fff;'>
+  // <h3 style='color: #1976d2; margin: 0 0 8px 0;'>🏠 %s</h3>
+  // <div style='display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0;'>
+  // <span style='background: #e3f2fd; color: #1976d2; padding: 4px 8px;
+  // border-radius: 4px; font-size: 12px; font-weight: bold;'>💰 %s
+  // VNĐ/tháng</span>
+  // <span style='background: #f3e5f5; color: #7b1fa2; padding: 4px 8px;
+  // border-radius: 4px; font-size: 12px; font-weight: bold;'>📐 %.1f m²</span>
+  // %s
+  // </div>
+  // <p style='margin: 8px 0; color: #666; font-size: 14px;'><strong>📍 Địa
+  // chỉ:</strong> %s</p>
+  // <p style='margin: 8px 0; color: #777; font-size: 13px; line-height:
+  // 1.4;'>%s</p>
+  // <div style='margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee;'>
+  // <p style='margin: 4px 0; color: #555; font-size: 12px;'><strong>👤 Liên
+  // hệ:</strong> %s</p>
+  // <p style='margin: 4px 0; color: #555; font-size: 12px;'><strong>📞 Điện
+  // thoại:</strong> %s</p>
+  // <a href='http://localhost:3000/detail/%s'
+  // style='display:inline-block;margin-top:8px;padding:6px
+  // 16px;background:#1976d2;color:#fff;border-radius:4px;text-decoration:none;font-size:13px;font-weight:bold;'>Xem
+  // chi tiết</a>
+  // </div>
+  // </div>
+  // """,
+  // room.getTitle(),
+  // String.format("%,.0f", room.getPriceMonth()),
+  // room.getArea(),
+  // distanceInfo, // Thêm thông tin khoảng cách
+  // room.getAddress(),
+  // room.getDescription() != null
+  // ? (room.getDescription().length() > 100 ? room.getDescription().substring(0,
+  // 100) + "..."
+  // : room.getDescription())
+  // : "Không có mô tả",
+  // room.getLandlordName(),
+  // room.getLandlordPhone() != null ? room.getLandlordPhone() :
+  // room.getLandlordEmail(),
+  // room.getId() // Thêm id vào link chi tiết
+  // ));
+  // }
+
+  // thêm
   @Async
   public void sendRoomSuggestionEmail(String to, String userName, List<RoomSuggestionInfoDto> suggestedRooms) {
     if (suggestedRooms == null || suggestedRooms.isEmpty()) {
@@ -98,14 +163,23 @@ public class MailService {
 
     StringBuilder roomsHtml = new StringBuilder();
     for (RoomSuggestionInfoDto room : suggestedRooms) {
-      // Tạo chuỗi hiển thị khoảng cách
+      // 1. Xử lý hiển thị Khoảng cách (An toàn với null)
       String distanceInfo = "";
       if (room.getDistanceKm() != null) {
         distanceInfo = String.format(
             "<span style='background: #e8f5e8; color: #2e7d2e; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;'>🚗 %.1f km</span>",
-            room.getDistanceKm());
+            room.getDistanceKm()); // Phải là kiểu Double/Float
       }
 
+      // 2. Xử lý hiển thị Độ phù hợp ML (An toàn với null)
+      String matchInfo = "";
+      if (room.getMatchPercentage() != null) {
+        matchInfo = String.format(
+            "<span style='background: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;'>🎯 Độ phù hợp: %.1f%%</span>",
+            room.getMatchPercentage());
+      }
+
+      // 3. Build HTML (Sử dụng %s cho các chuỗi HTML đã format sẵn)
       roomsHtml.append(String.format(
           """
               <div style='border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; background: #fff;'>
@@ -113,6 +187,7 @@ public class MailService {
                 <div style='display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0;'>
                   <span style='background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;'>💰 %s VNĐ/tháng</span>
                   <span style='background: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;'>📐 %.1f m²</span>
+                  %s
                   %s
                 </div>
                 <p style='margin: 8px 0; color: #666; font-size: 14px;'><strong>📍 Địa chỉ:</strong> %s</p>
@@ -124,20 +199,22 @@ public class MailService {
                 </div>
               </div>
               """,
-          room.getTitle(),
-          String.format("%,.0f", room.getPriceMonth()),
-          room.getArea(),
-          distanceInfo, // Thêm thông tin khoảng cách
-          room.getAddress(),
+          room.getTitle() != null ? room.getTitle() : "Phòng trọ",
+          String.format("%,.0f", room.getPriceMonth() != null ? room.getPriceMonth() : 0.0), // Chuyển số thành chuỗi
+                                                                                             // định dạng tiền
+          room.getArea() != null ? room.getArea() : 0.0,
+          distanceInfo, // %s cho chuỗi HTML khoảng cách
+          matchInfo, // %s cho chuỗi HTML độ phù hợp
+          room.getAddress() != null ? room.getAddress() : "Chưa cập nhật địa chỉ",
           room.getDescription() != null
               ? (room.getDescription().length() > 100 ? room.getDescription().substring(0, 100) + "..."
                   : room.getDescription())
               : "Không có mô tả",
-          room.getLandlordName(),
-          room.getLandlordPhone() != null ? room.getLandlordPhone() : room.getLandlordEmail(),
-          room.getId() // Thêm id vào link chi tiết
-      ));
+          room.getLandlordName() != null ? room.getLandlordName() : "Chủ trọ",
+          room.getLandlordPhone() != null ? room.getLandlordPhone() : "N/A",
+          room.getId() != null ? room.getId().toString() : ""));
     }
+    // thay thế
 
     String html = String.format(
         """

@@ -60,6 +60,7 @@ export default function ForgotPasswordScreen() {
             setError('');
           }}
           placeholder="nguyenvana@gmail.com"
+          placeholder="nguyenvana@gmail.com"
           keyboardType="email-address"
           autoCapitalize="none"
           icon="mail"

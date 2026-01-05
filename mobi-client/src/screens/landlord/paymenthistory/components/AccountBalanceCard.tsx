@@ -23,6 +23,7 @@ const AccountBalanceCard: React.FC<AccountBalanceCardProps> = ({
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
+    return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
   };
 
   const handleDepositPress = () => {

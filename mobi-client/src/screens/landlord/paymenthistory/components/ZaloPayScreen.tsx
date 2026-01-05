@@ -755,6 +755,21 @@ const ZaloPayScreen: React.FC<ZaloPayScreenProps> = ({ onSuccess }) => {
             </View>
           </View>
         )}
+
+        {/* Loading State - Moved outside ScrollView */}
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color="#2E7D32" />
+              <Text style={styles.loadingText}>{getLoadingMessage()}</Text>
+              <Text style={styles.loadingSubtext}>
+                {paymentState === PaymentState.WAITING_PAYMENT
+                  ? 'Đang chờ xác nhận từ ZaloPay'
+                  : 'Vui lòng đợi trong giây lát'}
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );

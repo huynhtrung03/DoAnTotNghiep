@@ -26,6 +26,11 @@ import {
 
 import { PiElevatorLight } from "react-icons/pi";
 
+//recommentdation 
+import { recommendRoom } from "@/utils/recommendationEngine";
+import RecommendationBox from "./RecommendationBox";
+
+
 // Enhanced amenities with better labels and icons
 const allPossibleConvenients = [
   { key: "furnished", label: "Furnished", icon: Package },
@@ -86,6 +91,9 @@ export default function ListingComparisonDisplay({
       .filter(Boolean)
       .join(", ");
   };
+  //recommentdation
+    const recommendation = listing1 && listing2 ? recommendRoom(listing1, listing2) : null;
+
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -411,6 +419,8 @@ export default function ListingComparisonDisplay({
             </div>
           </div>
 
+          
+
           {/* Amenities Section */}
           <div className="mt-8">
             <div className="flex items-center gap-2 pb-3 mb-6 border-b border-gray-200">
@@ -474,6 +484,13 @@ export default function ListingComparisonDisplay({
               })}
             </div>
           </div>
+          <div className="mt-8">
+
+          {/* ⭐ RECOMMENDATION BOX */}
+      {recommendation && (
+        <RecommendationBox recommendation={recommendation} />
+      )}
+      </div>
         </div>
       </div>
     </div>

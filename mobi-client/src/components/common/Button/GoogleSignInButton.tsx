@@ -82,6 +82,7 @@ export default function GoogleSignInButton({ onSuccess, disabled }: { onSuccess?
         ['userRoles', JSON.stringify(roles || [])],
         ['userProfile', JSON.stringify(userProfile || {})],
         ['userData', JSON.stringify(user)], // Save userData (was missing!)
+        ['userData', JSON.stringify(user)], // Save userData (was missing!)
       ]);
       console.log('Data saved to AsyncStorage');
       

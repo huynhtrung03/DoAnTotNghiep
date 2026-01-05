@@ -5,6 +5,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../../colors/colors';
 import { confirmPayment } from '../../../services/PaymentService';
+import { confirmPayment } from '../../../services/PaymentService';
 
 interface RouteParams {
   paymentUrl: string;
