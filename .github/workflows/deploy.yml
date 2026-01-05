@@ -143,8 +143,18 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/doantotnghiep
+
+            # Stop và remove containers cũ
+            docker-compose down --remove-orphans || true
+
+            # Pull images mới từ Docker Hub
             docker-compose pull
-            docker-compose up -d --remove-orphans
+
+            # Khởi động containers mới
+            docker-compose up -d
+
+            # Dọn dẹp images cũ
+            docker image prune -f
 
   # --- DEPLOY FRONTEND CLIENT ---
   deploy-frontend:
@@ -172,5 +182,15 @@ jobs:
           script: |
             cd /root/doantotnghiep
             mv docker-compose-client.yml docker-compose.yml
+
+            # Stop và remove container cũ (tránh lỗi image không tồn tại)
+            docker-compose down --remove-orphans || true
+
+            # Pull image mới từ Docker Hub
             docker-compose pull
-            docker-compose up -d --remove-orphans
+
+            # Khởi động container mới
+            docker-compose up -d
+
+            # Dọn dẹp image cũ không còn sử dụng
+            docker image prune -f
