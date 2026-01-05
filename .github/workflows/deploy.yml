@@ -72,7 +72,6 @@ jobs:
           push: true
           tags: tinhsoma/python-gemini:latest
 
-  # Build Next.js on SERVER (to use .env file from server)
   build-next-client:
     needs: changes
     if: ${{ needs.changes.outputs.next == 'true' }}
@@ -80,34 +79,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy source code to client server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.CLIENT_HOST_IP }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "next-app-client"
-          target: "/root/doantotnghiep"
-          overwrite: true
+      # Tạo file .env từ secret (1 secret chứa toàn bộ ENV)
+      - name: Create .env file from secret
+        run: |
+          echo "${{ secrets.NEXT_CLIENT_ENV }}" > ./next-app-client/.env.production
 
-      - name: Build Docker image on server
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.CLIENT_HOST_IP }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 30m
-          script: |
-            cd /root/doantotnghiep/next-app-client
-            # Copy .env file vào thư mục build
-            cp /root/doantotnghiep/.env .env.production
-            # Build Docker image
-            docker build -t tinhsoma/next-app-client:latest \
-              --build-arg NEXT_PUBLIC_API_URL=http://${{ secrets.HOST_IP }}:3333 \
-              --build-arg NEXT_PUBLIC_PYTHON_API_URL=http://${{ secrets.HOST_IP }}:5000 \
-              .
-            # Clean up
-            rm -f .env.production
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./next-app-client
+          push: true
+          tags: tinhsoma/next-app-client:latest
 
   build-app-ktc:
     needs: changes
@@ -184,5 +172,5 @@ jobs:
           script: |
             cd /root/doantotnghiep
             mv docker-compose-client.yml docker-compose.yml
-            # Không cần pull vì đã build local
-            docker-compose up -d --force-recreate
+            docker-compose pull
+            docker-compose up -d --remove-orphans
