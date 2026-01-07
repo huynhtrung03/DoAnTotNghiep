@@ -68,7 +68,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./api_gemini
+          context: ./api_gemini # Build context for Gemini API
           push: true
           tags: tinhsoma/python-gemini:latest
 
@@ -126,13 +126,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy docker-compose to backend server
+      - name: Prepare deployment files
+        run: cp api_gemini/api.json ./api.json
+
+      - name: Copy docker-compose and api.json to backend server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,api.json"
           target: "/root/doantotnghiep"
 
       - name: Deploy Backend via SSH
