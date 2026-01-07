@@ -127,7 +127,7 @@ public class RoomController {
         PaginationRoomInUserResponseDto rooms = roomService.getAllRoomByLandlordIdPaginatedWithImages(id, page, size);
         return ResponseEntity.ok(rooms);
     }
-   
+
     @GetMapping("/by-admin/paging")
     public ResponseEntity<PaginationRoomAdminResponseDto> getAllRoomByAdminPaginated(
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -370,5 +370,13 @@ public class RoomController {
     public ResponseEntity<Long> increaseView(@PathVariable("roomId") UUID roomId) {
         long viewCount = roomService.increaseView(roomId);
         return ResponseEntity.ok(viewCount);
+    }
+
+    // lưu lịch sử xem (tracking)
+    @PostMapping("/{roomId}/track-view")
+    public ResponseEntity<String> trackUserView(@PathVariable("roomId") UUID roomId,
+            @RequestParam(name = "userId", required = false) UUID userId) {
+        roomService.trackUserView(roomId, userId);
+        return ResponseEntity.ok("Tracked view successfully");
     }
 }

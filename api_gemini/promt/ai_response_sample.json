@@ -1,0 +1,56 @@
+{
+  "greeting": "Chào bạn nhé! Mình là chuyên gia từ Ants đây, rất vui được đồng hành cùng bạn để tìm ra 'tổ ấm' ưng ý nhất tại Ngũ Hành Sơn.",
+  "user_profile_summary": "Dựa trên lịch sử xem phòng, mình thấy bạn đang tìm kiếm sự cân bằng giữa giá thành rẻ (tầm 1.5M) và những tiện nghi cao cấp như máy giặt, nội thất đầy đủ (thường thấy ở các phòng 3.5M bạn hay yêu thích). Bạn là người cực kỳ đề cao tính tiện dụng và sự riêng tư trong không gian sống.",
+  "room_analysis": {
+    "room_1": {
+      "match_score": 6.5,
+      "why_it_fits": "Phù hợp với ngân sách bạn đang tìm kiếm (1.8M) và có kệ bếp, gác lửng đúng như thói quen xem phòng của bạn.",
+      "why_it_doesnt": "Thiếu máy giặt và nội thất cơ bản - hai thứ mà bạn thường xuyên 'thả tim' ở các phòng khác. Việc phải tự mua sắm đồ đạc sẽ làm bạn mất khá nhiều thời gian và chi phí ban đầu.",
+      "real_monthly_cost": {
+        "base_rent": 1800000,
+        "hidden_costs": 600000,
+        "total": 2400000,
+        "breakdown": "Tiền thuê 1.8M + Chi phí giặt ủi bên ngoài (~300k/tháng) + Khấu hao chi phí mua sắm giường, tủ, tủ lạnh nếu ở lâu dài (~300k/tháng)."
+      },
+      "personal_note": "Phòng này giá rẻ nhưng sẽ khá 'trống trải' với một người thích sự tiện nghi như bạn. Bạn sẽ phải tốn công sắm sửa nhiều đấy!"
+    },
+    "room_2": {
+      "match_score": 9.2,
+      "why_it_fits": "Đây gần như là 'chân ái' vì có sẵn máy giặt và nội thất (furnished) - hai tiêu chí xuất hiện xuyên suốt trong cả lịch sử xem và yêu thích của bạn. Diện tích 22.5m2 cũng khớp hoàn toàn với diện tích trung bình bạn thường tìm kiếm.",
+      "why_it_doesnt": "Giá 2 triệu cao hơn một chút so với mức 1.5 triệu bạn thường xem, nhưng vẫn thấp hơn nhiều so với mức 3.5 triệu ở danh mục yêu thích.",
+      "real_monthly_cost": {
+        "base_rent": 2000000,
+        "hidden_costs": 100000,
+        "total": 2100000,
+        "breakdown": "Tiền thuê 2M + Điện nước cơ bản. Bạn tiết kiệm được hoàn toàn chi phí giặt đồ và mua sắm đồ dùng vì đã có sẵn nội thất."
+      },
+      "personal_note": "Căn này có lối đi riêng (private entry) đúng gu bạn hay tìm. Dù giá nhỉnh hơn 200k so với phòng 1 nhưng tính ra lại rẻ hơn vì không phải sắm đồ."
+    }
+  },
+  "financial_comparison": {
+    "initial_cost_difference": "Phòng 2 đắt hơn 200.000đ mỗi tháng về tiền thuê, nhưng phòng 1 sẽ tốn thêm khoảng 2-3 triệu tiền mua sắm đồ dùng ban đầu.",
+    "long_term_analysis": "Trong 1 năm, ở phòng 2 bạn tiết kiệm được ít nhất 3.600.000đ chi phí giặt ngoài và công sức vận chuyển đồ đạc.",
+    "value_for_money_verdict": "Phòng 2 thắng tuyệt đối về giá trị thực tế. Với 2 triệu, bạn nhận được tiện nghi của một căn phòng 3 triệu mà bạn hằng mong ước."
+  },
+  "my_recommendation": {
+    "chosen_room": "Phòng trọ trung tâm thành phố, có máy giặt và nội thất - Đường Thanh Sơn",
+    "chosen_room_id": "room_2",
+    "confidence_level": "High - Vì nó khớp đến 90% hành vi tìm kiếm máy giặt và lối đi riêng của bạn.",
+    "personalized_reasons": [
+      "Có sẵn máy giặt giúp bạn duy trì thói quen sinh hoạt tiện lợi như các phòng cao cấp bạn thích.",
+      "Diện tích 22.5m2 là 'con số vàng' mà bạn thường xuyên dừng lại xem lâu nhất.",
+      "Lối đi riêng và nội thất đầy đủ giúp bạn tối ưu hóa sự tự do và tiết kiệm chi phí mua sắm ban đầu."
+    ],
+    "honest_advice": "Đừng để mức giá 1.8M của phòng 1 đánh lừa. Với một người thích sự chỉn chu và tiện lợi như bạn, việc ở phòng trống sẽ sớm làm bạn thấy mệt mỏi. Hãy chọn phòng 2 để tận hưởng cuộc sống thoải mái ngay từ ngày đầu tiên.",
+    "action_steps": [
+      "Nhắn tin ngay cho chủ phòng 2 hỏi xem nội thất gồm những gì cụ thể (giường, tủ lạnh có chưa?).",
+      "Hẹn lịch xem phòng vào buổi chiều để kiểm tra độ thoáng của hướng Tây.",
+      "Chốt ngay nếu phòng còn mới vì những căn có máy giặt giá 2 triệu ở khu này rất nhanh hết."
+    ]
+  },
+  "when_to_choose_alternative": {
+    "scenario": "Nếu bạn đã có sẵn toàn bộ đồ đạc cá nhân và máy giặt riêng.",
+    "explanation": "Lúc này phòng 1 sẽ là lựa chọn tối ưu để tiết kiệm 200k tiền thuê mỗi tháng vì bạn không cần dùng đến đồ có sẵn của chủ nhà."
+  },
+  "closing_note": "Hy vọng những phân tích 'có tâm' này sẽ giúp bạn sớm tìm được nơi ở ưng ý. Chúc bạn sớm ổn định chỗ ở nhé!"
+}

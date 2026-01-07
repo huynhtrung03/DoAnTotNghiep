@@ -99,6 +99,9 @@ public class RoomService {
         private ImageJpaRepository imageJpaRepository;
 
         @Autowired
+        private com.ants.ktc.ants_ktc.repositories.UserViewRoomRepository userViewRoomRepository;
+
+        @Autowired
         private MailService mailService;
 
         @Autowired
@@ -161,6 +164,35 @@ public class RoomService {
                 room.setViewCount(room.getViewCount() + 1);
                 roomJpaRepository.save(room);
                 return room.getViewCount();
+        }
+
+        public void trackUserView(UUID roomId, UUID userId) {
+                Room room = roomJpaRepository.findById(roomId)
+                                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+
+                // Check for duplicate view
+                if (userId != null) {
+                        java.util.Optional<com.ants.ktc.ants_ktc.entities.UserViewRoom> existingView = userViewRoomRepository
+                                        .findByUserIdAndRoomId(userId, roomId);
+                        if (existingView.isPresent()) {
+                                // Already viewed -> increment count
+                                com.ants.ktc.ants_ktc.entities.UserViewRoom view = existingView.get();
+                                view.setViewCount(view.getViewCount() + 1);
+                                userViewRoomRepository.save(view);
+                                return;
+                        }
+                }
+
+                com.ants.ktc.ants_ktc.entities.UserViewRoom viewHistory = new com.ants.ktc.ants_ktc.entities.UserViewRoom();
+                viewHistory.setRoom(room);
+                viewHistory.setViewCount(1); // Set initial count
+
+                if (userId != null) {
+                        User user = userJpaRepository.findById(userId).orElse(null);
+                        viewHistory.setUser(user);
+                }
+
+                userViewRoomRepository.save(viewHistory);
         }
 
         /**
@@ -684,7 +716,8 @@ public class RoomService {
         }
 
         @Transactional(readOnly = true)
-        public PaginationRoomInUserResponseDto getAllRoomByLandlordIdPaginatedWithImages(UUID userId, int page, int size) {
+        public PaginationRoomInUserResponseDto getAllRoomByLandlordIdPaginatedWithImages(UUID userId, int page,
+                        int size) {
                 // Ensure page is at least 1 (1-based)
                 if (page < 1)
                         page = 1;
@@ -1645,6 +1678,7 @@ public class RoomService {
 
         /**
          * Find rooms inside a rectangular bounding box (map viewport)
+         * 
          * @param minLat bottom (south) latitude
          * @param minLng left (west) longitude
          * @param maxLat top (north) latitude

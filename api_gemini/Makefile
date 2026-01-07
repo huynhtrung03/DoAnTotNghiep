@@ -56,7 +56,7 @@ status:
 
 health:
 	@echo "🏥 Testing health endpoint..."
-	@curl -s http://localhost:5000/health | python -m json.tool || echo "❌ Health check failed"
+	@curl -s http://localhost:5001/health | python -m json.tool || echo "❌ Health check failed"
 
 rebuild:
 	@echo "🔨 Rebuilding image (no cache)..."
@@ -77,9 +77,9 @@ shell:
 test:
 	@echo "🧪 Testing API endpoints..."
 	@echo "\n1️⃣ Testing /health..."
-	@curl -s http://localhost:5000/health | python -m json.tool
+	@curl -s http://localhost:5001/health | python -m json.tool
 	@echo "\n2️⃣ Testing /ai_chatbot..."
-	@curl -s -X POST http://localhost:5000/ai_chatbot \
+	@curl -s -X POST http://localhost:5001/ai_chatbot \
 		-H "Content-Type: application/json" \
 		-d '{"history":[{"role":"user","text":"Hello"}]}' | python -m json.tool
 	@echo "\n✅ Tests completed!"

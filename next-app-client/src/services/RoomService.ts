@@ -330,3 +330,26 @@ export async function getRoomsInMap(lat: number, lng: number, radius: number) {
     return null;
   }
 }
+
+//------ track view ------//
+export async function trackUserView(roomId: string, userId?: string) {
+  try {
+    const response = await fetch("/api/track-view", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ roomId, userId }),
+    });
+
+    if (!response.ok) {
+      // const data = await response.json();
+      // throw new Error(data.message || "Failed to track view");
+      console.error("Failed to track view");
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Error tracking view:", error);
+    return null;
+  }
+}

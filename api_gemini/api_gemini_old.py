@@ -582,7 +582,8 @@ def ai_approval():
         }), 500
 
 # Health check endpoint for Docker
-@app.route('/health', methods=['GET'])
+# @app.route('/health', methods=['GET'])
+@app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint để Docker monitoring"""
     return jsonify({
@@ -590,6 +591,72 @@ def health_check():
         "service": "api_gemini",
         "timestamp": datetime.datetime.now().isoformat()
     }), 200
+
+
+# API test lấy dữ liệu phòng
+@app.route('/api/test-rooms', methods=['GET'])
+def test_rooms():
+    """API kiểm tra kết nối và lấy dữ liệu phòng từ Database"""
+    try:
+        print("[DEBUG] Testing room retrieval...")
+        
+        # Check database connection variables
+        password = os.getenv("DB_PASSWORD")
+        db_info = {
+            "host": os.getenv("DB_HOST"),
+            "port": os.getenv("DB_PORT"),
+            "database": os.getenv("DB_NAME"),
+            "user": os.getenv("DB_USER"),
+            "password_status": "SET (len=" + str(len(password)) + ")" if password else "NOT SET or EMPTY"
+        }
+        print(f"[DEBUG] DB Config: {db_info}")
+        
+        # Force refresh cache by clearing it (optional, mainly for testing real DB connection)
+        # room_cache['result'] = None
+        
+        result, columns = get_rooms()
+        
+        if result is None or columns is None:
+            return jsonify({
+                "status": "error",
+                "message": "Không thể kết nối database hoặc lỗi truy vấn",
+                "db_config": db_info
+            }), 500
+            
+        # Format return data
+        rooms_data = []
+        import uuid
+        
+        for row in result:
+            row_dict = {}
+            for col, val in zip(columns, row):
+                # Handle binary/bytes UUID if necessary
+                if isinstance(val, (bytes, bytearray)):
+                    try:
+                        if len(val) == 16:
+                            val = str(uuid.UUID(bytes=bytes(val)))
+                        else:
+                            val = val.decode('utf-8', errors='ignore')
+                    except:
+                        val = str(val)
+                elif isinstance(val, datetime.date):
+                    val = val.isoformat()
+                
+                row_dict[col] = val
+            rooms_data.append(row_dict)
+            
+        return jsonify({
+            "status": "success",
+            "count": len(rooms_data),
+            "data": rooms_data
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Test failed: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 # API search giữ nguyên
 if __name__ == '__main__':

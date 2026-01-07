@@ -678,6 +678,7 @@ import com.ants.ktc.ants_ktc.entities.*;
 import com.ants.ktc.ants_ktc.repositories.FavoriteJpaRepository;
 import com.ants.ktc.ants_ktc.repositories.RoomJpaRepository;
 import com.ants.ktc.ants_ktc.repositories.UserJpaRepository; // Cần repo này để tìm user đơn lẻ
+import com.ants.ktc.ants_ktc.repositories.UserViewRoomRepository;
 
 @Service
 public class RoomSuggestionService {
@@ -690,6 +691,8 @@ public class RoomSuggestionService {
     private UserJpaRepository userJpaRepository;
     @Autowired
     private MailService mailService;
+    @Autowired
+    private UserViewRoomRepository userViewRoomRepository;
 
     private static final double THRESHOLD = 0.75; // Ngưỡng chấp nhận Recommendation>=0.75
 
@@ -744,6 +747,55 @@ public class RoomSuggestionService {
                     user.getProfile().getFullName(),
                     topSuggestions);
         }
+    }
+
+    // Hàm tính toán độ tương đồng của phòng yêu thích
+    public Map<String, Object> getSuggestionsForUser(UUID userId) {
+        User user = userJpaRepository.findById(userId).orElse(null);
+        if (user == null)
+            return null;
+
+        List<Favorite> favorites = favoriteJpaRepository.findByUserIdWithRoom(user.getId(), PageRequest.of(0, 50))
+                .getContent();
+        if (favorites.isEmpty() || user.getProfile() == null)
+            return null;
+
+        UserPreferenceProfile profile = buildProfile(favorites, user);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("userLat", profile.userLat);
+        result.put("userLng", profile.userLng);
+        result.put("avgPrice", profile.avgPrice);
+        result.put("avgArea", profile.avgArea);
+        result.put("avgCapacity", profile.avgCapacity);
+        result.put("avgLen", profile.avgLen);
+        result.put("avgWid", profile.avgWid);
+
+        // Convert Set<Long> to List<Long> for better JSON compatibility
+        // Convert favConvenientIds to detailed list with names
+        if (profile.favConvenientIds != null && !profile.favConvenientIds.isEmpty()) {
+            // Collect all convenients from favorites to map ID -> Name
+            Map<Long, String> convenientIdToName = favorites.stream()
+                    .flatMap(f -> f.getRoom().getConvenients().stream())
+                    .filter(c -> profile.favConvenientIds.contains(c.getId()))
+                    .collect(Collectors.toMap(
+                            Convenient::getId,
+                            Convenient::getName,
+                            (existing, replacement) -> existing // Keep existing if duplicate
+                    ));
+
+            List<String> detailedConvenients = new ArrayList<>();
+            for (Long id : profile.favConvenientIds) {
+                if (convenientIdToName.containsKey(id)) {
+                    detailedConvenients.add(convenientIdToName.get(id));
+                }
+            }
+            result.put("favConvenientIds", detailedConvenients);
+        } else {
+            result.put("favConvenientIds", new ArrayList<>());
+        }
+
+        return result;
     }
 
     private RoomSuggestionInfoDto calculateSimilarity(UserPreferenceProfile p,
@@ -868,6 +920,87 @@ public class RoomSuggestionService {
         }
 
         return dto;
+    }
+
+    // Hàm tính toán độ tương đồng của lịch sử xem phòng
+    public Map<String, Object> getUserViewHistoryProfile(UUID userId) {
+        User user = userJpaRepository.findById(userId).orElse(null);
+        if (user == null)
+            return null;
+
+        List<UserViewRoom> viewedRooms = userViewRoomRepository
+                .findByUserIdAndViewCountGreaterThanEqualOrderByCreatedDateDesc(user.getId(), 3, PageRequest.of(0, 50))
+                .getContent();
+        if (viewedRooms.isEmpty() || user.getProfile() == null)
+            return null;
+
+        UserPreferenceProfile profile = buildProfileFromViews(viewedRooms, user);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("userLat", profile.userLat);
+        result.put("userLng", profile.userLng);
+        result.put("avgPrice", profile.avgPrice);
+        result.put("avgArea", profile.avgArea);
+        result.put("avgCapacity", profile.avgCapacity);
+        result.put("avgLen", profile.avgLen);
+        result.put("avgWid", profile.avgWid);
+
+        // Convert Set<Long> to List<String>
+        if (profile.favConvenientIds != null && !profile.favConvenientIds.isEmpty()) {
+            Map<Long, String> convenientIdToName = viewedRooms.stream()
+                    .flatMap(v -> v.getRoom().getConvenients().stream())
+                    .filter(c -> profile.favConvenientIds.contains(c.getId()))
+                    .collect(Collectors.toMap(
+                            Convenient::getId,
+                            Convenient::getName,
+                            (existing, replacement) -> existing));
+
+            List<String> detailedConvenients = new ArrayList<>();
+            for (Long id : profile.favConvenientIds) {
+                if (convenientIdToName.containsKey(id)) {
+                    detailedConvenients.add(convenientIdToName.get(id));
+                }
+            }
+            result.put("favConvenientIds", detailedConvenients);
+        } else {
+            result.put("favConvenientIds", new ArrayList<>());
+        }
+
+        return result;
+    }
+
+    public Map<String, Object> getCombinedUserProfiles(UUID userId) {
+        Map<String, Object> combinedResult = new HashMap<>();
+        combinedResult.put("favoriteBasedProfile", getSuggestionsForUser(userId));
+        combinedResult.put("viewHistoryBasedProfile", getUserViewHistoryProfile(userId));
+        return combinedResult;
+    }
+
+    private UserPreferenceProfile buildProfileFromViews(List<UserViewRoom> views, User u) {
+        UserPreferenceProfile p = new UserPreferenceProfile();
+        p.userLat = u.getProfile().getSearchLatitude() != null ? u.getProfile().getSearchLatitude() : 0;
+        p.userLng = u.getProfile().getSearchLongitude() != null ? u.getProfile().getSearchLongitude() : 0;
+
+        p.avgPrice = views.stream().mapToDouble(f -> f.getRoom().getPrice_month()).average().orElse(0);
+        p.avgArea = views.stream().mapToDouble(f -> f.getRoom().getArea()).average().orElse(0);
+
+        p.avgCapacity = views.stream()
+                .mapToDouble(f -> f.getRoom().getMaxPeople() != null ? f.getRoom().getMaxPeople() : 0).average()
+                .orElse(0);
+
+        p.avgLen = views.stream().mapToDouble(f -> f.getRoom().getRoomLength() != null
+                ? f.getRoom().getRoomLength()
+                : 0)
+                .average().orElse(0);
+
+        p.avgWid = views.stream().mapToDouble(f -> f.getRoom().getRoomWidth() != null
+                ? f.getRoom().getRoomWidth()
+                : 0)
+                .average().orElse(0);
+
+        p.favConvenientIds = views.stream().flatMap(f -> f.getRoom().getConvenients().stream()).map(Convenient::getId)
+                .collect(Collectors.toSet());
+        return p;
     }
 
     private static class UserPreferenceProfile {

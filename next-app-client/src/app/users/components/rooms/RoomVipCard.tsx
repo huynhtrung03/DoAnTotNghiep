@@ -14,6 +14,8 @@ import { useCompareStore } from "@/stores/CompareStore";
 import { message } from "antd";
 import { useEffect, useRef, useState, useMemo } from "react"; // THÊM useEffect, useRef, useState
 import { FaPlay, FaPause } from "react-icons/fa";
+import { useSession } from "next-auth/react";
+import { trackUserView } from "@/services/RoomService";
 
 interface RoomVipCardProps {
   room: RoomInUser;
@@ -30,12 +32,26 @@ export default function RoomVipCard({
   const { items, addItem } = useCompareStore((state) => state);
   const [isCompared, setIsCompared] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const { data: session } = useSession();
+  const userIdRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      userIdRef.current = session.user.id;
+    }
+  }, [session]);
 
   useEffect(() => {
     setIsCompared(items.some((item) => item.room.id === room.id));
   }, [items, room.id]);
 
+  const hasTrackedRef = useRef(false);
+
   const handleViewRoom = () => {
+    if (!hasTrackedRef.current) {
+      trackUserView(room.id, userIdRef.current);
+      hasTrackedRef.current = true;
+    }
     router.push(`/detail/${room.id}`);
   };
 
@@ -80,7 +96,15 @@ export default function RoomVipCard({
     let timer: NodeJS.Timeout | null = null;
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
+        if (hasTrackedRef.current) return;
+        
         timer = setTimeout(() => {
+          if (hasTrackedRef.current) return;
+
+          // Track view
+          trackUserView(room.id, userIdRef.current);
+          hasTrackedRef.current = true;
+
           fetch(`${API_URL}/rooms/${room.id}/view`, { method: "POST" }).then(
             () => {
               fetch(`${API_URL}/rooms/${room.id}`)

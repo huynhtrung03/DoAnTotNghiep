@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import React, { useRef, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { trackUserView } from "@/services/RoomService";
 // framer-motion import removed
 import { URL_IMAGE, API_URL } from "@/services/Constant";
 import { RoomInUser } from "@/types/types";
@@ -45,6 +47,14 @@ const RoomCard: React.FC<RoomCardProps> = ({
   const [isMainHovered, setIsMainHovered] = useState(false);
   const [isFirstHover, setIsFirstHover] = useState(true);
   const mainVideoRef = useRef<HTMLVideoElement>(null);
+  const { data: session } = useSession();
+  const userIdRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      userIdRef.current = session.user.id;
+    }
+  }, [session]);
 
   useEffect(() => {
     setIsCompared(items.some((item) => item.room.id === room.id));
@@ -52,7 +62,13 @@ const RoomCard: React.FC<RoomCardProps> = ({
 
   // Video should not auto-play on mount - only play when user hovers and clicks
 
+  const hasTrackedRef = useRef(false);
+
   const handleViewRoom = () => {
+    if (!hasTrackedRef.current) {
+      trackUserView(room.id, userIdRef.current);
+      hasTrackedRef.current = true;
+    }
     router.push(`/detail/${room.id}`);
   };
 
@@ -76,10 +92,19 @@ const RoomCard: React.FC<RoomCardProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [hasIncreasedView, setHasIncreasedView] = useState(false);
   const handleMouseEnter = () => {
-    if (hasIncreasedView) return; // Nếu đã tăng view thì không tăng nữa
+    if (hasTrackedRef.current) return;
+    
     timerRef.current = setTimeout(() => {
+      if (hasTrackedRef.current) return;
+
       setViewCount((prev) => prev + 1);
-      setHasIncreasedView(true); // Đánh dấu đã tăng view
+      setHasIncreasedView(true);
+      
+      // Track view
+      trackUserView(room.id, userIdRef.current);
+      hasTrackedRef.current = true;
+
+      // Increase view count
       fetch(`${API_URL}/rooms/${room.id}/view`, { method: "POST" }).then(() => {
         fetch(`${API_URL}/rooms/${room.id}`)
           .then((res) => res.json())
@@ -91,7 +116,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
 
   const handleMouseLeave = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    setHasIncreasedView(false); // Cho phép tăng lại nếu rời chuột và hover lại
+    // setHasIncreasedView(false); // Removed to prevent re-tracking
     setIsMainHovered(false);
     // Reset video state when leaving card
     if (mainVideoRef.current) {

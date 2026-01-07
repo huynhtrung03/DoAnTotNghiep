@@ -28,6 +28,7 @@ jobs:
           filters: |
             backend:
               - 'spring-ants-ktc/**'
+              - 'docker-compose.yml'
             python:
               - 'api_gemini/**'
 
