@@ -126,16 +126,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare deployment files
-        run: cp api_gemini/api.json ./api.json
-
-      - name: Copy docker-compose and api.json to backend server
+      - name: Copy docker-compose to backend server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml,api.json"
+          source: "docker-compose.yml"
           target: "/root/doantotnghiep"
 
       - name: Deploy Backend via SSH
