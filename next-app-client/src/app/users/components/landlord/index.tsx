@@ -4,6 +4,7 @@ import LandlordCard from "./LandlordCard";
 import { landlordService } from "@/services/LandlordService"; 
 import { PageResponse } from "@/types/types";
 import { LandLordInfo } from "@/app/landlord/types";
+import { getSession } from "next-auth/react";
 
 export default function LandlordListCard() {
   const [landlords, setLandlords] = useState<LandLordInfo[]>([]);
@@ -19,8 +20,13 @@ export default function LandlordListCard() {
 
   const fetchLandlords = async (page: number) => {  
     try {
+      console.log('Fetching landlords page:', page);
       setLoading(true);
-      const response = await landlordService.getAllLandlords(page, pageSize);
+      const session = await getSession();
+      const accessToken = session?.user?.accessToken;
+      
+      const response = await landlordService.getAllLandlords(page, pageSize, accessToken);
+      console.log('Landlords response:', response);
       setLandlords(response.content);
       setPageData(response);
     } catch (err) {
