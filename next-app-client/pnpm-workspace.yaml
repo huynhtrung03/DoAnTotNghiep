@@ -1,0 +1,7 @@
+ignoredBuiltDependencies:
+  - '@firebase/util'
+  - '@tailwindcss/oxide'
+  - core-js
+  - protobufjs
+  - sharp
+  - unrs-resolver

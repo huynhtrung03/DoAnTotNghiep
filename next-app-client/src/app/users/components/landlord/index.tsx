@@ -22,10 +22,10 @@ export default function LandlordListCard() {
     try {
       console.log('Fetching landlords page:', page);
       setLoading(true);
-      const session = await getSession();
-      const accessToken = session?.user?.accessToken;
+      // const session = await getSession();
+      // const accessToken = session?.user?.accessToken;
       
-      const response = await landlordService.getAllLandlords(page, pageSize, accessToken);
+      const response = await landlordService.getAllLandlords(page, pageSize);
       console.log('Landlords response:', response);
       setLandlords(response.content);
       setPageData(response);
