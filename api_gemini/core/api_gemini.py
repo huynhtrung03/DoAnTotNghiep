@@ -1053,8 +1053,7 @@ def ai_approval():
             if not pending_rooms:
                 return jsonify({
                     "response_type": "in_channel",
-                    "text": f"✅ Không có phòng nào đang chờ duyệt!\n\n"
-                           f"Tất cả bài đăng đã được xử lý."
+                    "text": "Khong co phong nao dang cho duyet!\nTat ca bai dang da duoc xu ly."
                 }), 200
             
             # Load prompt một lần
@@ -1062,19 +1061,20 @@ def ai_approval():
             if not prompt:
                 return jsonify({
                     "response_type": "ephemeral",
-                    "text": "❌ Lỗi: Không thể tải file prompt duyệt phòng"
+                    "text": "Loi: Khong the tai file prompt duyet phong"
                 }), 200
             
             # Trả về ngay cho Slack (tránh timeout 3s)
             initial_response = {
                 "response_type": "in_channel",
-                "text": f"🚀 Đang duyệt {len(pending_rooms)} phòng bằng AI...\n\n"
-                       f"👤 Yêu cầu bởi: {slack_user}\n"
-                       f"⏳ Vui lòng đợi, kết quả sẽ được cập nhật trong database."
+                "text": f"Dang duyet {len(pending_rooms)} phong bang AI...\n"
+                       f"Yeu cau boi: {slack_user}\n"
+                       f"Vui long doi, ket qua se duoc cap nhat trong database."
             }
             
             # Chạy duyệt trong background (sử dụng thread)
             import threading
+            from datetime import datetime
             
             def process_batch_approval(rooms, prompt_text, response_url_str):
                 """Background task để duyệt batch"""
@@ -1082,64 +1082,76 @@ def ai_approval():
                     'approved': 0,
                     'rejected': 0,
                     'errors': 0,
-                    'details': []
+                    'details': []  # List of tuples: (timestamp, title, status, reason)
                 }
                 
                 for room in rooms:
                     try:
                         room_id = room['id']
                         room_title = room.get('title', 'N/A')[:50]
+                        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         
-                        logging.info(f"Đang duyệt phòng: {room_id} - {room_title}")
+                        logging.info(f"Dang duyet phong: {room_id} - {room_title}")
                         
                         # Gọi AI duyệt
                         approval_result = approve_room_with_gemini(room, prompt_text)
                         
                         status = approval_result.get('status', 2)
                         content = approval_result.get('content', [])
+                        reason = content[0] if content else 'Khong ro ly do'
                         
                         # Cập nhật database
                         update_success = update_room_approval(room_id, status, content)
                         
                         if status == 1:
                             results['approved'] += 1
-                            results['details'].append(f"✅ {room_title}")
+                            results['details'].append((timestamp, room_title, "APPROVED", reason))
                         elif status == 2:
                             results['rejected'] += 1
-                            results['details'].append(f"❌ {room_title}: {content[0] if content else 'Không rõ lý do'}")
+                            results['details'].append((timestamp, room_title, "REJECTED", reason))
                         else:
                             results['errors'] += 1
-                            results['details'].append(f"⚠️ {room_title}: Rate limit")
+                            results['details'].append((timestamp, room_title, "ERROR", "Rate limit"))
                         
                         # Delay nhỏ giữa các request để tránh rate limit
                         time.sleep(0.5)
                         
                     except Exception as e:
                         results['errors'] += 1
-                        logging.error(f"Lỗi duyệt phòng {room.get('id', 'N/A')}: {e}")
+                        logging.error(f"Loi duyet phong {room.get('id', 'N/A')}: {e}")
                 
                 # Gửi kết quả cuối cùng về Slack (nếu có response_url)
                 if response_url_str:
                     try:
-                        summary = f"📊 *Kết quả duyệt phòng tự động*\n\n"
-                        summary += f"✅ Duyệt: {results['approved']}\n"
-                        summary += f"❌ Từ chối: {results['rejected']}\n"
-                        summary += f"⚠️ Lỗi: {results['errors']}\n\n"
+                        summary = f"*Ket qua duyet phong tu dong*\n\n"
+                        summary += f"Duyet: {results['approved']}\n"
+                        summary += f"Tu choi: {results['rejected']}\n"
+                        summary += f"Loi: {results['errors']}\n\n"
                         
-                        # Chỉ hiện 10 chi tiết đầu tiên
+                        # Bảng chi tiết
                         if results['details']:
-                            summary += "*Chi tiết (10 phòng đầu):*\n"
-                            for detail in results['details'][:10]:
-                                summary += f"• {detail}\n"
-                            if len(results['details']) > 10:
-                                summary += f"... và {len(results['details']) - 10} phòng khác"
+                            summary += "```\n"
+                            summary += "Timestamp           | Room Title                      | Status   | Reason\n"
+                            summary += "-" * 100 + "\n"
+                            
+                            for detail in results['details'][:15]:  # Hiện tối đa 15 dòng
+                                ts, title, status, reason = detail
+                                # Truncate để vừa bảng
+                                title_short = title[:30] + "..." if len(title) > 30 else title.ljust(33)
+                                reason_short = reason[:40] + "..." if len(reason) > 40 else reason
+                                summary += f"{ts} | {title_short} | {status:8} | {reason_short}\n"
+                            
+                            summary += "```"
+                            
+                            if len(results['details']) > 15:
+                                summary += f"\n... va {len(results['details']) - 15} phong khac"
                         
                         requests.post(response_url_str, json={
                             "response_type": "in_channel",
                             "text": summary
                         }, timeout=10)
                     except Exception as e:
-                        logging.error(f"Lỗi gửi kết quả về Slack: {e}")
+                        logging.error(f"Loi gui ket qua ve Slack: {e}")
             
             # Chạy trong thread riêng
             thread = threading.Thread(
