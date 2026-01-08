@@ -793,7 +793,18 @@ def approve_room_with_gemini(room_data, prompt):
     # Xử lý URL ảnh và video  
     media_urls = []
     if room_data.get('images') and isinstance(room_data['images'], list):
-        media_urls = [f"{URL_IMAGE}{url}" for url in room_data['images'] if url]
+        for url in room_data['images']:
+            if url:
+                # Nếu URL đã có đầy đủ http/https thì giữ nguyên
+                if url.startswith('http://') or url.startswith('https://'):
+                    media_urls.append(url)
+                else:
+                    # Thêm prefix Cloudinary
+                    media_urls.append(f"{URL_IMAGE}{url}")
+    
+    logging.info(f"[approve_room_with_gemini] Số ảnh: {len(media_urls)}")
+    if media_urls:
+        logging.info(f"[approve_room_with_gemini] URL mẫu: {media_urls[0][:100]}...")
     
     # Tải các file ảnh/video về ./images/
     downloaded_files = []
@@ -868,83 +879,95 @@ DANH SÁCH FILE ĐÃ TẢI:
     try:
         manager = get_api_manager()
         last_error = None
+        # Thử tất cả keys có sẵn trước khi đổi model
+        total_keys = len(manager.api_keys) if hasattr(manager, 'api_keys') else 10
+        max_key_retries = total_keys  # Thử hết tất cả keys
+        
+        logging.info(f"[approve_room_with_gemini] Có {total_keys} API keys, sẽ thử hết trước khi đổi model")
         
         # Thử các model theo thứ tự
         for model in models_to_try:
-            api_key, key_info = manager.get_next_api_key()
+            key_retry_count = 0
+            tried_keys = set()  # Track các key đã thử
             
-            if not api_key:
-                last_error = "Không có API key nào khả dụng"
-                continue
+            while key_retry_count < max_key_retries:
+                api_key, key_info = manager.get_next_api_key()
                 
-            try:
-                url = f"{GEMINI_API_BASE}/{model}:generateContent?key={api_key}"
-                logging.info(f"Duyệt phòng với model: {model}, key: {key_info['name']} ({len(downloaded_files)} ảnh)")
-                
-                response = requests.post(url, headers=headers, json=payload, timeout=60)
-                
-                # Kiểm tra lỗi 429 (Rate Limit)
-                if response.status_code == 429:
-                    manager.record_rate_limit_error(api_key)
-                    logging.warning(f"Rate limit exceeded for {model}, trying next...")
-                    last_error = "Rate limit exceeded"
-                    time.sleep(1)
-                    continue
-                
-                # Kiểm tra lỗi 404 (Model not found)
-                if response.status_code == 404:
-                    logging.warning(f"Model {model} not found, trying next...")
-                    last_error = f"Model {model} not available"
-                    continue
-                
-                response.raise_for_status()
-                result = response.json()
-                text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
-                manager.record_success(api_key)
-                
-                # Parse JSON response
+                if not api_key:
+                    last_error = "Không có API key nào khả dụng"
+                    break  # Thoát while, thử model tiếp theo
+                    
                 try:
-                    # Loại bỏ markdown formatting
-                    if '```json' in text:
-                        text = text.split('```json')[1].split('```')[0].strip()
-                    elif '```' in text:
-                        text = text.split('```')[1].split('```')[0].strip()
+                    url = f"{GEMINI_API_BASE}/{model}:generateContent?key={api_key}"
+                    logging.info(f"Duyệt phòng với model: {model}, key: {key_info['name']} (retry {key_retry_count + 1}/{max_key_retries}, {len(downloaded_files)} ảnh)")
                     
-                    # Loại bỏ text thừa trước và sau JSON
-                    json_start = text.find('{')
-                    json_end = text.rfind('}') + 1
-                    if json_start >= 0 and json_end > json_start:
-                        text = text[json_start:json_end]
+                    response = requests.post(url, headers=headers, json=payload, timeout=60)
                     
-                    approval_result = json.loads(text)
+                    # Kiểm tra lỗi 429 (Rate Limit) - thử key khác
+                    if response.status_code == 429:
+                        manager.record_rate_limit_error(api_key)
+                        logging.warning(f"Rate limit với key {key_info['name']}, đang thử key khác...")
+                        last_error = "Rate limit exceeded"
+                        key_retry_count += 1
+                        time.sleep(0.5)  # Delay ngắn trước khi thử key khác
+                        continue  # Thử key khác cho cùng model
                     
-                    # Validate JSON structure
-                    if not isinstance(approval_result, dict):
-                        raise ValueError("Response is not a dict")
-                    if 'status' not in approval_result or 'content' not in approval_result:
-                        raise ValueError("Missing required fields")
-                    if not isinstance(approval_result['content'], list):
-                        raise ValueError("Content must be a list")
+                    # Kiểm tra lỗi 404 (Model not found) - chuyển model
+                    if response.status_code == 404:
+                        logging.warning(f"Model {model} not found, chuyển sang model khác...")
+                        last_error = f"Model {model} not available"
+                        break  # Thoát while, thử model tiếp theo
                     
-                    logging.info(f"Duyệt phòng thành công với {model}")
-                    return approval_result
+                    response.raise_for_status()
+                    result = response.json()
+                    text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    manager.record_success(api_key)
                     
-                except Exception as e:
-                    logging.error(f"Failed to parse response from {model}: {e}")
-                    last_error = f"Parse error: {str(e)}"
-                    continue
-                    
-            except requests.exceptions.HTTPError as e:
-                manager.record_error(api_key, str(e))
-                logging.error(f"HTTP Error with {model}: {e}")
-                last_error = str(e)
-                continue
-            except Exception as e:
-                if api_key:
+                    # Parse JSON response
+                    try:
+                        # Loại bỏ markdown formatting
+                        if '```json' in text:
+                            text = text.split('```json')[1].split('```')[0].strip()
+                        elif '```' in text:
+                            text = text.split('```')[1].split('```')[0].strip()
+                        
+                        # Loại bỏ text thừa trước và sau JSON
+                        json_start = text.find('{')
+                        json_end = text.rfind('}') + 1
+                        if json_start >= 0 and json_end > json_start:
+                            text = text[json_start:json_end]
+                        
+                        approval_result = json.loads(text)
+                        
+                        # Validate JSON structure
+                        if not isinstance(approval_result, dict):
+                            raise ValueError("Response is not a dict")
+                        if 'status' not in approval_result or 'content' not in approval_result:
+                            raise ValueError("Missing required fields")
+                        if not isinstance(approval_result['content'], list):
+                            raise ValueError("Content must be a list")
+                        
+                        logging.info(f"Duyệt phòng thành công với {model}, key {key_info['name']}")
+                        return approval_result
+                        
+                    except Exception as e:
+                        logging.error(f"Failed to parse response from {model}: {e}")
+                        last_error = f"Parse error: {str(e)}"
+                        break  # Thoát while, thử model tiếp theo
+                        
+                except requests.exceptions.HTTPError as e:
                     manager.record_error(api_key, str(e))
-                logging.error(f"Error with {model}: {e}")
-                last_error = str(e)
-                continue
+                    logging.error(f"HTTP Error with {model}: {e}")
+                    last_error = str(e)
+                    key_retry_count += 1
+                    continue  # Thử key khác
+                except Exception as e:
+                    if api_key:
+                        manager.record_error(api_key, str(e))
+                    logging.error(f"Error with {model}: {e}")
+                    last_error = str(e)
+                    key_retry_count += 1
+                    continue  # Thử key khác
         
         # Nếu tất cả model đều thất bại
         logging.error(f"All approval models failed. Last error: {last_error}")
@@ -953,7 +976,7 @@ DANH SÁCH FILE ĐÃ TẢI:
         if last_error and ("rate limit" in str(last_error).lower() or "429" in str(last_error)):
             return {
                 "status": 0, 
-                "content": ["Rate limit exceeded - Please try again in a few minutes"]
+                "content": ["Rate limit exceeded - Đã thử tất cả API keys. Vui lòng thử lại sau vài phút"]
             }
         else:
             return {
