@@ -22,14 +22,17 @@ public class EmailConfig {
         mailSender.setPassword(EnvLoader.get("MAIL_PASSWORD"));
 
         Properties props = mailSender.getJavaMailProperties();
-        props.put("mail.transport.protocol", "smtps"); // Sử dụng smtps cho SSL
+        props.put("mail.transport.protocol", "smtps");
         props.put("mail.smtps.auth", "true");
         props.put("mail.smtps.starttls.enable", "true");
-        props.put("mail.smtps.timeout", "5000"); // Timeout 5s
+        props.put("mail.smtps.timeout", "10000"); // Tăng timeout lên 10s
 
-        // Config quan trọng cho Port 465
+        // SSL Socket Factory Config (Bắt buộc cho server chặn port thường)
         props.put("mail.smtps.ssl.enable", "true");
         props.put("mail.smtps.ssl.trust", "smtp.gmail.com");
+        props.put("mail.smtps.socketFactory.port", "465");
+        props.put("mail.smtps.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        props.put("mail.smtps.socketFactory.fallback", "false");
 
         props.put("mail.debug", "true");
 
