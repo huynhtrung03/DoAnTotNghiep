@@ -673,20 +673,36 @@ def reload_keys():
 
 
 def load_approval_prompt():
-    """Load prompt duyệt phòng từ file markdown"""
+    """Load prompt duyệt phòng từ file txt"""
     try:
-        # Đường dẫn: api_gemini/promt_approval.md
+        # Đường dẫn: api_gemini/promt_approval.txt
         current_dir = os.path.dirname(os.path.abspath(__file__)) # core/
         app_dir = os.path.dirname(current_dir) # api_gemini/
         
-        # Thử nhiều vị trí để chắc chắn
+        # Thử nhiều vị trí để chắc chắn (bao gồm cả Docker container)
         candidates = [
-            os.path.join(app_dir, "promt_approval.md"),
-            os.path.join(app_dir, "promt", "promt_approval.md")
+            # Docker container paths
+            "/app/promt_approval.txt",
+            "/app/api_gemini/promt_approval.txt",
+            # Relative paths
+            os.path.join(app_dir, "promt_approval.txt"),
+            os.path.join(app_dir, "promt", "promt_approval.txt"),
+            os.path.join(current_dir, "promt_approval.txt"),
+            os.path.join(current_dir, "..", "promt_approval.txt"),
+            # Root project paths
+            "promt_approval.txt",
+            "./promt_approval.txt",
+            "../promt_approval.txt",
         ]
         
+        logging.info(f"[load_approval_prompt] Searching in {len(candidates)} locations...")
+        logging.info(f"[load_approval_prompt] current_dir: {current_dir}")
+        logging.info(f"[load_approval_prompt] app_dir: {app_dir}")
+        
         for path in candidates:
+            logging.debug(f"[load_approval_prompt] Checking: {path}")
             if os.path.exists(path):
+                logging.info(f"[load_approval_prompt] Found file at: {path}")
                 with open(path, 'r', encoding='utf-8') as f:
                     content = f.read()
                     # Append strict JSON format instruction if needed
@@ -714,10 +730,11 @@ Bạn PHẢI trả về kết quả duyệt theo ĐÚNG định dạng JSON sau,
 CHỈ trả về JSON thuần."""
                     return content
         
-        logging.error("Không tìm thấy file promt_approval.md")
+        logging.error(f"[load_approval_prompt] Không tìm thấy file promt_approval.txt tại bất kỳ vị trí nào!")
+        logging.error(f"[load_approval_prompt] Các vị trí đã thử: {candidates}")
         return None
     except Exception as e:
-        logging.error(f"Lỗi đọc file promt_approval.md: {e}")
+        logging.error(f"Lỗi đọc file promt_approval.txt: {e}")
         return None
 
 def call_gemini_vision_payload(payload: dict, model="gemini-2.5-flash"):
