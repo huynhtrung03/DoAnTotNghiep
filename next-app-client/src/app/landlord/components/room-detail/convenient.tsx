@@ -33,7 +33,7 @@ export default function Convenient({ features }: ConvenientProps) {
   }));
   return (
     <div className="mt-6">
-      <h2 className="text-lg font-bold text-gray-800 mb-3 dark:text-white">
+      <h2 className="mb-3 text-lg font-bold text-gray-800 dark:text-white">
         Conveniences
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-6 text-[15px]">
