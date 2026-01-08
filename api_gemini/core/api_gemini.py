@@ -192,7 +192,7 @@ def get_pending_rooms(limit=100):
     LEFT JOIN provinces p ON d.province_id = p.id
     LEFT JOIN room_convenients rc ON r.id = rc.room_id
     LEFT JOIN convenients c ON rc.convenient_id = c.id
-    LEFT JOIN room_images ri ON r.id = ri.room_id
+    LEFT JOIN images ri ON r.id = ri.room_id
     WHERE r.approval = 0 AND (r.is_removed = 0 OR r.is_removed = FALSE OR r.is_removed IS NULL)
     GROUP BY r.id
     ORDER BY r.createddate DESC
