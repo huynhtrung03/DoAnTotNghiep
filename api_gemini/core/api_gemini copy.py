@@ -311,35 +311,6 @@ def update_room_approval(room_id: str, approval_status: int, approval_content: l
         conn.close()
         
         logging.info(f"Cập nhật approval cho room {room_id}: status={approval_status}, affected={affected_rows}")
-        
-        # --- GỌI API JAVA ĐỂ GỬI MAIL THÔNG BÁO ---
-        if affected_rows > 0:
-            try:
-                # URL của Java Backend (thử tên service docker trước, sau đó đến public IP, cuối cùng là localhost)
-                java_api_urls = [ # Docker internal
-                    "http://188.166.222.86:3333/api/internal/notify-approval",   # Public Server IP
-                    "http://localhost:8080/api/internal/notify-approval"         # Local fallback
-                ]
-                
-                payload = {
-                    "room_id": str(room_id),
-                    "status": "APPROVED" if approval_status == 1 else "REJECTED",
-                    "reason": approval_content[0] if approval_content else "Không đạt yêu cầu"
-                }
-
-                for url in java_api_urls:
-                    try:
-                        resp = requests.post(url, json=payload, timeout=2)
-                        if resp.status_code == 200:
-                            logging.info(f"Đã gọi Java API gửi mail thành công: {url}")
-                            break # Thành công thì dừng
-                    except Exception:
-                        continue # Thử URL tiếp theo
-                        
-            except Exception as e:
-                logging.error(f"Lỗi khi gọi Java API gửi mail: {e}")
-        # -------------------------------------------
-
         return affected_rows > 0
         
     except Exception as e:
