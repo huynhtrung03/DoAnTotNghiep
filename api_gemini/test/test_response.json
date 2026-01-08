@@ -1,0 +1,64 @@
+{
+  "data": {
+    "closing_note": "Hy vọng những phân tích này giúp bạn tự tin hơn khi chốt phòng. Chúc bạn sớm ổn định chỗ ở mới nhé!",
+    "financial_comparison": {
+      "initial_cost_difference": "Phòng 2 đắt hơn 200k tiền thuê, nhưng phòng 1 sẽ ngốn của bạn ít nhất 3-5 triệu đồng tiền mua nội thất (giường, nệm, tủ) ngay tháng đầu tiên.",
+      "long_term_analysis": "Trong 1 năm, chọn phòng 2 giúp bạn tiết kiệm khoảng 2.4 triệu đồng tiền giặt ủi và bảo toàn được số vốn không phải mua đồ đạc.",
+      "value_for_money_verdict": "Phòng 2 thắng tuyệt đối. Với một người ưu tiên 'Best value for money' như bạn, việc thêm 200k để có máy giặt và nội thất là khoản đầu tư cực kỳ thông minh."
+    },
+    "greeting": "Chào bạn nhé! Mình là chuyên gia tư vấn từ Ants đây. Rất vui được đồng hành cùng bạn để tìm ra tổ ấm ưng ý nhất tại khu vực Ngũ Hành Sơn.",
+    "my_recommendation": {
+      "action_steps": [
+        "Liên hệ ngay với chủ phòng 2 để hỏi xem nội thất gồm những gì (có tủ lạnh không?).",
+        "Hẹn lịch xem phòng vào buổi chiều để kiểm tra hướng Tây có bị quá nóng không."
+      ],
+      "chosen_room": "Cho thuê phòng trọ, có 2 phòng liền kề, trung tâm thành phố, gần chợ và trường học",
+      "chosen_room_id": "room_2",
+      "confidence_level": "High - Vì nó đáp ứng hoàn hảo các tiện ích 'Furnished' và 'Washing Machine' mà bạn luôn ưu tiên.",
+      "honest_advice": "Đừng để con số 1.8 triệu của phòng 1 đánh lừa nhé. Bạn sẽ thấy mệt mỏi khi phải đi giặt đồ ngoài tiệm và nằm ngủ trên sàn trống. Phòng 2 chỉ hơn 200k nhưng mang lại sự thoải mái gấp đôi.",
+      "personalized_reasons": [
+        "Đầy đủ nội thất và máy giặt giúp bạn duy trì lối sống tiện nghi mà không vượt quá ngân sách thực tế.",
+        "Diện tích 22.5m2 khớp chính xác với thói quen tìm kiếm không gian rộng rãi của bạn.",
+        "Có lối đi riêng, tạo sự tự do đúng như pattern 'Private entry' bạn thường xuyên quan tâm gần đây."
+      ]
+    },
+    "room_analysis": {
+      "room_1": {
+        "match_score": 6.5,
+        "personal_note": "Nếu bạn là sinh viên muốn tiết kiệm tối đa và không ngại tự sắm đồ, đây là lựa chọn ổn. Nhưng với thói quen thích sự tiện nghi của bạn, mình e là bạn sẽ sớm thấy bất tiện đấy.",
+        "real_monthly_cost": {
+          "base_rent": 1800000,
+          "breakdown": "Bao gồm: Chi phí giặt ủi bên ngoài (khoảng 300k/tháng do không có máy giặt) và chi phí khấu hao khi bạn phải tự sắm giường, nệm, tủ quần áo (ước tính 200k/tháng).",
+          "hidden_costs": 500000,
+          "total": 2300000
+        },
+        "why_it_doesnt": "Phòng này thiếu hẳn các tiện nghi 'must-have' trong danh sách yêu thích của bạn như máy giặt, điều hòa và nội thất cơ bản. Bạn sẽ phải tốn thêm một khoản kha khá để sắm sửa ban đầu.",
+        "why_it_fits": "Phòng này cực kỳ phù hợp với tiêu chí 'giá rẻ' và nằm ngay gần khu vực bạn đang quan tâm. Nó có sẵn gác lửng và kệ bếp - hai tiện ích mà bạn thường xuyên tìm kiếm."
+      },
+      "room_2": {
+        "match_score": 9.2,
+        "personal_note": "Căn này thực tế lại RẺ HƠN phòng 1 nếu tính trên tổng chi phí sinh hoạt hàng tháng của bạn. Nó khớp đến 90% các tiện ích mà bạn luôn tìm kiếm trong lịch sử xem phòng.",
+        "real_monthly_cost": {
+          "base_rent": 2000000,
+          "breakdown": "Chủ yếu là tiền điện nước và điện máy giặt. Bạn tiết kiệm được hoàn toàn tiền giặt ngoài và tiền mua sắm nội thất ban đầu.",
+          "hidden_costs": 100000,
+          "total": 2100000
+        },
+        "why_it_doesnt": "Giá thuê cao hơn 200k so với phòng 1, có thể khiến bạn hơi lăn tăn một chút về ngân sách 'cứng' ban đầu.",
+        "why_it_fits": "Đây chính là 'chân ái' của bạn! Nó hội tụ đủ các yếu tố bạn thích: có sẵn nội thất, máy giặt, gác lửng và lối đi riêng. Diện tích 22.5m2 cũng rộng rãi hơn đúng theo gu bạn thường xem."
+      }
+    },
+    "user_profile_summary": "Qua thói quen tìm kiếm, mình thấy bạn là người khá thực tế: dù thích những căn phòng cao cấp đầy đủ tiện nghi (tầm 3.5tr), nhưng bạn lại thường xuyên cân nhắc các lựa chọn 'vừa túi tiền' quanh mức 1.5tr - 1.8tr. Đặc biệt, bạn luôn ưu tiên những phòng có gác lửng, kệ bếp và máy giặt để tối ưu cuộc sống hàng ngày.",
+    "when_to_choose_alternative": {
+      "explanation": "Lúc này phòng 1 sẽ là lựa chọn tối ưu để tiết kiệm 200k mỗi tháng vì bạn không cần dùng đến tiện ích có sẵn của phòng 2.",
+      "scenario": "Nếu bạn đã có sẵn toàn bộ đồ đạc cá nhân (giường, tủ, máy giặt riêng)."
+    }
+  },
+  "meta": {
+    "ai_model": "gemini-3-flash-preview",
+    "personalized": true,
+    "processing_time_ms": 14650,
+    "timestamp": "2026-01-08T00:27:25.774186"
+  },
+  "success": true
+}

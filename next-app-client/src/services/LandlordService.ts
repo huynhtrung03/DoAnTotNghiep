@@ -6,9 +6,19 @@ import { API_URL } from "./Constant";
 
 
 export const landlordService = {
+  // async getAllLandlords(page: number = 0, size: number = 6, token?: string): Promise<PageResponse<LandLordInfo>> {
   async getAllLandlords(page: number = 0, size: number = 6): Promise<PageResponse<LandLordInfo>> {
     try {
       const response = await fetch(`${API_URL}/landlords?page=${page}&size=${size}`);
+      // const headers: HeadersInit = {};
+      // if (token) {
+      //   headers['Authorization'] = `Bearer ${token}`;
+      // }
+      
+      // const response = await fetch(`${API_URL}/landlords?page=${page}&size=${size}`, {
+      //   headers: headers
+      // });
+
       if (!response.ok) {
         throw new Error('Failed to fetch landlords');
       }

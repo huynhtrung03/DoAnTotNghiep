@@ -45,6 +45,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_DATABASE: ants_ktc
+      MYSQL_ROOT_HOST: "%"
     ports:
       - "3306:3306"
     volumes:
@@ -68,7 +69,7 @@ services:
     container_name: python-gemini
     restart: always
     ports:
-      - "5000:5000"
+      - "5001:5001" # Gemini API Port
     depends_on:
       db:
         condition: service_healthy
@@ -79,7 +80,10 @@ services:
       - DB_PORT=3306
       - DB_USER=root
       - DB_PASSWORD=root_password
+      - DB_PASSWORD=root_password
       - DB_NAME=ants_ktc
+    volumes:
+      - ./api.json:/app/api.json
 
   # --- 6. ADMIN DASHBOARD SERVICE ---
   app-ktc:

@@ -384,4 +384,72 @@ public class MailService {
     }
   }
 
+  @Async
+  public void sendRoomApprovalNotification(String to, String landlordName, String roomTitle) {
+    String subject = "✅ Chúc mừng! Phòng trọ của bạn đã được duyệt: " + roomTitle;
+
+    String html = String.format(
+        """
+            <div style='font-family: Arial, sans-serif; background: #f6f6f6; padding: 24px;'>
+              <div style='max-width: 550px; margin: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 24px;'>
+                <h2 style='color: #2e7d2e; text-align: center; margin-bottom: 24px;'>✅ Phòng trọ đã được phê duyệt!</h2>
+                <p style='font-size: 16px; color: #333; margin-bottom: 16px;'>Xin chào <strong>%s</strong>,</p>
+                <p style='font-size: 16px; color: #333; margin-bottom: 20px;'>
+                  Chúc mừng! Phòng trọ của bạn đã vượt qua quy trình kiểm duyệt và hiện đã được công khai trên hệ thống Ants.
+                </p>
+
+                <div style='background: #e8f5e8; border: 1px solid #c8e6c9; padding: 16px; border-radius: 8px; margin: 16px 0;'>
+                  <h3 style='color: #2e7d2e; margin: 0 0 12px 0; font-size: 18px;'>🏠 Thông tin phòng:</h3>
+                  <p style='margin: 8px 0; font-size: 16px; color: #333;'><strong>Tên phòng:</strong> %s</p>
+                  <p style='margin: 8px 0; font-size: 16px; color: #333;'><strong>Trạng thái:</strong> <span style='color: #2e7d2e; font-weight: bold;'>ĐANG HIỂN THỊ</span></p>
+                </div>
+
+                <div style='background: #e3f2fd; border: 1px solid #90caf9; padding: 16px; border-radius: 8px; margin: 20px 0;'>
+                  <h3 style='color: #1565c0; margin: 0 0 12px 0; font-size: 18px;'>🚀 Mẹo để cho thuê nhanh hơn:</h3>
+                  <ul style='margin: 8px 0; padding-left: 20px; color: #333; line-height: 1.6;'>
+                    <li>Chia sẻ bài đăng lên mạng xã hội</li>
+                    <li>Thường xuyên kiểm tra tin nhắn từ người thuê</li>
+                    <li>Đẩy tin để bài đăng luôn ở top đầu</li>
+                  </ul>
+                </div>
+
+                <div style='text-align: center; margin: 24px 0;'>
+                  <a href='http://localhost:3000/detail/my-rooms'
+                     style='display: inline-block; padding: 12px 24px; background: #1976d2; color: #fff;
+                            text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;'>
+                    👀 Xem bài đăng của bạn
+                  </a>
+                </div>
+
+                <hr style='margin: 24px 0; border: none; border-top: 1px solid #eee;'>
+                <p style='font-size: 14px; color: #888; text-align: center; margin: 0;'>
+                  Cảm ơn bạn đã đồng hành cùng Ants!<br>
+                  Chúc bạn sớm tìm được người thuê ưng ý.
+                </p>
+              </div>
+            </div>
+            """,
+        landlordName, roomTitle);
+
+    try {
+      MimeMessage mimeMessage = emailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+      helper.setTo(to);
+      helper.setSubject(subject);
+      helper.setText(html, true);
+      emailSender.send(mimeMessage);
+      System.out.println("[MailService] Room approval notification sent to: " + to + " for room: " + roomTitle);
+    } catch (Exception e) {
+      System.out.println("[MailService] Failed to send room approval notification: " + e.getMessage());
+      e.printStackTrace();
+      // fallback: send simple text
+      SimpleMailMessage message = new SimpleMailMessage();
+      message.setTo(to);
+      message.setSubject(subject);
+      message
+          .setText("Chúc mừng! Phòng trọ '" + roomTitle + "' đã được duyệt thành công và đang hiển thị trên hệ thống.");
+      emailSender.send(message);
+    }
+  }
+
 }

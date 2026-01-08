@@ -7,7 +7,7 @@ services:
     container_name: api_gemini
     restart: always
     ports:
-      - "5000:5000"
+      - "5001:5001"
 
     # Nếu cần connect với MySQL từ docker-compose khác, uncomment:
     # depends_on:
@@ -48,7 +48,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import requests; requests.get('http://localhost:5000/health')",
+          "import requests; requests.get('http://localhost:5001/health')",
         ]
       timeout: 10s
       retries: 3

@@ -27,9 +27,11 @@ import {
 import { PiElevatorLight } from "react-icons/pi";
 
 //recommentdation 
-import { recommendRoom } from "@/utils/recommendationEngine";
-import RecommendationBox from "./RecommendationBox";
-
+import { recommendRoom, recommendRoomAI, AIPersonalizedResponse } from "@/utils/recommendationEngine";
+// import RecommendationBox from "./RecommendationBox";
+import AIRecommendationBox from "./AIRecommendationBox";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 // Enhanced amenities with better labels and icons
 const allPossibleConvenients = [
@@ -46,6 +48,7 @@ const allPossibleConvenients = [
   { key: "garage", label: "Garage", icon: Car },
 ];
 
+
 export default function ListingComparisonDisplay({
   listing1,
   listing2,
@@ -53,6 +56,35 @@ export default function ListingComparisonDisplay({
   listing1?: RoomDetail;
   listing2?: RoomDetail;
 }) {
+  const { data: session } = useSession();
+  const [aiResult, setAiResult] = useState<AIPersonalizedResponse | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Trigger AI Recommendation
+  useEffect(() => {
+    if (listing1 && listing2) {
+      const fetchData = async () => {
+        setIsAiLoading(true);
+        try {
+            const result = await recommendRoomAI(
+              listing1, 
+              listing2, 
+              session?.user?.id ? String(session.user.id) : null
+            );
+            setAiResult(result);
+        } catch (error) {
+            console.error("AI Recommendation failed:", error);
+        } finally {
+            setIsAiLoading(false);
+        }
+      }
+      fetchData();
+    } else {
+        setAiResult(null);
+    }
+  }, [listing1, listing2]);
+
+
   // Enhanced empty state
   if (!listing1 || !listing2) {
     return (
@@ -118,6 +150,8 @@ export default function ListingComparisonDisplay({
           <h2 className="text-xl font-bold truncate">{listing2.title}</h2>
         </div>
       </div>
+
+
 
       {/* Image Gallery */}
       <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2">
@@ -434,8 +468,6 @@ export default function ListingComparisonDisplay({
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {allPossibleConvenients.map((amenity, index) => {
-                console.log("listing1.convenients:", listing1.convenients);
-                console.log("listing2.convenients:", listing2.convenients);
                 const IconComponent = amenity.icon;
                 const room1HasAmenity = isAmenityEnabled(
                   listing1.convenients,
@@ -484,15 +516,15 @@ export default function ListingComparisonDisplay({
               })}
             </div>
           </div>
-          <div className="mt-8">
-
-          {/* ⭐ RECOMMENDATION BOX */}
-      {recommendation && (
-        <RecommendationBox recommendation={recommendation} />
-      )}
-      </div>
         </div>
       </div>
+            {/* ⭐ AI RECOMMENDATION BOX */}
+      <AIRecommendationBox 
+        aiResult={aiResult} 
+        isLoading={isAiLoading} 
+        room1Name={listing1.title} 
+        room2Name={listing2.title} 
+      />
     </div>
   );
 }

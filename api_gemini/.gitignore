@@ -1,5 +1,5 @@
 /.env
-
+/api.json
 /api_chatbot.py
 
 /resendmai.py

@@ -24,16 +24,16 @@ COPY . .
 RUN mkdir -p api_gemini/images
 
 # Expose port Flask
-EXPOSE 5000
+EXPOSE 5001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:5000/health')" || exit 1
+    CMD python -c "import requests; requests.get('http://localhost:5001/health')" || exit 1
 
 # Run with Gunicorn (Production WSGI server)
-# --bind 0.0.0.0:5000 → Bind to all interfaces
+# --bind 0.0.0.0:5001 → Bind to all interfaces
 # --workers 2 → Number of worker processes (CPU cores x 2)
 # --timeout 120 → Worker timeout (120s for long-running AI requests)
 # --access-logfile - → Log to stdout
 # --error-logfile - → Error log to stdout
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "api_gemini:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "core.main:create_app()"]

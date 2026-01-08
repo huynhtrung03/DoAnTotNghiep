@@ -2,6 +2,8 @@ package com.ants.ktc.ants_ktc.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import java.util.UUID;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,6 +37,15 @@ public class TestController {
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body("Error sending suggestions: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/get-similarity")
+    public ResponseEntity<?> getSimilarityInfo(@RequestParam(value = "userId") UUID userId) {
+        try {
+            return ResponseEntity.ok(roomSuggestionService.getCombinedUserProfiles(userId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

@@ -28,6 +28,7 @@ jobs:
           filters: |
             backend:
               - 'spring-ants-ktc/**'
+              - 'docker-compose.yml'
             python:
               - 'api_gemini/**'
 
@@ -67,7 +68,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./api_gemini
+          context: ./api_gemini # Build context for Gemini API
           push: true
           tags: tinhsoma/python-gemini:latest
 
