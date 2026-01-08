@@ -23,7 +23,7 @@ import com.ants.ktc.ants_ktc.config.EnvLoader;
 public class ReportLogController {
 
     private static final String SLACK_TOKEN = EnvLoader.get("SLACK_BOT_TOKEN");
-    private static final String SLACK_CHANNEL_ID = "C09GVNUF5LG";
+    private static final String SLACK_CHANNEL_ID = "C0A0MK03N2Y";
 
     private final RestTemplate restTemplate = new RestTemplate();
 
