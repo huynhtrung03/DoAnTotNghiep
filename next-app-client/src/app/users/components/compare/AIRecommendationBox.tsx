@@ -312,7 +312,7 @@ export default function AIRecommendationBox({
       </div>
 
       {/* Financial Comparison */}
-      <div className="p-5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+      {/* <div className="p-5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
         <div className="flex items-center gap-2 mb-4 text-amber-800 font-bold">
           <DollarSign className="w-5 h-5" />
           So sánh tài chính
@@ -342,59 +342,10 @@ export default function AIRecommendationBox({
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Recommendation Card */}
-      <div className="p-5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-xl">
-        <div className="flex items-center gap-2 mb-4">
-          <CheckCircle2 className="w-6 h-6" />
-          <h4 className="font-bold text-lg">Đề xuất của AI</h4>
-          <span className="ml-auto bg-white/20 px-3 py-1 rounded-full text-sm">
-            {recommendation.confidence_level}
-          </span>
-        </div>
-
-        <p className="text-lg font-semibold mb-4">
-          👉 {recommendation.chosen_room}
-        </p>
-
-        <div className="bg-white/10 rounded-lg p-4 mb-4">
-          <div className="text-sm font-medium mb-2">Lý do cá nhân hóa:</div>
-          <ul className="space-y-2">
-            {recommendation.personalized_reasons.map((reason, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm">
-                <span className="mt-1 w-1.5 h-1.5 bg-white rounded-full flex-shrink-0"></span>
-                {reason}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="bg-white/10 rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2 mb-2 text-sm font-medium">
-            <Lightbulb className="w-4 h-4" />
-            Lời khuyên chân thành
-          </div>
-          <p className="text-sm">{recommendation.honest_advice}</p>
-        </div>
-
-        <div className="bg-white/10 rounded-lg p-4">
-          <div className="text-sm font-medium mb-2">Các bước tiếp theo:</div>
-          <ol className="space-y-2">
-            {recommendation.action_steps.map((step, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm">
-                <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0">
-                  {index + 1}
-                </span>
-                {step}
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
+      </div> */}
 
       {/* Alternative Scenario */}
-      <div className="p-4 rounded-xl bg-gray-100 border border-gray-200">
+      {/* <div className="p-4 rounded-xl bg-gray-100 border border-gray-200">
         <div className="flex items-center gap-2 mb-2 text-gray-700 font-semibold text-sm">
           <AlertCircle className="w-4 h-4" />
           Khi nào nên chọn phương án còn lại?
@@ -406,14 +357,14 @@ export default function AIRecommendationBox({
         <p className="text-sm text-gray-600">
           {aiResult.when_to_choose_alternative.explanation}
         </p>
-      </div>
+      </div> */}
 
       {/* Closing Note */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 text-center">
+      {/* <div className="p-4 rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 text-center">
         <p className="text-sm text-purple-800 font-medium">
           {aiResult.closing_note}
         </p>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -28,7 +28,7 @@ import { PiElevatorLight } from "react-icons/pi";
 
 //recommentdation 
 import { recommendRoom, recommendRoomAI, AIPersonalizedResponse } from "@/utils/recommendationEngine";
-import RecommendationBox from "./RecommendationBox";
+// import RecommendationBox from "./RecommendationBox";
 import AIRecommendationBox from "./AIRecommendationBox";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -151,13 +151,7 @@ export default function ListingComparisonDisplay({
         </div>
       </div>
 
-      {/* ⭐ AI RECOMMENDATION BOX */}
-      <AIRecommendationBox 
-        aiResult={aiResult} 
-        isLoading={isAiLoading} 
-        room1Name={listing1.title} 
-        room2Name={listing2.title} 
-      />
+
 
       {/* Image Gallery */}
       <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2">
@@ -522,14 +516,15 @@ export default function ListingComparisonDisplay({
               })}
             </div>
           </div>
-          <div className="mt-8">
-            {/* ⭐ RECOMMENDATION BOX */}
-      {recommendation && (
-        <RecommendationBox recommendation={recommendation} />
-      )}
-      </div>
         </div>
       </div>
+            {/* ⭐ AI RECOMMENDATION BOX */}
+      <AIRecommendationBox 
+        aiResult={aiResult} 
+        isLoading={isAiLoading} 
+        room1Name={listing1.title} 
+        room2Name={listing2.title} 
+      />
     </div>
   );
 }
