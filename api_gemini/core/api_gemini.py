@@ -585,103 +585,261 @@ def call_gemini_vision_payload(payload: dict, model="gemini-2.5-flash"):
         manager.record_error(api_key, str(e))
         return {"status": 2, "content": [f"Lỗi xử lý: {str(e)}"]}
 
-@api_gemini_bp.route('/ai_approval', methods=['POST'])
-def ai_approval():
-    """API duyệt phòng trọ bằng Gemini AI (Legacy port)"""
+
+def approve_room_with_gemini(room_data, prompt):
+    """Duyệt phòng bằng AI Gemini với ảnh/video, sử dụng key rotation"""
+    
+    # Xử lý URL ảnh và video  
+    media_urls = []
+    if room_data.get('images') and isinstance(room_data['images'], list):
+        media_urls = [f"{URL_IMAGE}{url}" for url in room_data['images'] if url]
+    
+    # Tải các file ảnh/video về ./images/
     downloaded_files = []
-    try:
-        room_data = request.get_json()
+    for i, url in enumerate(media_urls):
+        # Lấy tên file từ URL
+        parsed_url = urlparse(url)
+        filename = os.path.basename(parsed_url.path)
+        if not filename or '.' not in filename:
+            # Tạo tên file dựa trên index và loại media
+            extension = '.jpg' if '/image/' in url else '.mp4' if '/video/' in url else '.jpg'
+            filename = f"room_{room_data.get('id', 'unknown')}_{i+1}{extension}"
         
-        # Load prompt
-        prompt = load_approval_prompt()
-        if not prompt:
-            return jsonify({"status": 2, "content": ["Lỗi config: Không tìm thấy prompt approval"]}), 500
-            
-        # 1. Download images/videos
-        media_urls = []
-        if room_data.get('images') and isinstance(room_data['images'], list):
-            media_urls = [f"{URL_IMAGE}{url}" for url in room_data['images'] if url]
-            
-        for i, url in enumerate(media_urls):
-            parsed_url = urlparse(url)
-            filename = os.path.basename(parsed_url.path)
-            if not filename or '.' not in filename:
-                ext = '.jpg'
-                if '/video/' in url: ext = '.mp4'
-                filename = f"room_{room_data.get('id', 'u')}_{i}{ext}"
-            
-            fp = download_media_file(url, filename)
-            if fp:
-                downloaded_files.append(fp)
-        
-        # 2. Build info text
-        convenients = room_data.get('convenients', [])
-        if isinstance(convenients, list):
-            convenients = ', '.join(convenients)
-            
-        room_info = f"""
+        filepath = download_media_file(url, filename)
+        if filepath:
+            downloaded_files.append(filepath)
+    
+    # Chuyển dữ liệu phòng thành text để gửi AI
+    convenients_text = ', '.join(room_data.get('convenients', [])) if isinstance(room_data.get('convenients'), list) else str(room_data.get('convenients', ''))
+    
+    room_info = f"""
 Thông tin phòng trọ cần duyệt:
 - ID: {room_data.get('id', '')}
 - Tiêu đề: {room_data.get('title', '')}
-- Mô tả: {room_data.get('description', 'No description')[:1000]}
-- Giá: {room_data.get('priceMonth', 0)}
+- Mô tả: {room_data.get('description', '')[:500] if room_data.get('description') else 'Không có mô tả'}
+- Giá thuê: {room_data.get('priceMonth', 0):,} VNĐ/tháng
+- Tiền cọc: {room_data.get('priceDeposit', 0):,} VNĐ
+- Diện tích: {room_data.get('area', 0)} m²
+- Kích thước: {room_data.get('length', 0)}m x {room_data.get('width', 0)}m
+- Số người tối đa: {room_data.get('maxPeople', 0)}
+- Giá điện: {room_data.get('elecPrice', 0):,} đ/kW
+- Giá nước: {room_data.get('waterPrice', 0):,} đ/m³
 - Địa chỉ: {room_data.get('fullAddress', '')}
-- Tiện ích: {convenients}
-- Số ảnh/video: {len(downloaded_files)}
-File đã tải: {', '.join([os.path.basename(f) for f in downloaded_files])}
-"""
-        full_text = f"{prompt}\n\n{room_info}"
-        
-        # 3. Build Payload
-        payload_parts = [{"text": full_text}]
-        
-        # Add images (base64 inline)
-        # Note: Video handling in standard Gemini API via inline data is limited?
-        # Standard approach: Image ok, Video usually needs file API.
-        # Following old logic: encode everything as image/jpeg ? 
-        # Old code logic:
-        # if filepath.lower().endswith(('.jpg', ...)): payload...
-        
-        for fp in downloaded_files:
-            if fp.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
-                try:
-                    with open(fp, 'rb') as f:
-                        b64_data = base64.b64encode(f.read()).decode('utf-8')
-                        payload_parts.append({
-                            "inline_data": {
-                                "mime_type": "image/jpeg",
-                                "data": b64_data
-                            }
-                        })
-                except:
-                    pass
-        
-        payload = {"contents": [{"parts": payload_parts}]}
-        
-        # 4. Call API with Rotation
-        # Try models in order
-        models = [
-            "gemini-3-flash-preview",
-            "gemini-2.5-flash",
-            "gemini-2.5-flash-lite",
-            "gemini-2.0-flash-lite"
-        ]
-        
-        final_result = {"status": 2, "content": ["Lỗi không xác định"]}
-        
-        for model in models:
-            res = call_gemini_vision_payload(payload, model)
-            if res.get("status") == 1 or (res.get("status") == 2 and "Lỗi API" not in str(res.get("content"))):
-                final_result = res
-                break
-                
-        return jsonify(final_result)
+- Tiện ích: {convenients_text}
+- Số lượng ảnh/video: {len(media_urls)}
 
-    except Exception as e:
-        logging.error(f"Lỗi Duyệt phòng: {e}")
-        return jsonify({"status": 2, "content": [f"Lỗi server: {str(e)}"]}), 500
+DANH SÁCH FILE ĐÃ TẢI:
+{chr(10).join([f"- {os.path.basename(f)}" for f in downloaded_files])}
+    """
+
+    full_prompt = f"{prompt}\n\n{room_info}\n\nHãy duyệt phòng này dựa trên thông tin và hình ảnh/video đã tải. Trả về ĐÚNG định dạng JSON yêu cầu, không có markdown, không có text thừa."
+
+    # Danh sách các model để thử (theo thứ tự ưu tiên) - Tất cả hỗ trợ vision
+    models_to_try = [
+        "gemini-2.5-flash",          # Mới nhất, tốt nhất cho vision
+        "gemini-2.0-flash",          # Stable backup
+        "gemini-2.0-flash-lite",     # Nhanh, nhẹ
+    ]
+
+    # Tạo payload với ảnh/video đã tải
+    payload_parts = [{"text": full_prompt}]
+    
+    # Thêm các file ảnh vào payload
+    for filepath in downloaded_files:
+        if filepath.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+            try:
+                with open(filepath, 'rb') as f:
+                    image_data = base64.b64encode(f.read()).decode('utf-8')
+                    payload_parts.append({
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": image_data
+                        }
+                    })
+                    logging.debug(f"Đã thêm ảnh {os.path.basename(filepath)} vào payload")
+            except Exception as e:
+                logging.error(f"Lỗi khi thêm ảnh {filepath}: {e}")
+
+    payload = {"contents": [{"parts": payload_parts}]}
+    headers = {"Content-Type": "application/json"}
+    
+    # Sử dụng try-finally để đảm bảo cleanup files
+    try:
+        manager = get_api_manager()
+        last_error = None
+        
+        # Thử các model theo thứ tự
+        for model in models_to_try:
+            api_key, key_info = manager.get_next_api_key()
+            
+            if not api_key:
+                last_error = "Không có API key nào khả dụng"
+                continue
+                
+            try:
+                url = f"{GEMINI_API_BASE}/{model}:generateContent?key={api_key}"
+                logging.info(f"Duyệt phòng với model: {model}, key: {key_info['name']} ({len(downloaded_files)} ảnh)")
+                
+                response = requests.post(url, headers=headers, json=payload, timeout=60)
+                
+                # Kiểm tra lỗi 429 (Rate Limit)
+                if response.status_code == 429:
+                    manager.record_rate_limit_error(api_key)
+                    logging.warning(f"Rate limit exceeded for {model}, trying next...")
+                    last_error = "Rate limit exceeded"
+                    time.sleep(1)
+                    continue
+                
+                # Kiểm tra lỗi 404 (Model not found)
+                if response.status_code == 404:
+                    logging.warning(f"Model {model} not found, trying next...")
+                    last_error = f"Model {model} not available"
+                    continue
+                
+                response.raise_for_status()
+                result = response.json()
+                text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+                manager.record_success(api_key)
+                
+                # Parse JSON response
+                try:
+                    # Loại bỏ markdown formatting
+                    if '```json' in text:
+                        text = text.split('```json')[1].split('```')[0].strip()
+                    elif '```' in text:
+                        text = text.split('```')[1].split('```')[0].strip()
+                    
+                    # Loại bỏ text thừa trước và sau JSON
+                    json_start = text.find('{')
+                    json_end = text.rfind('}') + 1
+                    if json_start >= 0 and json_end > json_start:
+                        text = text[json_start:json_end]
+                    
+                    approval_result = json.loads(text)
+                    
+                    # Validate JSON structure
+                    if not isinstance(approval_result, dict):
+                        raise ValueError("Response is not a dict")
+                    if 'status' not in approval_result or 'content' not in approval_result:
+                        raise ValueError("Missing required fields")
+                    if not isinstance(approval_result['content'], list):
+                        raise ValueError("Content must be a list")
+                    
+                    logging.info(f"Duyệt phòng thành công với {model}")
+                    return approval_result
+                    
+                except Exception as e:
+                    logging.error(f"Failed to parse response from {model}: {e}")
+                    last_error = f"Parse error: {str(e)}"
+                    continue
+                    
+            except requests.exceptions.HTTPError as e:
+                manager.record_error(api_key, str(e))
+                logging.error(f"HTTP Error with {model}: {e}")
+                last_error = str(e)
+                continue
+            except Exception as e:
+                if api_key:
+                    manager.record_error(api_key, str(e))
+                logging.error(f"Error with {model}: {e}")
+                last_error = str(e)
+                continue
+        
+        # Nếu tất cả model đều thất bại
+        logging.error(f"All approval models failed. Last error: {last_error}")
+        
+        # Trả về status 0 nếu là rate limit, status 2 nếu lỗi khác
+        if last_error and ("rate limit" in str(last_error).lower() or "429" in str(last_error)):
+            return {
+                "status": 0, 
+                "content": ["Rate limit exceeded - Please try again in a few minutes"]
+            }
+        else:
+            return {
+                "status": 2,
+                "content": [f"Lỗi duyệt phòng: {last_error}"]
+            }
+    
     finally:
+        # Luôn cleanup files dù success hay fail
+        logging.debug(f"Cleaning up {len(downloaded_files)} downloaded files...")
         cleanup_media_files(downloaded_files)
+
+
+# API duyệt phòng - nhận interface và trả về JSON kết quả
+@api_gemini_bp.route('/ai_approval', methods=['POST'])
+def ai_approval():
+    """
+    API duyệt phòng trọ bằng Gemini AI
+    
+    Input interface:
+    {
+        "id": "room_id",
+        "title": "Tiêu đề phòng",
+        "description": "Mô tả phòng", 
+        "priceMonth": 3000000,
+        "priceDeposit": 2000000,
+        "area": 25,
+        "length": 5,
+        "width": 5,
+        "maxPeople": 2,
+        "elecPrice": 3500,
+        "waterPrice": 20000,
+        "fullAddress": "Địa chỉ đầy đủ",
+        "convenients": ["Wifi", "Máy lạnh", "Tủ lạnh"],
+        "images": ["/image/upload/...", "/video/upload/..."]
+    }
+    
+    Output:
+    {
+        "status": 1 (duyệt) / 2 (không duyệt) / 0 (lỗi 429 rate limit),
+        "content": ["Lý do 1", "Lý do 2", ...]
+    }
+    """
+    try:
+        # Nhận dữ liệu từ request
+        room_data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['id', 'title', 'description', 'priceMonth', 'priceDeposit', 
+                          'area', 'length', 'width', 'maxPeople', 'elecPrice', 'waterPrice', 
+                          'fullAddress', 'convenients', 'images']
+        
+        missing_fields = []
+        for field in required_fields:
+            if field not in room_data:
+                missing_fields.append(field)
+        
+        if missing_fields:
+            return jsonify({
+                "status": 2,
+                "content": [f"Thiếu các trường bắt buộc: {', '.join(missing_fields)}"]
+            }), 400
+        
+        # Load prompt duyệt phòng
+        prompt = load_approval_prompt()
+        if not prompt:
+            return jsonify({
+                "status": 2,
+                "content": ["Không thể tải file prompt duyệt phòng (promt_approval.md)"]
+            }), 500
+        
+        print(f"[DEBUG] Bắt đầu duyệt phòng ID: {room_data.get('id')}")
+        
+        # Gọi Gemini để duyệt phòng
+        approval_result = approve_room_with_gemini(room_data, prompt)
+        
+        print(f"[DEBUG] Kết quả duyệt: {approval_result}")
+        
+        # Trả về kết quả
+        return jsonify(approval_result)
+        
+    except Exception as e:
+        print(f"[ERROR] Lỗi trong API room_approval: {e}")
+        return jsonify({
+            "status": 2,
+            "content": [f"Lỗi server: {str(e)}"]
+        }), 500
 
 
 # ======================= ROOM COMPARISON API =======================

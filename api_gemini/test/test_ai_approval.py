@@ -1,23 +1,30 @@
 import requests
 import json
 
-BASE_URL = "http://localhost:5000"
+BASE_URL = "http://localhost:5001"
 
 def test_approval():
     print(f"Testing AI Approval API...")
     url = f"{BASE_URL}/ai_approval"
     
-    # Mock data
+    # Mock data - đầy đủ các trường bắt buộc
     room_data = {
         "id": "test_room_01",
         "title": "Phòng trọ cao cấp full nội thất",
         "description": "Phòng đẹp, thoáng mát, có ban công, đầy đủ tiện nghi: máy lạnh, tủ lạnh, máy giặt...",
         "priceMonth": 4500000,
+        "priceDeposit": 2000000,
+        "area": 25,
+        "length": 5,
+        "width": 5,
+        "maxPeople": 2,
+        "elecPrice": 3500,
+        "waterPrice": 20000,
         "fullAddress": "123 Đường Nguyễn Văn Cừ, Quận 5, TP.HCM",
         "convenients": ["Wifi", "Máy lạnh", "Chỗ để xe", "An ninh"],
         "images": [
-            "https://decocor.vn/wp-content/uploads/2023/05/phong-tro-gac-lung-dep-lung-linh.jpg",
-            "https://cdn.pgs-hcm.com/attachments/10-kieu-trang-tri-phong-tro-sieu-dep-sieu-tiet-kiem-chi-phi-1-jpg.9172/"
+            "/image/upload/v1234567890/sample_room_1.jpg",
+            "/image/upload/v1234567891/sample_room_2.jpg"
         ]
     }
     
