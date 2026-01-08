@@ -684,7 +684,8 @@ public class RoomService {
         }
 
         @Transactional(readOnly = true)
-        public PaginationRoomInUserResponseDto getAllRoomByLandlordIdPaginatedWithImages(UUID userId, int page, int size) {
+        public PaginationRoomInUserResponseDto getAllRoomByLandlordIdPaginatedWithImages(UUID userId, int page,
+                        int size) {
                 // Ensure page is at least 1 (1-based)
                 if (page < 1)
                         page = 1;
@@ -1301,7 +1302,8 @@ public class RoomService {
 
                         // Sử dụng query có sắp xếp theo khoảng cách nếu có tọa độ user
                         if (userLat != null && userLng != null) {
-                                roomPage = roomJpaRepository.findAllRoomInUserSortedByDistance(code, userLat, userLng,
+                                roomPage = roomJpaRepository.findAllRoomInUserSortedByDistance(code, userLat,
+                                                userLng,
                                                 pageable);
                         } else {
                                 // Fallback về query cơ bản nếu không có tọa độ
@@ -1335,13 +1337,111 @@ public class RoomService {
                                         .build();
 
                 } catch (Exception e) {
-                        System.err.println("Error in getAllRoomInUserSortedByDistance: " + e.getMessage());
+                        System.err.println("Error in getAllRoomInUserSortedByDistance: " +
+                                        e.getMessage());
                         e.printStackTrace();
 
                         // Fallback về method cơ bản nếu có lỗi
                         return getAllRoomInUser(pageNumber, pageSize, code);
                 }
         }
+
+        // // reload trang random bài vip -8/11/
+
+        // public PaginationRoomInUserResponseDto getAllRoomInUserSortedByDistance(int
+        // pageNumber, int pageSize,
+        // String code, UUID userId) {
+        // try {
+        // Double userLat = null;
+        // Double userLng = null;
+
+        // // Lấy tọa độ của user nếu có
+        // if (userId != null) {
+        // try {
+        // com.ants.ktc.ants_ktc.entities.UserProfile userProfile = profileService
+        // .getUserProfileEntity(userId);
+        // userLat = userProfile.getSearchLatitude();
+        // userLng = userProfile.getSearchLongitude();
+        // System.out.println("userLat: " + userLat + ", userLng: " + userLng);
+        // } catch (Exception e) {
+        // System.err.println("Could not get user coordinates for distance sorting: "
+        // + e.getMessage());
+        // // Fallback về method cũ nếu không lấy được tọa độ
+        // return getAllRoomInUser(pageNumber, pageSize, code);
+        // }
+        // }
+
+        // Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        // Page<Room> roomPage;
+
+        // // Sử dụng query có sắp xếp theo khoảng cách nếu có tọa độ user
+        // if (userLat != null && userLng != null) {
+        // roomPage = roomJpaRepository.findAllRoomInUserSortedByDistance(code, userLat,
+        // userLng,
+        // pageable);
+        // } else {
+        // // Fallback về query cơ bản nếu không có tọa độ
+        // roomPage = roomJpaRepository.findAllRoomInUser(code, pageable);
+        // }
+
+        // // ✨ THÊM LOGIC RANDOM VIP Ở ĐÂY
+        // List<Room> rooms = roomPage.getContent();
+
+        // // Chỉ random khi:
+        // // 1. Đang ở trang đầu tiên (pageNumber == 0)
+        // // 2. Là phòng VIP (code == "VIP")
+        // // 3. Có ít nhất 2 phòng để random
+        // if (pageNumber == 0 && "VIP".equals(code) && rooms.size() >= 2) {
+        // // Chọn random 1 phòng để đưa lên đầu (không bao gồm phòng đầu tiên)
+        // int randomIndex = 1 + (int) (Math.random() * (rooms.size() - 1));
+
+        // // Hoán đổi phòng random với phòng đầu tiên
+        // Room featuredRoom = rooms.remove(randomIndex);
+        // rooms.add(0, featuredRoom);
+
+        // System.out.println(
+        // "🎲 Random VIP: Moved room at index " + randomIndex + " to position 0");
+        // }
+
+        // // Convert rooms thành DTO
+        // List<RoomInUserResponseDto> roomDtos = rooms.stream()
+        // .map(room -> RoomInUserResponseDto.builder()
+        // .id(room.getId())
+        // .title(room.getTitle())
+        // .description(room.getDescription())
+        // .priceMonth(room.getPrice_month())
+        // .area(room.getArea())
+        // .maxPeople(room.getMaxPeople())
+        // .postStartDate(room.getPost_start_date())
+        // .address(convertAddress(room.getAddress()))
+        // .images(convertImages(room.getImages()))
+        // .conveniences(convertConveniences(room.getConvenients()))
+        // .landlord(convertLandlord(room.getUser()))
+        // .viewCount(room.getViewCount())
+        // .build())
+        // .collect(Collectors.toList());
+
+        // return PaginationRoomInUserResponseDto.builder()
+        // .data(roomDtos)
+        // .pageNumber(roomPage.getNumber())
+        // .pageSize(roomPage.getSize())
+        // .totalRecords(roomPage.getTotalElements())
+        // .totalPages(roomPage.getTotalPages())
+        // .hasNext(roomPage.hasNext())
+        // .hasPrevious(roomPage.hasPrevious())
+        // .build();
+
+        // } catch (Exception e) {
+        // System.err.println("Error in getAllRoomInUserSortedByDistance: " +
+        // e.getMessage());
+        // e.printStackTrace();
+
+        // // Fallback về method cơ bản nếu có lỗi
+        // return getAllRoomInUser(pageNumber, pageSize, code);
+        // }
+        // }
+
+        // // reload trang random bài vip -8/11/
 
         // Method mới - sắp xếp theo tọa độ trực tiếp (cho user chưa đăng nhập)
         public PaginationRoomInUserResponseDto getAllRoomInUserWithLocation(int pageNumber, int pageSize,
@@ -1352,7 +1452,8 @@ public class RoomService {
 
                         // Sử dụng query có sắp xếp theo khoảng cách nếu có tọa độ
                         if (latitude != null && longitude != null) {
-                                roomPage = roomJpaRepository.findAllRoomInUserSortedByDistance(code, latitude,
+                                roomPage = roomJpaRepository.findAllRoomInUserSortedByDistance(code,
+                                                latitude,
                                                 longitude,
                                                 pageable);
                         } else {
@@ -1387,13 +1488,83 @@ public class RoomService {
                                         .build();
 
                 } catch (Exception e) {
-                        System.err.println("Error in getAllRoomInUserWithLocation: " + e.getMessage());
+                        System.err.println("Error in getAllRoomInUserWithLocation: " +
+                                        e.getMessage());
                         e.printStackTrace();
 
                         // Fallback về method cơ bản nếu có lỗi
                         return getAllRoomInUser(pageNumber, pageSize, code);
                 }
         }
+
+        // // reload random -8/1
+
+        // public PaginationRoomInUserResponseDto getAllRoomInUserWithLocation(int
+        // pageNumber, int pageSize,
+        // String code, Double latitude, Double longitude) {
+        // try {
+        // Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        // Page<Room> roomPage;
+
+        // // Sử dụng query có sắp xếp theo khoảng cách nếu có tọa độ
+        // if (latitude != null && longitude != null) {
+        // roomPage = roomJpaRepository.findAllRoomInUserSortedByDistance(code,
+        // latitude,
+        // longitude,
+        // pageable);
+        // } else {
+        // // Fallback về query cơ bản nếu không có tọa độ
+        // roomPage = roomJpaRepository.findAllRoomInUser(code, pageable);
+        // }
+
+        // // ✨ THÊM LOGIC RANDOM VIP Ở ĐÂY (GIỐNG BƯỚC 1)
+        // List<Room> rooms = roomPage.getContent();
+
+        // if (pageNumber == 0 && "VIP".equals(code) && rooms.size() >= 2) {
+        // int randomIndex = 1 + (int) (Math.random() * (rooms.size() - 1));
+        // Room featuredRoom = rooms.remove(randomIndex);
+        // rooms.add(0, featuredRoom);
+        // System.out.println("🎲 Random VIP (Guest): Moved room at index " +
+        // randomIndex
+        // + " to position 0");
+        // }
+
+        // List<RoomInUserResponseDto> roomDtos = rooms.stream()
+        // .map(room -> RoomInUserResponseDto.builder()
+        // .id(room.getId())
+        // .title(room.getTitle())
+        // .description(room.getDescription())
+        // .priceMonth(room.getPrice_month())
+        // .area(room.getArea())
+        // .maxPeople(room.getMaxPeople())
+        // .postStartDate(room.getPost_start_date())
+        // .address(convertAddress(room.getAddress()))
+        // .images(convertImages(room.getImages()))
+        // .conveniences(convertConveniences(room.getConvenients()))
+        // .landlord(convertLandlord(room.getUser()))
+        // .viewCount(room.getViewCount())
+        // .build())
+        // .collect(Collectors.toList());
+
+        // return PaginationRoomInUserResponseDto.builder()
+        // .data(roomDtos)
+        // .pageNumber(roomPage.getNumber())
+        // .pageSize(roomPage.getSize())
+        // .totalRecords(roomPage.getTotalElements())
+        // .totalPages(roomPage.getTotalPages())
+        // .hasNext(roomPage.hasNext())
+        // .hasPrevious(roomPage.hasPrevious())
+        // .build();
+
+        // } catch (Exception e) {
+        // System.err.println("Error in getAllRoomInUserWithLocation: " +
+        // e.getMessage());
+        // e.printStackTrace();
+        // return getAllRoomInUser(pageNumber, pageSize, code);
+        // }
+        // }
+
+        // // reload random -8/1
 
         public PaginationRoomInUserResponseDto filterRooms(int pageNumber, int pageSize,
                         FilterRoomRequestDto filterDto) {
@@ -1645,6 +1816,7 @@ public class RoomService {
 
         /**
          * Find rooms inside a rectangular bounding box (map viewport)
+         * 
          * @param minLat bottom (south) latitude
          * @param minLng left (west) longitude
          * @param maxLat top (north) latitude

@@ -98,6 +98,9 @@ export default async function RentalRooms({
     return notFound();
   }
 
+  
+
+
   if (!filteredRooms || !roomVips || !roomNormals) {
     return notFound();
   }
@@ -135,16 +138,16 @@ export default async function RentalRooms({
         <div className="flex-1 min-w-0 px-2 sm:px-4 md:px-6">
           {!isEmptyFilter ? (
             filteredRooms.data.length > 0 ? (
-              <div className="flex flex-col items-center w-full gap-4 px-2 sm:px-4 my-8 bg-white max-w-7xl lg:px-0 lg:w-auto">
-                <div className="w-full text-center space-y-4">
-                  <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-700 to-purple-700 bg-clip-text text-transparent leading-tight">
+              <div className="flex flex-col items-center w-full gap-4 px-2 my-8 bg-white sm:px-4 max-w-7xl lg:px-0 lg:w-auto">
+                <div className="w-full space-y-4 text-center">
+                  <h1 className="text-4xl font-bold leading-tight text-transparent lg:text-5xl bg-gradient-to-r from-gray-900 via-blue-700 to-purple-700 bg-clip-text">
                     Rooms You&#39;re Looking For
                   </h1>
                   <div className="flex items-center justify-center gap-2 text-lg text-gray-600">
                     <HiLocationMarker className="text-blue-500" />
                     <span className="font-medium">
                       Found{" "}
-                      <span className="text-blue-600 font-bold">
+                      <span className="font-bold text-blue-600">
                         {filteredRooms.totalRecords}
                       </span>{" "}
                       perfect matches
@@ -154,7 +157,7 @@ export default async function RentalRooms({
 
                 <div
                   id="normal-rooms-list"
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-full"
+                  className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2 md:gap-6 lg:gap-4"
                 >
                   {filteredRooms.data.map((room) => (
                     <div key={room.id} className="flex justify-center">
@@ -205,7 +208,7 @@ export default async function RentalRooms({
                     scroll={false}
                     aria-disabled={pageSearch + 1 >= filteredRooms.totalPages}
                   >
-                    <span className="hidden sm:inline font-medium">Next</span>
+                    <span className="hidden font-medium sm:inline">Next</span>
                     <BiChevronRight
                       size={22}
                       className="transition-transform group-hover:translate-x-1"
@@ -217,7 +220,7 @@ export default async function RentalRooms({
               <NoLookingForFilter />
             )
           ) : (
-            <div className="flex flex-col items-center w-full gap-4 px-2 sm:px-4 my-8 bg-white max-w-7xl lg:px-0 lg:w-auto">
+            <div className="flex flex-col items-center w-full gap-4 px-2 my-8 bg-white sm:px-4 max-w-7xl lg:px-0 lg:w-auto">
               {/* Hero Section placeholder nếu muốn */}
             </div>
           )}
@@ -234,17 +237,17 @@ export default async function RentalRooms({
 
         {/* Sidebar */}
         <div className="w-full mt-6 lg:mt-0 lg:w-[350px] flex flex-col items-center">
-          <div className="block lg:hidden w-full max-w-md mx-auto mb-4">
+          <div className="block w-full max-w-md mx-auto mb-4 lg:hidden">
             <CardFilter />
           </div>
-          <div className="block lg:hidden w-full max-w-md mx-auto mb-4">
+          <div className="block w-full max-w-md mx-auto mb-4 lg:hidden">
             <FilterForm />
           </div>
-          <div className="block lg:hidden w-full max-w-md mx-auto mb-4">
+          <div className="block w-full max-w-md mx-auto mb-4 lg:hidden">
             <FeaturedListingsCard />
           </div>
 
-          <div className="hidden lg:block w-full">
+          <div className="hidden w-full lg:block">
             <CardFilter />
             <div className="mt-3">
               <FilterForm />

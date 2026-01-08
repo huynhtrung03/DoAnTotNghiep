@@ -121,7 +121,7 @@ export async function getRoomById(id: string) {
 export async function getRoomVipUser(
   page: number,
   size: number,
-  userId?: string
+  userId?: string,
 ) {
   try {
     let url = `${API_URL}/rooms/allroom-vip?page=${page}&size=${size}`;
@@ -221,6 +221,8 @@ export async function getRoomNormalWithLocation(
     return null;
   }
 }
+
+
 
 // Smart function - automatically chooses the right API based on user session and location
 export async function getRoomsSmartLocation(
