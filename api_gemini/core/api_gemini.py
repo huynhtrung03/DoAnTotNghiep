@@ -166,7 +166,10 @@ def get_pending_rooms(limit=100):
     except:
         port = 3306
 
+    logging.info(f"[get_pending_rooms] Connecting to DB: {host}:{port}/{database}")
+
     # Query lấy phòng chờ duyệt với đầy đủ thông tin
+    # Sử dụng điều kiện tương tự Java: approval = 0 AND is_removed = 0 (hoặc FALSE)
     query = f'''SELECT 
         r.id AS room_id,
         r.title,
@@ -179,27 +182,41 @@ def get_pending_rooms(limit=100):
         r.max_people,
         r.elec_price,
         r.water_price,
-        CONCAT(a.name_street, ', ', w.name, ', ', d.name, ', ', p.name) AS full_address,
+        CONCAT(COALESCE(a.name_street, ''), ', ', COALESCE(w.name, ''), ', ', COALESCE(d.name, ''), ', ', COALESCE(p.name, '')) AS full_address,
         GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS convenients,
         GROUP_CONCAT(DISTINCT ri.url SEPARATOR '|||') AS images
     FROM rooms r
-    JOIN addresses a ON r.address_id = a.id
-    JOIN wards w ON a.ward_id = w.id
-    JOIN districts d ON w.district_id = d.id
-    JOIN provinces p ON d.province_id = p.id
+    LEFT JOIN addresses a ON r.address_id = a.id
+    LEFT JOIN wards w ON a.ward_id = w.id
+    LEFT JOIN districts d ON w.district_id = d.id
+    LEFT JOIN provinces p ON d.province_id = p.id
     LEFT JOIN room_convenients rc ON r.id = rc.room_id
     LEFT JOIN convenients c ON rc.convenient_id = c.id
     LEFT JOIN room_images ri ON r.id = ri.room_id
-    WHERE r.approval = 0 AND r.is_removed = 0
+    WHERE r.approval = 0 AND (r.is_removed = 0 OR r.is_removed = FALSE OR r.is_removed IS NULL)
     GROUP BY r.id
-    ORDER BY r.created_date DESC
+    ORDER BY r.createddate DESC
     LIMIT {limit};'''
 
     try:
         conn = mysql.connector.connect(host=host, user=user, port=port, password=password, database=database)
         cursor = conn.cursor(dictionary=True)
+        
+        # Debug: Check số lượng phòng với approval=0 trước
+        cursor.execute("SELECT COUNT(*) as cnt FROM rooms WHERE approval = 0")
+        count_result = cursor.fetchone()
+        logging.info(f"[get_pending_rooms] Rooms with approval=0: {count_result['cnt']}")
+        
+        # Debug: Check thêm điều kiện is_removed
+        cursor.execute("SELECT COUNT(*) as cnt FROM rooms WHERE approval = 0 AND (is_removed = 0 OR is_removed = FALSE OR is_removed IS NULL)")
+        count_result2 = cursor.fetchone()
+        logging.info(f"[get_pending_rooms] Rooms with approval=0 AND is_removed check: {count_result2['cnt']}")
+        
         cursor.execute(query)
         rooms = cursor.fetchall()
+        
+        logging.info(f"[get_pending_rooms] Query returned {len(rooms)} rooms")
+        
         cursor.close()
         conn.close()
         
@@ -239,11 +256,13 @@ def get_pending_rooms(limit=100):
                 'images': images
             })
         
-        logging.info(f"Tìm thấy {len(formatted_rooms)} phòng đang chờ duyệt")
+        logging.info(f"[get_pending_rooms] Tìm thấy {len(formatted_rooms)} phòng đang chờ duyệt")
         return formatted_rooms
         
     except Exception as e:
-        logging.error(f"Lỗi khi lấy phòng chờ duyệt: {e}")
+        logging.error(f"[get_pending_rooms] Lỗi khi lấy phòng chờ duyệt: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
         return []
 
 
@@ -282,7 +301,7 @@ def update_room_approval(room_id: str, approval_status: int, approval_content: l
             content_str = json.dumps(approval_content, ensure_ascii=False)
             update_query = """
                 UPDATE rooms 
-                SET approval = %s, approval_content = %s, updated_date = NOW()
+                SET approval = %s, approval_content = %s, modifieddate = NOW()
                 WHERE id = %s
             """
             cursor.execute(update_query, (approval_status, content_str, room_id_bytes))
@@ -291,7 +310,7 @@ def update_room_approval(room_id: str, approval_status: int, approval_content: l
             logging.warning(f"Column approval_content không tồn tại, chỉ cập nhật approval: {e}")
             update_query = """
                 UPDATE rooms 
-                SET approval = %s, updated_date = NOW()
+                SET approval = %s, modifieddate = NOW()
                 WHERE id = %s
             """
             cursor.execute(update_query, (approval_status, room_id_bytes))
