@@ -15,6 +15,7 @@ import mysql.connector
 import uuid
 import shutil
 import base64
+import threading
 from urllib.parse import urlparse
 try:
     from .api_manager import get_api_manager, reload_api_manager
@@ -144,6 +145,170 @@ def get_rooms():
     except Exception as e:
         logging.error(f"Kết nối database thất bại: {e}")
         return [], None
+
+
+def get_pending_rooms(limit=100):
+    """
+    Lấy danh sách các phòng đang chờ duyệt (approval=0)
+    Trả về đầy đủ thông tin cần thiết để AI duyệt
+    """
+    host = os.getenv("DB_HOST")
+    port = os.getenv("DB_PORT")
+    database = os.getenv("DB_NAME")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+
+    try:
+        if port:
+            port = int(port)
+        else:
+            port = 3306
+    except:
+        port = 3306
+
+    # Query lấy phòng chờ duyệt với đầy đủ thông tin
+    query = f'''SELECT 
+        r.id AS room_id,
+        r.title,
+        r.description,
+        r.price_month,
+        r.price_deposit,
+        r.area,
+        r.length,
+        r.width,
+        r.max_people,
+        r.elec_price,
+        r.water_price,
+        CONCAT(a.name_street, ', ', w.name, ', ', d.name, ', ', p.name) AS full_address,
+        GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS convenients,
+        GROUP_CONCAT(DISTINCT ri.url SEPARATOR '|||') AS images
+    FROM rooms r
+    JOIN addresses a ON r.address_id = a.id
+    JOIN wards w ON a.ward_id = w.id
+    JOIN districts d ON w.district_id = d.id
+    JOIN provinces p ON d.province_id = p.id
+    LEFT JOIN room_convenients rc ON r.id = rc.room_id
+    LEFT JOIN convenients c ON rc.convenient_id = c.id
+    LEFT JOIN room_images ri ON r.id = ri.room_id
+    WHERE r.approval = 0 AND r.is_removed = 0
+    GROUP BY r.id
+    ORDER BY r.created_date DESC
+    LIMIT {limit};'''
+
+    try:
+        conn = mysql.connector.connect(host=host, user=user, port=port, password=password, database=database)
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(query)
+        rooms = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Chuyển đổi UUID bytes sang string và format data
+        formatted_rooms = []
+        for room in rooms:
+            room_id = room['room_id']
+            if isinstance(room_id, (bytes, bytearray)) and len(room_id) == 16:
+                room_id = str(uuid.UUID(bytes=bytes(room_id)))
+            else:
+                room_id = str(room_id)
+            
+            # Parse images từ string '|||' separated
+            images = []
+            if room.get('images'):
+                images = [img.strip() for img in room['images'].split('|||') if img.strip()]
+            
+            # Parse convenients từ string ', ' separated
+            convenients = []
+            if room.get('convenients'):
+                convenients = [c.strip() for c in room['convenients'].split(',') if c.strip()]
+            
+            formatted_rooms.append({
+                'id': room_id,
+                'title': room.get('title', ''),
+                'description': room.get('description', ''),
+                'priceMonth': room.get('price_month', 0),
+                'priceDeposit': room.get('price_deposit', 0),
+                'area': room.get('area', 0),
+                'length': room.get('length', 0),
+                'width': room.get('width', 0),
+                'maxPeople': room.get('max_people', 0),
+                'elecPrice': room.get('elec_price', 0),
+                'waterPrice': room.get('water_price', 0),
+                'fullAddress': room.get('full_address', ''),
+                'convenients': convenients,
+                'images': images
+            })
+        
+        logging.info(f"Tìm thấy {len(formatted_rooms)} phòng đang chờ duyệt")
+        return formatted_rooms
+        
+    except Exception as e:
+        logging.error(f"Lỗi khi lấy phòng chờ duyệt: {e}")
+        return []
+
+
+def update_room_approval(room_id: str, approval_status: int, approval_content: list):
+    """
+    Cập nhật trạng thái duyệt phòng trong database
+    approval_status: 1 = duyệt, 2 = từ chối
+    approval_content: list các lý do
+    """
+    host = os.getenv("DB_HOST")
+    port = os.getenv("DB_PORT")
+    database = os.getenv("DB_NAME")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+
+    try:
+        if port:
+            port = int(port)
+        else:
+            port = 3306
+    except:
+        port = 3306
+
+    try:
+        conn = mysql.connector.connect(host=host, user=user, port=port, password=password, database=database)
+        cursor = conn.cursor()
+        
+        # Convert room_id string to bytes if needed
+        if isinstance(room_id, str) and len(room_id) == 36:  # UUID format
+            room_id_bytes = uuid.UUID(room_id).bytes
+        else:
+            room_id_bytes = room_id
+        
+        # Thử cập nhật với approval_content trước
+        try:
+            content_str = json.dumps(approval_content, ensure_ascii=False)
+            update_query = """
+                UPDATE rooms 
+                SET approval = %s, approval_content = %s, updated_date = NOW()
+                WHERE id = %s
+            """
+            cursor.execute(update_query, (approval_status, content_str, room_id_bytes))
+        except mysql.connector.errors.ProgrammingError as e:
+            # Nếu column approval_content không tồn tại, chỉ cập nhật approval
+            logging.warning(f"Column approval_content không tồn tại, chỉ cập nhật approval: {e}")
+            update_query = """
+                UPDATE rooms 
+                SET approval = %s, updated_date = NOW()
+                WHERE id = %s
+            """
+            cursor.execute(update_query, (approval_status, room_id_bytes))
+        
+        conn.commit()
+        
+        affected_rows = cursor.rowcount
+        cursor.close()
+        conn.close()
+        
+        logging.info(f"Cập nhật approval cho room {room_id}: status={approval_status}, affected={affected_rows}")
+        return affected_rows > 0
+        
+    except Exception as e:
+        logging.error(f"Lỗi khi cập nhật approval cho room {room_id}: {e}")
+        return False
+
 
 def call_gemini_with_rotation(prompt_text: str, history: list = None, model="gemini-2.5-flash"):
     """
@@ -808,33 +973,124 @@ def ai_approval():
             logging.info(f"Nhận request JSON - Room ID: {room_data.get('id', 'N/A')}")
         else:
             # Request từ Slack - Form data format
+            # Tự động duyệt tất cả phòng chờ (approval=0)
             form_data = request.form.to_dict()
-            logging.info(f"Nhận request Form (Slack) - Data: {form_data}")
-            
-            # Slack gửi: command, text, user_id, response_url, etc.
-            # text chứa tham số đi kèm lệnh, ví dụ: /ai_approval <room_id>
-            slack_text = form_data.get('text', '').strip()
             slack_user = form_data.get('user_name', 'unknown')
+            slack_text = form_data.get('text', '').strip()
+            response_url = form_data.get('response_url', '')
             
-            # Nếu không có room_id trong text, trả về hướng dẫn
-            if not slack_text:
+            logging.info(f"Nhận request từ Slack - User: {slack_user}, Text: {slack_text}")
+            
+            # Parse limit từ text nếu có (mặc định 100)
+            try:
+                limit = int(slack_text) if slack_text.isdigit() else 100
+                limit = min(limit, 100)  # Giới hạn tối đa 100
+            except:
+                limit = 100
+            
+            # Lấy danh sách phòng chờ duyệt
+            pending_rooms = get_pending_rooms(limit=limit)
+            
+            if not pending_rooms:
                 return jsonify({
-                    "response_type": "ephemeral",
-                    "text": f"👋 Xin chào {slack_user}!\n\n"
-                           f"⚠️ Để duyệt phòng, vui lòng dùng cú pháp:\n"
-                           f"`/ai_approval <room_id>`\n\n"
-                           f"Hoặc sử dụng Admin Panel để duyệt phòng với đầy đủ thông tin và hình ảnh.\n\n"
-                           f"📌 Lưu ý: API này được thiết kế để Java Backend gọi trực tiếp với đầy đủ thông tin phòng."
+                    "response_type": "in_channel",
+                    "text": f"✅ Không có phòng nào đang chờ duyệt!\n\n"
+                           f"Tất cả bài đăng đã được xử lý."
                 }), 200
             
-            # Nếu có room_id, trả về thông báo (chưa implement query DB)
-            return jsonify({
+            # Load prompt một lần
+            prompt = load_approval_prompt()
+            if not prompt:
+                return jsonify({
+                    "response_type": "ephemeral",
+                    "text": "❌ Lỗi: Không thể tải file prompt duyệt phòng"
+                }), 200
+            
+            # Trả về ngay cho Slack (tránh timeout 3s)
+            initial_response = {
                 "response_type": "in_channel",
-                "text": f"🔍 Đang xử lý yêu cầu duyệt phòng ID: `{slack_text}`\n\n"
-                       f"⚠️ Tính năng này đang được phát triển.\n"
-                       f"Hiện tại, vui lòng sử dụng Java Backend để gửi request duyệt phòng với đầy đủ thông tin.\n\n"
-                       f"📞 Liên hệ: 0388953628"
-            }), 200
+                "text": f"🚀 Đang duyệt {len(pending_rooms)} phòng bằng AI...\n\n"
+                       f"👤 Yêu cầu bởi: {slack_user}\n"
+                       f"⏳ Vui lòng đợi, kết quả sẽ được cập nhật trong database."
+            }
+            
+            # Chạy duyệt trong background (sử dụng thread)
+            import threading
+            
+            def process_batch_approval(rooms, prompt_text, response_url_str):
+                """Background task để duyệt batch"""
+                results = {
+                    'approved': 0,
+                    'rejected': 0,
+                    'errors': 0,
+                    'details': []
+                }
+                
+                for room in rooms:
+                    try:
+                        room_id = room['id']
+                        room_title = room.get('title', 'N/A')[:50]
+                        
+                        logging.info(f"Đang duyệt phòng: {room_id} - {room_title}")
+                        
+                        # Gọi AI duyệt
+                        approval_result = approve_room_with_gemini(room, prompt_text)
+                        
+                        status = approval_result.get('status', 2)
+                        content = approval_result.get('content', [])
+                        
+                        # Cập nhật database
+                        update_success = update_room_approval(room_id, status, content)
+                        
+                        if status == 1:
+                            results['approved'] += 1
+                            results['details'].append(f"✅ {room_title}")
+                        elif status == 2:
+                            results['rejected'] += 1
+                            results['details'].append(f"❌ {room_title}: {content[0] if content else 'Không rõ lý do'}")
+                        else:
+                            results['errors'] += 1
+                            results['details'].append(f"⚠️ {room_title}: Rate limit")
+                        
+                        # Delay nhỏ giữa các request để tránh rate limit
+                        time.sleep(0.5)
+                        
+                    except Exception as e:
+                        results['errors'] += 1
+                        logging.error(f"Lỗi duyệt phòng {room.get('id', 'N/A')}: {e}")
+                
+                # Gửi kết quả cuối cùng về Slack (nếu có response_url)
+                if response_url_str:
+                    try:
+                        summary = f"📊 *Kết quả duyệt phòng tự động*\n\n"
+                        summary += f"✅ Duyệt: {results['approved']}\n"
+                        summary += f"❌ Từ chối: {results['rejected']}\n"
+                        summary += f"⚠️ Lỗi: {results['errors']}\n\n"
+                        
+                        # Chỉ hiện 10 chi tiết đầu tiên
+                        if results['details']:
+                            summary += "*Chi tiết (10 phòng đầu):*\n"
+                            for detail in results['details'][:10]:
+                                summary += f"• {detail}\n"
+                            if len(results['details']) > 10:
+                                summary += f"... và {len(results['details']) - 10} phòng khác"
+                        
+                        requests.post(response_url_str, json={
+                            "response_type": "in_channel",
+                            "text": summary
+                        }, timeout=10)
+                    except Exception as e:
+                        logging.error(f"Lỗi gửi kết quả về Slack: {e}")
+            
+            # Chạy trong thread riêng
+            thread = threading.Thread(
+                target=process_batch_approval,
+                args=(pending_rooms, prompt, response_url)
+            )
+            thread.daemon = True
+            thread.start()
+            
+            return jsonify(initial_response), 200
         
         # Kiểm tra dữ liệu trống
         if not room_data:
