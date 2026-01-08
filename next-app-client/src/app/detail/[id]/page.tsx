@@ -21,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 // import { FaEye, FaHeart } from "react-icons/fa";
+import Convenient from "@/app/landlord/components/room-detail/convenient";
 
 export const dynamic = "force-static";
 export const dynamicParams = true;
@@ -319,6 +320,11 @@ export default async function Page({
                   </div>
                 </div>
 
+                {/* Conveniences Section */}
+                <div className="mb-8">
+                  <Convenient features={room.convenients} />
+                </div>
+
                 {/* Booking Form - Enhanced */}
                 <div className="mb-8">
                   <div className="p-6 border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl dark:border-blue-700">
@@ -373,10 +379,7 @@ export default async function Page({
                   </div>
                 </div>
 
-                {/* Conveniences Section */}
-                {/* <div className="mb-8">
-                  <Convenient features={room.convenients} />
-                </div> */}
+                
 
                 {/* Divider */}
                 <div className="relative mb-8">
