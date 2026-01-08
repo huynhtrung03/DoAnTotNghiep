@@ -772,7 +772,11 @@ def ai_approval():
     """
     API duyệt phòng trọ bằng Gemini AI
     
-    Input interface:
+    Hỗ trợ 2 loại request:
+    1. JSON từ Java Backend (Content-Type: application/json)
+    2. Form data từ Slack (Content-Type: application/x-www-form-urlencoded)
+    
+    Input interface (JSON):
     {
         "id": "room_id",
         "title": "Tiêu đề phòng",
@@ -797,8 +801,47 @@ def ai_approval():
     }
     """
     try:
-        # Nhận dữ liệu từ request
-        room_data = request.get_json()
+        # Kiểm tra xem là JSON hay Form data (từ Slack)
+        if request.is_json:
+            # Request từ Java Backend hoặc API client - JSON format
+            room_data = request.get_json()
+            logging.info(f"Nhận request JSON - Room ID: {room_data.get('id', 'N/A')}")
+        else:
+            # Request từ Slack - Form data format
+            form_data = request.form.to_dict()
+            logging.info(f"Nhận request Form (Slack) - Data: {form_data}")
+            
+            # Slack gửi: command, text, user_id, response_url, etc.
+            # text chứa tham số đi kèm lệnh, ví dụ: /ai_approval <room_id>
+            slack_text = form_data.get('text', '').strip()
+            slack_user = form_data.get('user_name', 'unknown')
+            
+            # Nếu không có room_id trong text, trả về hướng dẫn
+            if not slack_text:
+                return jsonify({
+                    "response_type": "ephemeral",
+                    "text": f"👋 Xin chào {slack_user}!\n\n"
+                           f"⚠️ Để duyệt phòng, vui lòng dùng cú pháp:\n"
+                           f"`/ai_approval <room_id>`\n\n"
+                           f"Hoặc sử dụng Admin Panel để duyệt phòng với đầy đủ thông tin và hình ảnh.\n\n"
+                           f"📌 Lưu ý: API này được thiết kế để Java Backend gọi trực tiếp với đầy đủ thông tin phòng."
+                }), 200
+            
+            # Nếu có room_id, trả về thông báo (chưa implement query DB)
+            return jsonify({
+                "response_type": "in_channel",
+                "text": f"🔍 Đang xử lý yêu cầu duyệt phòng ID: `{slack_text}`\n\n"
+                       f"⚠️ Tính năng này đang được phát triển.\n"
+                       f"Hiện tại, vui lòng sử dụng Java Backend để gửi request duyệt phòng với đầy đủ thông tin.\n\n"
+                       f"📞 Liên hệ: 0388953628"
+            }), 200
+        
+        # Kiểm tra dữ liệu trống
+        if not room_data:
+            return jsonify({
+                "status": 2,
+                "content": ["Dữ liệu request trống"]
+            }), 400
         
         # Validate required fields
         required_fields = ['id', 'title', 'description', 'priceMonth', 'priceDeposit', 
@@ -824,18 +867,18 @@ def ai_approval():
                 "content": ["Không thể tải file prompt duyệt phòng (promt_approval.md)"]
             }), 500
         
-        print(f"[DEBUG] Bắt đầu duyệt phòng ID: {room_data.get('id')}")
+        logging.info(f"Bắt đầu duyệt phòng ID: {room_data.get('id')}")
         
         # Gọi Gemini để duyệt phòng
         approval_result = approve_room_with_gemini(room_data, prompt)
         
-        print(f"[DEBUG] Kết quả duyệt: {approval_result}")
+        logging.info(f"Kết quả duyệt phòng: {approval_result}")
         
         # Trả về kết quả
         return jsonify(approval_result)
         
     except Exception as e:
-        print(f"[ERROR] Lỗi trong API room_approval: {e}")
+        logging.error(f"Lỗi trong API ai_approval: {e}")
         return jsonify({
             "status": 2,
             "content": [f"Lỗi server: {str(e)}"]
