@@ -317,7 +317,7 @@ def update_room_approval(room_id: str, approval_status: int, approval_content: l
             try:
                 # URL của Java Backend (thử tên service docker trước, sau đó đến public IP, cuối cùng là localhost)
                 java_api_urls = [ # Docker internal
-                    "http://188.166.222.86:3333/api/internal/notify-approval",   # Public Server IP
+                    "http://localhost:3333/api/internal/notify-approval",   # Public Server IP
                     "http://localhost:8080/api/internal/notify-approval"         # Local fallback
                 ]
                 
@@ -396,7 +396,7 @@ def call_gemini_with_rotation(prompt_text: str, history: list = None, model="gem
                 "temperature": 0.7,
                 "topK": 40,
                 "topP": 0.95,
-                "maxOutputTokens": 2048,
+                "maxOutputTokens": 8192,
             }
         }
         
