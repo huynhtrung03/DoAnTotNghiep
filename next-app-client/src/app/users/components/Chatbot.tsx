@@ -11,7 +11,7 @@ const API_URL = `${URL_PPYTHON}/ai_chatbot`;
 function useSessionChatHistory(initialHistory: any) {
   const [history, setHistory] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("chatbot-history");
+      const saved = sessionStorage.getItem("chatbot-history-v1");
       return saved ? JSON.parse(saved) : initialHistory;
     }
     return initialHistory;
@@ -19,7 +19,7 @@ function useSessionChatHistory(initialHistory: any) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("chatbot-history", JSON.stringify(history));
+      sessionStorage.setItem("chatbot-history-v1", JSON.stringify(history));
     }
   }, [history]);
 

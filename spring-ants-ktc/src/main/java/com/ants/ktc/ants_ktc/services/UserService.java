@@ -75,8 +75,6 @@ public class UserService {
 
         // ...existing code...
 
-
-
         private AddressResponseDto convertAddressDto(Address address) {
                 if (address == null || address.getWard() == null)
                         return null;
@@ -198,43 +196,59 @@ public class UserService {
                                 if (existingProfile != null && existingProfile.getUser() != null) {
                                         // Email đã tồn tại, login với user cũ
                                         user = existingProfile.getUser();
-                                        System.out.println("User already exists, logging in existing user: " + user.getUsername());
+                                        System.out.println("User already exists, logging in existing user: "
+                                                        + user.getUsername());
                                 } else {
                                         // Tạo user mới
                                         user = new User();
                                         user.setUsername(email);
-                                        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Random password cho Google users
+                                        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Random
+                                                                                                                // password
+                                                                                                                // cho
+                                                                                                                // Google
+                                                                                                                // users
                                         user.setIsActive(0);
                                         UserProfile profile = new UserProfile();
 
                                         profile.setEmail(email);
-                                        profile.setFullName(payload.get("name") != null ? payload.get("name").toString() : "");
+                                        profile.setFullName(payload.get("name") != null ? payload.get("name").toString()
+                                                        : "");
 
                                         // Upload ảnh lên Cloudinary
                                         if (payload.get("picture") != null) {
                                                 String pictureUrl = payload.get("picture").toString();
-                                                System.out.println("Attempting to upload Google avatar from URL: " + pictureUrl);
+                                                System.out.println("Attempting to upload Google avatar from URL: "
+                                                                + pictureUrl);
                                                 try {
-                                                        java.io.File tempFile = java.io.File.createTempFile("google_avatar", ".jpg");
-                                                        System.out.println("Created temp file: " + tempFile.getAbsolutePath());
+                                                        java.io.File tempFile = java.io.File
+                                                                        .createTempFile("google_avatar", ".jpg");
+                                                        System.out.println("Created temp file: "
+                                                                        + tempFile.getAbsolutePath());
 
-                                                        try (InputStream in = URI.create(pictureUrl).toURL().openStream();
-                                                                        FileOutputStream out = new FileOutputStream(tempFile)) {
+                                                        try (InputStream in = URI.create(pictureUrl).toURL()
+                                                                        .openStream();
+                                                                        FileOutputStream out = new FileOutputStream(
+                                                                                        tempFile)) {
                                                                 IOUtils.copy(in, out);
                                                         }
-                                                        System.out.println("Downloaded image from Google to temp file, size: " + tempFile.length() + " bytes");
+                                                        System.out.println(
+                                                                        "Downloaded image from Google to temp file, size: "
+                                                                                        + tempFile.length() + " bytes");
 
                                                         System.out.println("Uploading to Cloudinary...");
-                                                        Map<String, String> uploadResult = cloudinaryService.uploadFile(tempFile);
+                                                        Map<String, String> uploadResult = cloudinaryService
+                                                                        .uploadFile(tempFile);
                                                         String cloudinaryUrl = uploadResult.get("url");
-                                                        System.out.println("Upload successful! Cloudinary URL: " + cloudinaryUrl);
+                                                        System.out.println("Upload successful! Cloudinary URL: "
+                                                                        + cloudinaryUrl);
                                                         profile.setAvatar(cloudinaryUrl);
 
                                                         boolean deleted = tempFile.delete();
                                                         System.out.println("Temp file deleted: " + deleted);
                                                 } catch (Exception e) {
                                                         profile.setAvatar(null);
-                                                        System.err.println("Failed to upload avatar to Cloudinary: " + e.getMessage());
+                                                        System.err.println("Failed to upload avatar to Cloudinary: "
+                                                                        + e.getMessage());
                                                         e.printStackTrace();
                                                 }
                                         }
@@ -289,7 +303,8 @@ public class UserService {
                 } catch (Exception e) {
                         System.err.println("Error in googleLogin: " + e.getMessage());
                         e.printStackTrace();
-                        throw new HttpException("Google login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new HttpException("Google login failed: " + e.getMessage(),
+                                        HttpStatus.INTERNAL_SERVER_ERROR);
                 }
         }
 

@@ -18,14 +18,12 @@ import {
   ActivityIndicator,
   StatusBar,
   RefreshControl,
-  AppState,
-  AppStateStatus,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ChatUser, listenForConversations, markConversationAsRead, setChatActive, setChatInactive, sendHeartbeat, getUsersStatus } from '../../services/ChatService';
+import { ChatUser, listenForConversations, markConversationAsRead } from '../../services/ChatService';
 import { getFirestore, collection, query, where, onSnapshot } from '@react-native-firebase/firestore';
 import Colors from '../../colors/colors';
 import MessCard from './component/MessCard';
@@ -48,71 +46,13 @@ export default function MessengerScreen() {
   // AI Chatbot state
   const [showAIChat, setShowAIChat] = useState(false);
 
-  // App state for presence tracking
-  const appState = useRef(AppState.currentState);
-  const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
+
 
   useEffect(() => {
     loadCurrentUser();
   }, []);
 
-  /**
-   * Setup presence tracking (online/offline)
-   */
-  useEffect(() => {
-    if (!currentUserId) return;
 
-    console.log('🟢 [MessengerScreen] Setting up presence tracking for user:', currentUserId);
-
-    // Set user as active when screen loads
-    setChatActive(currentUserId);
-
-    // Listen to app state changes
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    // Setup heartbeat - send every 30 seconds
-    heartbeatInterval.current = setInterval(() => {
-      sendHeartbeat(currentUserId);
-    }, 30000);
-
-    return () => {
-      // Cleanup
-      subscription.remove();
-      if (heartbeatInterval.current) {
-        clearInterval(heartbeatInterval.current);
-      }
-    };
-  }, [currentUserId]);
-
-  /**
-   * Handle app state changes (foreground/background)
-   */
-  const handleAppStateChange = async (state: AppStateStatus) => {
-    if (!currentUserId) return;
-
-    if (state === 'active') {
-      console.log('🟢 [MessengerScreen] App went to foreground');
-      await setChatActive(currentUserId);
-
-      // Restart heartbeat
-      if (heartbeatInterval.current) {
-        clearInterval(heartbeatInterval.current);
-      }
-      heartbeatInterval.current = setInterval(() => {
-        sendHeartbeat(currentUserId);
-      }, 30000);
-    } else if (state === 'background' || state === 'inactive') {
-      console.log('🔴 [MessengerScreen] App went to background');
-      await setChatInactive(currentUserId);
-
-      // Stop heartbeat
-      if (heartbeatInterval.current) {
-        clearInterval(heartbeatInterval.current);
-      }
-    }
-
-    appState.current = state;
-  };
 
   const loadCurrentUser = async () => {
     try {
@@ -182,52 +122,7 @@ export default function MessengerScreen() {
     };
   }, [currentUserId]);
 
-  /**
-   * Fetch online status for all users
-   */
-  const fetchUsersStatus = async () => {
-    if (userList.length === 0) return;
 
-    const userIds = userList
-      .filter(u => u.id !== 'ai-assistant')
-      .map(u => u.id);
-
-    if (userIds.length === 0) return;
-
-    try {
-      const statusMap = await getUsersStatus(userIds);
-      console.log('📋 [MessengerScreen] Users status fetched:', statusMap);
-
-      // Update userList with online status
-      setUserList(prevUsers =>
-        prevUsers.map(user => {
-          if (user.id === 'ai-assistant') {
-            return { ...user, isOnline: true }; // AI always online
-          }
-          return {
-            ...user,
-            isOnline: statusMap[user.id] ?? false,
-          };
-        })
-      );
-    } catch (error) {
-      console.warn('⚠️ [MessengerScreen] Error fetching users status:', error);
-    }
-  };
-
-  /**
-   * Auto-fetch online status - only when userList changes
-   */
-  useEffect(() => {
-    if (userList.length === 0) return;
-
-    fetchUsersStatus();
-
-    // Refetch status every 30 seconds
-    const statusInterval = setInterval(fetchUsersStatus, 30000);
-
-    return () => clearInterval(statusInterval);
-  }, [userList.length]); // Only depend on userList length to avoid infinite loops
 
   // Combine AI user and filtered users
   const usersWithAI = React.useMemo(() => {
@@ -264,7 +159,7 @@ export default function MessengerScreen() {
     console.log('🔄 [MessengerScreen] Manual refresh triggered');
     
     // Fetch latest user online status
-    await fetchUsersStatus();
+    // await fetchUsersStatus();
     
     // Real-time listener will auto-update conversations
     setTimeout(() => setRefreshing(false), 500);

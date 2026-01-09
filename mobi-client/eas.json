@@ -2,91 +2,35 @@
   "cli": {
     "version": ">= 14.0.0"
   },
-  "cli": {
-    "version": ">= 14.0.0"
-  },
   "build": {
-    "dev": {
+    "development": {
       "developmentClient": true,
+      "distribution": "internal",
       "env": {
         "APP_ENV": "dev"
-      },
-      "android": {
-        "gradleCommand": ":app:assembleDebug",
-        "buildType": "apk""gradleCommand": ":app:assembleDebug",
-        "buildType": "apk"
-      },
-      "ios": {
-        "buildConfiguration": "Debug"
       }
     },
-    "staging": {
-      "env": {
-        "APP_ENV": "staging"
-      },
+    "apk": {
       "android": {
-        "gradleCommand": ":app:assembleRelease",
         "buildType": "apk"
       },
-      "ios": {
-        "buildConfiguration": "Release"
+      "env": {
+        "APP_ENV": "prod"
       }
     },
     "preview": {
       "distribution": "internal",
-      "env": {
-        "APP_ENV": "prod"
-      },
-      "android": {
-        "buildType": "apk"
-      },
-      "android": {
-        "gradleCommand": ":app:assembleRelease",
-        "buildType": "apk"
-      },
-      "ios": {
-        "buildConfiguration": "Release"
-      }
-    },
-    "preview": {
-      "distribution": "internal",
-      "env": {
-        "APP_ENV": "prod"
-      },
       "android": {
         "buildType": "apk"
       }
     },
-    "prod": {
-      "env": {
-        "APP_ENV": "prod"
-      },
+    "production": {
       "android": {
         "buildType": "app-bundle"
-      },
-      "ios": {
-        "buildConfiguration": "Release"
-      },
-      "android": {
-        "buildType": "app-bundle"
-      },
-      "ios": {
-        "buildConfiguration": "Release"
       }
     }
   },
   "submit": {
-    "prod": {
-      "android": {
-        "serviceAccountKeyPath": "./path-to-your-service-account.json"
-      }
-    }
-  }
-  "submit": {
-    "prod": {
-      "android": {
-        "serviceAccountKeyPath": "./path-to-your-service-account.json"
-      }
-    }
+    "production": {}
   }
 }

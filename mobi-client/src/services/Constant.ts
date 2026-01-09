@@ -1,7 +1,7 @@
 // export const API_URL = "http://localhost:3333/api";
 
 // export const API_URL = "https://big-whole-camel.ngrok-free.app/api";
-// export const API_URL = "http://188.166.222.86:3333/api";
+// export const API_URL = "http://localhost:3333/api";
 export const API_URL = "http://188.166.222.86:3333/api";
 // https://sink-baker-monte-limits.trycloudflare.com
 export const URL_PPYTHON = "http://188.166.222.86:5000";
